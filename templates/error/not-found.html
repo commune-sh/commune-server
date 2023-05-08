@@ -1,0 +1,41 @@
+{{define "not-found"}}
+<html>
+  <head>
+    <title>Not Found - {{.AppName}}</title>
+    {{template "common-head" .}}
+  </head>
+<style>
+body {
+    font-family: monospace;
+}
+.root {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 100%;
+    grid-template-rows: 100%;
+}
+.gr-center {
+    justify-self: center;
+    align-self: center;
+}
+.title {
+    font-size: 5rem;
+    font-weight: bold;
+}
+</style>
+  <body>
+    <div class="root">
+
+        <div class="gr-center flex flex-column">
+          <div class="title mt3 center">
+              404
+          </div>
+          <div class="mt3 gr-center center">
+              That page doesn't exist.
+          </div>
+        </div>
+
+    </div>
+  </body>
+</html>
+{{end}}

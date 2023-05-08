@@ -1,0 +1,16 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "queries"
+    schema: "migrations"
+    gen:
+      go:
+        package: "db"
+        sql_package: "pgx/v5"
+        out: "gen"
+        emit_json_tags: true
+overrides:
+  go:
+    rename:
+      json: "JSON"
+      origin_server_ts: "OriginServerTS"

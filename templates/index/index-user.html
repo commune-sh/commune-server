@@ -1,0 +1,28 @@
+{{define "index-user"}}
+<html>
+  <head>
+        <title>{{.AppName}}</title>
+      <meta name="description" content="Turn on, tune in, drop out.">
+    {{template "common-head" .}}
+
+
+  </head>
+  <body>
+<script nonce={{.Nonce}}>
+    let events = {{.EventJSON}}
+</script>
+    <div class="root app">
+
+            {{if .EventJSON}}
+            {{.EventJSON}}
+            {{else}}
+            nothing
+            {{end}}
+
+
+
+
+    </div>
+  </body>
+</html>
+{{end}}

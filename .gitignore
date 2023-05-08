@@ -1,0 +1,9 @@
+bin/*
+config*.toml
+db/gen
+db/matrix/gen
+static/js
+static/css
+static/assets
+ui/js/node_modules
+frontend/node_modules

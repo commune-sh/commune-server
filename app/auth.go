@@ -1,0 +1,467 @@
+package app
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	db "shpong/db/gen"
+	matrix_db "shpong/db/matrix/gen"
+
+	"shpong/gomatrix"
+
+	"github.com/tidwall/buntdb"
+)
+
+func (c *App) ValidateLogin() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		p, err := ReadRequestJSON(r, w, &struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		log.Println("recieved payload ", p)
+
+		creds, err := c.DB.Queries.GetCredentials(context.Background(), p.Username)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "GetCredentials failed: %v\n", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"authenticated": false,
+					"exists":        false,
+					"error":         "username or email does not exist",
+				},
+			})
+			return
+		}
+
+		log.Println("password is ", creds.Password)
+
+		matches := CheckPasswordHash(p.Password, creds.Password)
+
+		log.Println("did password match? ", matches)
+
+		if !matches {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"authenticated": false,
+					"error":         "username or password is incorrect",
+				},
+			})
+			return
+		}
+
+		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+		matrix, err := gomatrix.NewClient(serverName, "", "")
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"authenticated": false,
+					"error":         "internal server error",
+				},
+			})
+			return
+		}
+
+		rl := &gomatrix.ReqLogin{
+			Type:     "m.login.password",
+			User:     p.Username,
+			Password: p.Password,
+		}
+
+		resp, err := matrix.Login(rl)
+		if err != nil || resp == nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"authenticated": false,
+					"error":         "username or password is incorrect",
+				},
+			})
+			return
+		}
+
+		if resp != nil {
+			log.Println("resp is ", resp)
+		}
+
+		profile, err := c.MatrixDB.Queries.GetProfile(context.Background(), p.Username)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "CreateUser failed: %v\n", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"authenticated": false,
+					"error":         "internal server error",
+				},
+			})
+			return
+		}
+
+		log.Println("profile is ", profile)
+
+		token := RandomString(32)
+
+		idu := encodeUUID(creds.ID.Bytes)
+
+		err = c.StoreUserSession(&User{
+			UserID:            idu,
+			Username:          p.Username,
+			Email:             creds.Email,
+			DisplayName:       profile.Displayname.String,
+			AvatarURL:         profile.AvatarUrl.String,
+			AccessToken:       token,
+			MatrixAccessToken: resp.AccessToken,
+			MatrixUserID:      resp.UserID,
+			MatrixDeviceID:    resp.DeviceID,
+			Age:               creds.CreatedAt.Time.Unix(),
+		})
+
+		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), resp.UserID)
+		if err != nil {
+			log.Println(err)
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"authenticated": true,
+				"access_token":  token,
+				"credentials": map[string]any{
+					"id":                  idu,
+					"username":            p.Username,
+					"matrix_user_id":      resp.UserID,
+					"matrix_device_id":    resp.DeviceID,
+					"matrix_access_token": resp.AccessToken,
+					"display_name":        profile.Displayname.String,
+					"avatar_url":          profile.AvatarUrl.String,
+					"email":               creds.Email,
+					"age":                 creds.CreatedAt.Time.Unix(),
+				},
+				"spaces": spaces,
+			},
+		})
+
+	}
+}
+
+func (c *App) ValidateSession() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		at, err := ExtractAccessToken(r)
+
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusUnauthorized,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		user, err := c.GetTokenUser(at.Token)
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		exists, err := c.MatrixDB.Queries.IsAccessTokenValid(context.Background(), matrix_db.IsAccessTokenValidParams{
+			UserID: user.MatrixUserID,
+			Token:  user.MatrixAccessToken,
+		})
+		if err != nil || !exists {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusUnauthorized,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), user.MatrixUserID)
+		if err != nil {
+			log.Println(err)
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"valid":       true,
+				"credentials": user,
+				"spaces":      spaces,
+			},
+		})
+
+	}
+}
+
+func (c *App) SendCode() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		type request struct {
+			Email   string `json:"email"`
+			Session string `json:"session"`
+		}
+
+		p, err := ReadRequestJSON(r, w, &request{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		log.Println("recieved payload ", p)
+
+		// check to see if this email domain is allowed
+		/*
+			banned := IsEmailBanned(p.Email)
+			if banned {
+				log.Println("This email is forbidden.")
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error": "Email is banned",
+					},
+				})
+				return
+			}
+		*/
+
+		code := GenerateMagicCode()
+
+		log.Println("magic code is ", code, p.Session)
+
+		//
+		//go c.SendSignupCode(p.Email, code)
+		//
+
+		err = c.AddCodeToCache(p.Email, &CodeVerification{
+			Code:    code,
+			Session: p.Session,
+			Email:   p.Email,
+		})
+
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "code could not be sent",
+					"sent":  false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"sent": true,
+			},
+		})
+	}
+}
+
+type CodeVerification struct {
+	Email   string `json:"email"`
+	Session string `json:"session"`
+	Code    string `json:"code"`
+}
+
+func (c *App) VerifyCode() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		p, err := ReadRequestJSON(r, w, &CodeVerification{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		valid, err := c.DoesEmailCodeExist(p)
+
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": valid,
+					"error": "code could not be verified",
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"valid": valid,
+			},
+		})
+	}
+}
+
+func (c *App) OldVerifyEmail() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		type request struct {
+			Email string `json:"email"`
+		}
+
+		p, err := ReadRequestJSON(r, w, &request{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		log.Println("recieved payload ", p)
+
+		banned := IsEmailBanned(p.Email)
+		if banned {
+			log.Println("email is banned")
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "Email is banned",
+				},
+			})
+			return
+		}
+
+		//err := c.SendSignupVerificationEmail(p.Email)
+
+		err = c.Cache.VerificationCodes.View(func(tx *buntdb.Tx) error {
+			val, err := tx.Get("mykey")
+			if err != nil {
+				return err
+			}
+			fmt.Printf("value is %s\n", val)
+			return nil
+		})
+
+		type response struct {
+			Sent  bool   `json:"sent"`
+			Token string `json:"token"`
+		}
+
+		at, err := ExtractAccessToken(r)
+
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusUnauthorized,
+				JSON: map[string]any{
+					"error": "unauthorized",
+				},
+			})
+
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"token": at.Token,
+			},
+		})
+	}
+}
+
+func (c *App) Signup() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		request := struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+			Email    string `json:"email"`
+		}{}
+
+		p, err := ReadRequestJSON(r, w, request)
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		log.Println("recieved payload ", p)
+
+		user, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
+			Username: p.Username,
+			Password: p.Password,
+			Email:    p.Email,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "CreateUser failed: %v\n", err)
+		}
+
+		fmt.Println(user)
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: p,
+		})
+	}
+}
+
+func (c *App) UserPosts() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type rb struct {
+			Username string `json:"username"`
+		}
+
+		p, err := ReadRequestJSON(r, w, &rb{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		log.Println("recieved payload ", p)
+
+		posts, err := c.DB.Queries.GetUserPosts(context.Background(), p.Username)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "GetUserPosts failed: %v\n", err)
+		}
+
+		fmt.Println(posts)
+		fmt.Println(posts)
+		fmt.Println(posts)
+
+		type Response struct {
+			Exists bool `json:"exists"`
+		}
+
+		ff := Response{Exists: true}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: ff,
+		})
+	}
+}
