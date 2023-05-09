@@ -1,6 +1,12 @@
 -- name: DoesSpaceExist :one
 SELECT exists(select 1 from room_aliases where room_alias = $1 OR slug = $2);
 
+-- name: GetUserSpaceID :one
+SELECT ra.room_id
+FROM room_aliases ra
+WHERE ra.room_alias = $1
+AND ra.creator = $2;
+
 -- name: GetAllCommunities :many
 SELECT room_aliases.room_alias,
     room_aliases.room_id,

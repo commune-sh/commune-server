@@ -20,12 +20,15 @@ ORDER BY events.origin_server_ts DESC LIMIT 100;
 -- name: GetSpaceEvents :many
 SELECT ej.event_id, 
     ej.json, 
+    ud.display_name,
+    ud.avatar_url,
     RIGHT(events.event_id, 7) as slug,
     COALESCE(rc.count, 0) as replies,
-    array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
+LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 WHERE room_aliases.room_alias = $1
@@ -37,6 +40,8 @@ GROUP BY
     events.event_id, 
     rc.count,
     ej.json,
+    ud.display_name,
+    ud.avatar_url,
     events.origin_server_ts
 ORDER BY events.origin_server_ts DESC LIMIT 30;
 
@@ -46,11 +51,14 @@ ORDER BY events.origin_server_ts DESC LIMIT 30;
 
 -- name: GetSpaceEvent :one
 SELECT ej.event_id, 
-    ej.json ,
+    ej.json,
+    ud.display_name,
+    ud.avatar_url,
     COALESCE(rc.count, 0) as replies,
-    array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
+LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
@@ -60,6 +68,8 @@ GROUP BY
     ej.event_id, 
     events.event_id, 
     ej.json,
+    ud.display_name,
+    ud.avatar_url,
     rc.count
 LIMIT 1;
 
@@ -67,12 +77,24 @@ LIMIT 1;
 -- name: GetSpaceEventReplies :many
 SELECT ej.event_id, 
     ej.json, 
-    RIGHT(events.event_id, 7) as slug
+    ud.display_name,
+    ud.avatar_url,
+    RIGHT(events.event_id, 7) as slug,
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
+LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN event_relations ON event_relations.event_id = ej.event_id
+LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 WHERE events.type = 'm.room.message'
 AND event_relations.relates_to_id = $1
+GROUP BY
+    ej.event_id, 
+    ej.json,
+    events.event_id,
+    ud.display_name,
+    ud.avatar_url,
+    events.origin_server_ts
 ORDER BY events.origin_server_ts DESC LIMIT 1000;
 
 
@@ -82,11 +104,14 @@ ORDER BY events.origin_server_ts DESC LIMIT 1000;
 SELECT ej.event_id, 
     ej.json, 
     room_aliases.room_alias,
+    ud.display_name,
+    ud.avatar_url,
     RIGHT(events.event_id, 7) as slug,
     COALESCE(rc.count, 0) as replies,
-    array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
+LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
@@ -99,6 +124,8 @@ GROUP BY
     events.event_id, 
     rc.count,
     ej.json,
+    ud.display_name,
+    ud.avatar_url,
     events.origin_server_ts,
     room_aliases.room_alias
 ORDER BY events.origin_server_ts DESC LIMIT 30;

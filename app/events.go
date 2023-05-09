@@ -2,10 +2,11 @@ package app
 
 import (
 	"context"
-	matrix_db "shpong/db/matrix/gen"
 	"fmt"
 	"log"
 	"net/http"
+	matrix_db "shpong/db/matrix/gen"
+	"shpong/gomatrix"
 	"time"
 
 	"github.com/Jeffail/gabs/v2"
@@ -44,14 +45,16 @@ func (c *App) AllEvents() http.HandlerFunc {
 				log.Println("error parsing json: ", err)
 			}
 
-			s := ProcessEvent(json)
-
-			s.EventID = item.EventID
-			s.Slug = item.Slug
-			s.RoomAlias = GetLocalPart(item.RoomAlias.String)
-
-			s.ReplyCount = item.Replies
-			s.Reactions = item.Reactions
+			s := ProcessComplexEvent(&EventProcessor{
+				EventID:     item.EventID,
+				Slug:        item.Slug,
+				RoomAlias:   GetLocalPart(item.RoomAlias.String),
+				JSON:        json,
+				DisplayName: item.DisplayName.String,
+				AvatarURL:   item.AvatarUrl.String,
+				ReplyCount:  item.Replies,
+				Reactions:   item.Reactions,
+			})
 
 			items = append(items, s)
 		}
@@ -60,6 +63,113 @@ func (c *App) AllEvents() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"events": items,
+			},
+		})
+
+	}
+}
+
+func (c *App) GetEvent() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		event := chi.URLParam(r, "event")
+
+		log.Println("event id is ", event)
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"event": event,
+			},
+		})
+
+	}
+}
+
+func (c *App) NewPost() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		p, err := ReadRequestJSON(r, w, &struct {
+			RoomID string `json:"room_id"`
+			Body   any    `json:"body"`
+		}{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		user := c.LoggedInUser(r)
+
+		log.Println("what is room id ????", p.RoomID, p.Body)
+
+		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
+		if err != nil {
+			log.Println(err)
+		}
+
+		resp, err := matrix.SendMessageEvent(user.UserSpaceID, "m.room.message", p.Body)
+
+		log.Println("resp is ", resp, err)
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"event": "test",
+			},
+		})
+
+	}
+}
+
+func (c *App) GetEventReplies() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		event := chi.URLParam(r, "event")
+
+		log.Println("event id is ", event)
+
+		replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), event)
+
+		if err != nil {
+			log.Println("error getting event replies: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "couldn't get event replies",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		var items []interface{}
+
+		for _, item := range replies {
+
+			json, err := gabs.ParseJSON([]byte(item.JSON.String))
+			if err != nil {
+				log.Println("error parsing json: ", err)
+			}
+
+			s := ProcessComplexEvent(&EventProcessor{
+				EventID:     item.EventID,
+				Slug:        item.Slug,
+				JSON:        json,
+				DisplayName: item.DisplayName.String,
+				AvatarURL:   item.AvatarUrl.String,
+				Reactions:   item.Reactions,
+			})
+
+			items = append(items, s)
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"replies": items,
 			},
 		})
 
@@ -126,12 +236,15 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 				log.Println("error parsing json: ", err)
 			}
 
-			s := ProcessEvent(json)
-
-			s.EventID = item.EventID
-			s.Slug = item.Slug
-			s.ReplyCount = item.Replies
-			s.Reactions = item.Reactions
+			s := ProcessComplexEvent(&EventProcessor{
+				EventID:     item.EventID,
+				Slug:        item.Slug,
+				JSON:        json,
+				DisplayName: item.DisplayName.String,
+				AvatarURL:   item.AvatarUrl.String,
+				ReplyCount:  item.Replies,
+				Reactions:   item.Reactions,
+			})
 
 			items = append(items, s)
 		}
@@ -188,12 +301,15 @@ func (c *App) SpaceEvent() http.HandlerFunc {
 			return
 		}
 
-		s := ProcessEvent(json)
-
-		s.EventID = item.EventID
-		s.Slug = slug
-		s.ReplyCount = item.Replies
-		s.Reactions = item.Reactions
+		s := ProcessComplexEvent(&EventProcessor{
+			EventID:     item.EventID,
+			Slug:        slug,
+			JSON:        json,
+			DisplayName: item.DisplayName.String,
+			AvatarURL:   item.AvatarUrl.String,
+			ReplyCount:  item.Replies,
+			Reactions:   item.Reactions,
+		})
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,

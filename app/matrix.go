@@ -1,20 +1,25 @@
 package app
 
 import (
-	"shpong/config"
-	matrix_db "shpong/db/matrix/gen"
-	"shpong/gomatrix"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"shpong/config"
+	matrix_db "shpong/db/matrix/gen"
+	"shpong/gomatrix"
 
 	"github.com/Jeffail/gabs/v2"
 )
 
-func (c *App) CreateMatrixUserAccount(username, password string) (*gomatrix.RespRegister, error) {
+type MatrixAccountResponse struct {
+	Response    *gomatrix.RespRegister
+	UserSpaceID string
+}
+
+func (c *App) CreateMatrixUserAccount(username, password string) (*MatrixAccountResponse, error) {
 
 	serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
@@ -60,77 +65,83 @@ func (c *App) CreateMatrixUserAccount(username, password string) (*gomatrix.Resp
 		return nil, err
 	}
 
-	go func() {
+	matrix.SetCredentials(resp.UserID, resp.AccessToken)
+	matrix.Prefix = "/_matrix/client/r0"
 
-		matrix.SetCredentials(resp.UserID, resp.AccessToken)
-		matrix.Prefix = "/_matrix/client/r0"
+	pl := gomatrix.Event{
+		Type: "m.room.power_levels",
+		Content: map[string]interface{}{
+			"ban": 60,
+			"events": map[string]interface{}{
+				"m.room.name":         60,
+				"m.room.power_levels": 100,
+				"m.room.create":       10,
+				"m.space.child":       10,
+				"m.space.parent":      10,
+			},
+			"events_default": 10,
+			"invite":         10,
+			"kick":           60,
+			"notifications": map[string]interface{}{
+				"room": 20,
+			},
+			"redact":        10,
+			"state_default": 10,
+			"users": map[string]interface{}{
+				resp.UserID: 100,
+			},
+			"users_default": 10,
+		},
+	}
 
-		pl := gomatrix.Event{
-			Type: "m.room.power_levels",
+	initState := []gomatrix.Event{
+		gomatrix.Event{
+			Type: "m.room.history_visibility",
 			Content: map[string]interface{}{
-				"ban": 60,
-				"events": map[string]interface{}{
-					"m.room.name":         60,
-					"m.room.power_levels": 100,
-					"m.room.create":       10,
-					"m.space.child":       10,
-					"m.space.parent":      10,
-				},
-				"events_default": 10,
-				"invite":         10,
-				"kick":           60,
-				"notifications": map[string]interface{}{
-					"room": 20,
-				},
-				"redact":        10,
-				"state_default": 10,
-				"users": map[string]interface{}{
-					resp.UserID: 100,
-				},
-				"users_default": 10,
+				"history_visibility": "world_readable",
 			},
-		}
-
-		initState := []gomatrix.Event{
-			gomatrix.Event{
-				Type: "m.room.history_visibility",
-				Content: map[string]interface{}{
-					"history_visibility": "world_readable",
-				},
-			}, gomatrix.Event{
-				Type: "m.room.guest_access",
-				Content: map[string]interface{}{
-					"guest_access": "can_join",
-				},
-			}, gomatrix.Event{
-				Type: "shpong.room",
-				Content: map[string]interface{}{
-					"room_type": "profile",
-				},
+		}, gomatrix.Event{
+			Type: "m.room.guest_access",
+			Content: map[string]interface{}{
+				"guest_access": "can_join",
 			},
-			pl,
-		}
-
-		creq := &gomatrix.ReqCreateRoom{
-			RoomAliasName: fmt.Sprintf(`@%s`, username),
-			Preset:        "public_chat",
-			Visibility:    "public",
-			CreationContent: map[string]interface{}{
-				"type": "m.space",
+		}, gomatrix.Event{
+			Type: "m.room.name",
+			Content: map[string]interface{}{
+				"name": fmt.Sprintf(`@%s`, username),
 			},
-			InitialState: initState,
-		}
+		}, gomatrix.Event{
+			Type: "shpong.room",
+			Content: map[string]interface{}{
+				"room_type": "profile",
+			},
+		},
+		pl,
+	}
 
-		crr, err := matrix.CreateRoom(creq)
+	creq := &gomatrix.ReqCreateRoom{
+		RoomAliasName: fmt.Sprintf(`@%s`, username),
+		Preset:        "public_chat",
+		Visibility:    "public",
+		CreationContent: map[string]interface{}{
+			"type": "m.space",
+		},
+		InitialState: initState,
+	}
 
-		if err != nil || crr == nil {
-			log.Println(err)
-		}
+	crr, err := matrix.CreateRoom(creq)
 
-		log.Println("Was Room created?", crr)
-	}()
+	if err != nil || crr == nil {
+		log.Println(err)
+	}
 
-	return resp, nil
+	log.Println("Was Room created?", crr)
+
+	return &MatrixAccountResponse{
+		Response:    resp,
+		UserSpaceID: crr.RoomID,
+	}, nil
+
 }
 
 func (c *App) NewMatrixClient(userID, accessToken string) (*gomatrix.Client, error) {
@@ -215,10 +226,16 @@ func (c *App) ConstructMatrixRoomID(username string) string {
 	return fmt.Sprintf("#%s:%s", username, c.Config.Matrix.Homeserver)
 }
 
+type sender struct {
+	ID          string `json:"id"`
+	AvatarURL   string `json:"avatar_url"`
+	DisplayName string `json:"display_name"`
+}
+
 type Event struct {
 	Type           any      `json:"type"`
 	Content        any      `json:"content"`
-	Sender         any      `json:"sender"`
+	Sender         sender   `json:"sender"`
 	EventID        any      `json:"event_id"`
 	StateKey       any      `json:"state_key,omitempty"`
 	RoomAlias      any      `json:"room_alias,omitempty"`
@@ -231,12 +248,59 @@ type Event struct {
 	UserReactions  []string `json:"user_reactions,omitempty"`
 }
 
+type EventProcessor struct {
+	JSON        *gabs.Container
+	EventID     string
+	Slug        string
+	DisplayName string
+	AvatarURL   string
+	RoomAlias   string
+	ReplyCount  int64
+	Reactions   any
+}
+
+func ProcessComplexEvent(ep *EventProcessor) Event {
+
+	e := Event{
+		Type:    ep.JSON.Path("type").Data().(string),
+		Content: ep.JSON.Path("content").Data().(any),
+		Sender: sender{
+			ID: ep.JSON.Path("sender").Data().(string),
+		},
+		RoomID:         ep.JSON.Path("room_id").Data().(string),
+		OriginServerTs: ep.JSON.Path("origin_server_ts").Data().(any),
+		Unsigned:       ep.JSON.Path("unsigned").Data().(any),
+	}
+
+	e.EventID = ep.EventID
+	e.Slug = ep.Slug
+
+	e.RoomAlias = ep.RoomAlias
+
+	e.Sender.DisplayName = ep.DisplayName
+	e.Sender.AvatarURL = ep.AvatarURL
+
+	e.ReplyCount = ep.ReplyCount
+
+	e.Reactions = ep.Reactions
+
+	sk, ok := ep.JSON.Path("state_key").Data().(string)
+	if ok {
+		e.StateKey = sk
+	}
+
+	return e
+
+}
+
 func ProcessEvent(d *gabs.Container) Event {
 
 	e := Event{
-		Type:           d.Path("type").Data().(string),
-		Content:        d.Path("content").Data().(any),
-		Sender:         d.Path("sender").Data().(string),
+		Type:    d.Path("type").Data().(string),
+		Content: d.Path("content").Data().(any),
+		Sender: sender{
+			ID: d.Path("sender").Data().(string),
+		},
 		RoomID:         d.Path("room_id").Data().(string),
 		OriginServerTs: d.Path("origin_server_ts").Data().(any),
 		Unsigned:       d.Path("unsigned").Data().(any),

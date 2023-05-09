@@ -12,6 +12,7 @@ import (
 
 	"shpong/gomatrix"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/tidwall/buntdb"
 )
 
@@ -117,6 +118,23 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 
 		idu := encodeUUID(creds.ID.Bytes)
 
+		room_alias := fmt.Sprintf("#@%s:%s", p.Username, c.Config.Matrix.Homeserver)
+		creator := fmt.Sprintf("@%s:%s", p.Username, c.Config.Matrix.Homeserver)
+
+		log.Println("room alias is ", room_alias)
+		log.Println("creator is ", creator)
+
+		userspace, err := c.MatrixDB.Queries.GetUserSpaceID(context.Background(), matrix_db.GetUserSpaceIDParams{
+			RoomAlias: room_alias,
+			Creator: pgtype.Text{
+				String: creator,
+				Valid:  true,
+			},
+		})
+		if err != nil {
+			log.Println(err)
+		}
+
 		err = c.StoreUserSession(&User{
 			UserID:            idu,
 			Username:          p.Username,
@@ -127,6 +145,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			MatrixAccessToken: resp.AccessToken,
 			MatrixUserID:      resp.UserID,
 			MatrixDeviceID:    resp.DeviceID,
+			UserSpaceID:       userspace,
 			Age:               creds.CreatedAt.Time.Unix(),
 		})
 
@@ -146,6 +165,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 					"matrix_user_id":      resp.UserID,
 					"matrix_device_id":    resp.DeviceID,
 					"matrix_access_token": resp.AccessToken,
+					"user_space_id":       userspace,
 					"display_name":        profile.Displayname.String,
 					"avatar_url":          profile.AvatarUrl.String,
 					"email":               creds.Email,

@@ -2,12 +2,12 @@ package app
 
 import (
 	"context"
-	db "shpong/db/gen"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	db "shpong/db/gen"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -116,7 +116,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 		hash, _ := HashPassword(p.Password)
 
 		// create user
-		id, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
+		user, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
 			Email:    p.Email,
 			Username: p.Username,
 			Password: hash,
@@ -135,7 +135,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			return
 		}
 
-		idu := encodeUUID(id.Bytes)
+		idu := encodeUUID(user.ID.Bytes)
 
 		token := RandomString(32)
 
@@ -144,9 +144,11 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			Username:          p.Username,
 			Email:             p.Email,
 			AccessToken:       token,
-			MatrixAccessToken: resp.AccessToken,
-			MatrixUserID:      resp.UserID,
-			MatrixDeviceID:    resp.DeviceID,
+			MatrixAccessToken: resp.Response.AccessToken,
+			MatrixUserID:      resp.Response.UserID,
+			MatrixDeviceID:    resp.Response.DeviceID,
+			UserSpaceID:       resp.UserSpaceID,
+			Age:               user.CreatedAt.Time.Unix(),
 		})
 
 		// send success JSON
@@ -154,91 +156,22 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"created": true,
-				"credentials": map[string]string{
+				"credentials": map[string]any{
 					"id":                  idu,
+					"username":            p.Username,
 					"access_token":        token,
-					"matrix_user_id":      resp.UserID,
-					"matrix_device_id":    resp.DeviceID,
-					"matrix_access_token": resp.AccessToken,
+					"matrix_user_id":      resp.Response.UserID,
+					"matrix_device_id":    resp.Response.DeviceID,
+					"matrix_access_token": resp.Response.AccessToken,
+					"user_space_id":       resp.UserSpaceID,
 					"display_name":        p.Username,
 					"email":               p.Email,
+					"age":                 user.CreatedAt.Time.Unix(),
 				},
 			},
 		})
 	}
 }
-
-/*
-func (c *App) CreateMatrixAccount(username, hash string) error {
-
-	_, err := c.MatrixDB.Queries.CreateUser(context.Background(), matrix_db.CreateUserParams{
-		Name: pgtype.Text{
-			String: fmt.Sprintf("@%s:%s", username, c.Config.Matrix.Homeserver),
-			Valid:  true,
-		},
-		PasswordHash: pgtype.Text{
-			String: hash,
-			Valid:  true,
-		},
-		CreationTs: pgtype.Int8{
-			Int64: time.Now().Unix(),
-			Valid: true,
-		},
-		ShadowBanned: pgtype.Bool{
-			Bool:  false,
-			Valid: true,
-		},
-		Approved: pgtype.Bool{
-			Bool:  true,
-			Valid: true,
-		},
-	})
-
-	if err != nil {
-		return err
-	}
-
-	_, err = c.MatrixDB.Queries.CreateProfile(context.Background(), matrix_db.CreateProfileParams{
-		UserID: username,
-		Displayname: pgtype.Text{
-			String: username,
-			Valid:  true,
-		},
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	_, err = c.MatrixDB.Queries.CreateUserDirectory(context.Background(), matrix_db.CreateUserDirectoryParams{
-		UserID: fmt.Sprintf("@%s:%s", username, c.Config.Matrix.Homeserver),
-		DisplayName: pgtype.Text{
-			String: username,
-			Valid:  true,
-		},
-	})
-
-	if err != nil {
-		return nil
-	}
-
-	at, _ := GenerateAccessToken()
-
-	_, err = c.MatrixDB.Queries.CreateAccessToken(context.Background(), matrix_db.CreateAccessTokenParams{
-		UserID: fmt.Sprintf("@%s:%s", username, c.Config.Matrix.Homeserver),
-		DeviceID: pgtype.Text{
-			String: RandomString(10),
-			Valid:  true,
-		},
-		Token: at,
-	})
-
-	if err != nil {
-		return nil
-	}
-
-	return nil
-}
-*/
 
 func (c *App) UsernameAvailable() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

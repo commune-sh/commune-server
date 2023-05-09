@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 )
@@ -52,39 +51,30 @@ func (c *App) GetAuthorizationToken(h http.Handler) http.Handler {
 func (c *App) RequireAuthentication(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		s, err := GetSession(r, c)
+		at, err := ExtractAccessToken(r)
+		if err != nil || at.Token == "" {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"authenticated": false,
+					"error":         "this action requires authentication",
+				},
+			})
+			return
+		}
+
+		_, err = c.GetTokenUser(at.Token)
 		if err != nil {
 			log.Println(err)
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
 
-		token, ok := s.Values["access_token"].(string)
-
-		if !ok {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		userid, err := c.SessionsStore.Get(token).Result()
-		if err != nil {
-			log.Println(err)
-			h.ServeHTTP(w, r)
-			return
-		}
-
-		user, err := c.SessionsStore.Get(userid).Result()
-		if err != nil {
-			log.Println(err)
-			h.ServeHTTP(w, r)
-			return
-		}
-
-		var us User
-		err = json.Unmarshal([]byte(user), &us)
-		if err != nil || us.UserID == "" {
-			log.Println(err)
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"authenticated": false,
+					"error":         "token invalid",
+				},
+			})
 			return
 		}
 

@@ -17,7 +17,7 @@ type User struct {
 	MatrixUserID      string `json:"matrix_user_id"`
 	MatrixDeviceID    string `json:"matrix_device_id"`
 	UserID            string `json:"user_id"`
-	RoomID            string `json:"room_id"`
+	UserSpaceID       string `json:"user_space_id"`
 	Email             string `json:"email"`
 	Age               int64  `json:"age"`
 }

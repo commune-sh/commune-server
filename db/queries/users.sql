@@ -33,7 +33,7 @@ INSERT INTO users (
 ) VALUES (
   $1, $2, $3
 )
-RETURNING id;
+RETURNING id, created_at;
 
 -- name: DeactivateUser :exec
 UPDATE users SET deactivated_at = NOW() AND deactivated = true WHERE id = $1;
