@@ -90,8 +90,8 @@ func (c *App) NewPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		p, err := ReadRequestJSON(r, w, &struct {
-			RoomID string `json:"room_id"`
-			Body   any    `json:"body"`
+			RoomID  string `json:"room_id"`
+			Content any    `json:"content"`
 		}{})
 
 		if err != nil {
@@ -101,7 +101,7 @@ func (c *App) NewPost() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		log.Println("what is room id ????", p.RoomID, p.Body)
+		log.Println("what is room id ????", p.RoomID, p.Content)
 
 		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
@@ -110,7 +110,7 @@ func (c *App) NewPost() http.HandlerFunc {
 			log.Println(err)
 		}
 
-		resp, err := matrix.SendMessageEvent(user.UserSpaceID, "m.room.message", p.Body)
+		resp, err := matrix.SendMessageEvent(user.UserSpaceID, "m.room.message", p.Content)
 
 		log.Println("resp is ", resp, err)
 
@@ -179,8 +179,6 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 func (c *App) SpaceEvents() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		//user := c.LoggedInUser(r)
-
 		space := chi.URLParam(r, "space")
 
 		alias := c.ConstructMatrixRoomID(space)
@@ -240,6 +238,7 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 				EventID:     item.EventID,
 				Slug:        item.Slug,
 				JSON:        json,
+				RoomAlias:   space,
 				DisplayName: item.DisplayName.String,
 				AvatarURL:   item.AvatarUrl.String,
 				ReplyCount:  item.Replies,
@@ -248,6 +247,30 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 
 			items = append(items, s)
 		}
+
+		isMember := false
+
+		user := c.LoggedInUser(r)
+
+		if user != nil {
+
+			mem, err := c.MatrixDB.Queries.IsUserSpaceMember(context.Background(), matrix_db.IsUserSpaceMemberParams{
+				UserID: pgtype.Text{
+					String: user.MatrixUserID,
+					Valid:  true,
+				},
+				RoomID: pgtype.Text{
+					String: state.RoomID,
+					Valid:  true,
+				},
+			})
+			if err != nil {
+				log.Println("error getting event: ", err)
+			}
+			isMember = mem
+		}
+
+		log.Println("is member is ", isMember)
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -311,10 +334,41 @@ func (c *App) SpaceEvent() http.HandlerFunc {
 			Reactions:   item.Reactions,
 		})
 
+		// get event replies
+		eventReplies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), item.EventID)
+
+		if err != nil {
+			log.Println("error getting event replies: ", err)
+		}
+
+		var replies []interface{}
+		{
+
+			for _, item := range eventReplies {
+
+				json, err := gabs.ParseJSON([]byte(item.JSON.String))
+				if err != nil {
+					log.Println("error parsing json: ", err)
+				}
+
+				s := ProcessComplexEvent(&EventProcessor{
+					EventID:     item.EventID,
+					Slug:        item.Slug,
+					JSON:        json,
+					DisplayName: item.DisplayName.String,
+					AvatarURL:   item.AvatarUrl.String,
+					Reactions:   item.Reactions,
+				})
+
+				replies = append(replies, s)
+			}
+		}
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"event": s,
+				"event":   s,
+				"replies": replies,
 			},
 		})
 	}

@@ -11,6 +11,15 @@ GROUP BY sc.parent_room_alias, rm.room_id, rs.name, rs.topic, rs.avatar, rs.head
 HAVING COUNT(CASE WHEN rm.membership = 'join' THEN 1 ELSE NULL END) > 0
    AND COUNT(CASE WHEN rm.membership = 'leave' THEN 1 ELSE NULL END) = 0;
 
+-- name: IsUserSpaceMember :one
+SELECT exists(
+SELECT 1
+FROM membership_state ms 
+WHERE ms.user_id = $1 
+AND ms.room_id = $2 
+AND ms.membership = 'join');
+
+
 -- name: CreateUser :one
 INSERT INTO users (
   name, password_hash, creation_ts, shadow_banned, approved
