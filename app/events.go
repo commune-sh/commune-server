@@ -277,6 +277,7 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 			JSON: map[string]any{
 				"state":  sps,
 				"events": items,
+				"member": isMember,
 			},
 		})
 
@@ -299,6 +300,23 @@ func (c *App) SpaceEvent() http.HandlerFunc {
 			RoomAlias: alias,
 		}
 
+		// check if space exists in DB
+		state, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), alias)
+
+		if err != nil {
+			log.Println("error getting event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "space does not exist",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		sps := ProcessState(state)
+
 		item, err := c.MatrixDB.Queries.GetSpaceEvent(context.Background(), sreq)
 
 		if err != nil {
@@ -306,7 +324,8 @@ func (c *App) SpaceEvent() http.HandlerFunc {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
-					"error": "event not found",
+					"error":  "event not found",
+					"exists": false,
 				},
 			})
 			return
@@ -368,6 +387,7 @@ func (c *App) SpaceEvent() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"event":   s,
+				"state":   sps,
 				"replies": replies,
 			},
 		})
