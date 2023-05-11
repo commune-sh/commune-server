@@ -7,6 +7,7 @@ import (
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
 	"shpong/gomatrix"
+	"strconv"
 	"time"
 
 	"github.com/Jeffail/gabs/v2"
@@ -19,11 +20,23 @@ import (
 func (c *App) AllEvents() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		query := r.URL.Query()
+		last := query.Get("last")
+
 		// get events for this space
-		events, err := c.MatrixDB.Queries.GetEvents(context.Background(), pgtype.Int8{
+
+		ge := pgtype.Int8{
 			Int64: time.Now().UnixMilli(),
 			Valid: true,
-		})
+		}
+
+		if last != "" {
+			i, _ := strconv.ParseInt(last, 10, 64)
+			log.Println(i)
+			ge.Int64 = i
+		}
+
+		events, err := c.MatrixDB.Queries.GetEvents(context.Background(), ge)
 
 		if err != nil {
 			log.Println("error getting events: ", err)
