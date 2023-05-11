@@ -5,6 +5,7 @@ go 1.20
 require (
 	cgt.name/pkg/go-mwclient v1.2.0
 	github.com/BurntSushi/toml v1.2.1
+	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/chi/v5 v5.0.0
@@ -12,6 +13,7 @@ require (
 	github.com/go-chi/hostrouter v0.2.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gocolly/colly v1.2.0
+	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/lib/pq v1.10.8
@@ -22,13 +24,13 @@ require (
 	github.com/sony/sonyflake v1.1.0
 	github.com/tidwall/buntdb v1.3.0
 	github.com/unrolled/secure v1.13.0
+	golang.org/x/crypto v0.9.0
 	google.golang.org/api v0.119.0
 )
 
 require (
 	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/Jeffail/gabs/v2 v2.7.0 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/antchfx/htmlquery v1.3.0 // indirect
 	github.com/antchfx/xmlquery v1.3.15 // indirect
@@ -36,8 +38,6 @@ require (
 	github.com/antonholmquist/jason v1.0.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/gofrs/uuid v4.4.0+incompatible // indirect
-	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -65,11 +65,10 @@ require (
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.8.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect

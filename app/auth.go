@@ -112,17 +112,12 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			return
 		}
 
-		log.Println("profile is ", profile)
-
 		token := RandomString(32)
 
 		idu := encodeUUID(creds.ID.Bytes)
 
 		room_alias := fmt.Sprintf("#@%s:%s", p.Username, c.Config.Matrix.Homeserver)
 		creator := fmt.Sprintf("@%s:%s", p.Username, c.Config.Matrix.Homeserver)
-
-		log.Println("room alias is ", room_alias)
-		log.Println("creator is ", creator)
 
 		userspace, err := c.MatrixDB.Queries.GetUserSpaceID(context.Background(), matrix_db.GetUserSpaceIDParams{
 			RoomAlias: room_alias,

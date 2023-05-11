@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,6 +20,12 @@ import (
 
 func (c *App) AllEvents() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := c.LoggedInUser(r)
+
+		if user != nil {
+			log.Println("user is ", user.Username)
+		}
 
 		query := r.URL.Query()
 		last := query.Get("last")
@@ -82,6 +89,81 @@ func (c *App) AllEvents() http.HandlerFunc {
 	}
 }
 
+func (c *App) UserFeedEvents() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := c.LoggedInUser(r)
+
+		query := r.URL.Query()
+		last := query.Get("last")
+
+		// get events for this space
+
+		ge := pgtype.Int8{
+			Int64: time.Now().UnixMilli(),
+			Valid: true,
+		}
+
+		if last != "" {
+			i, _ := strconv.ParseInt(last, 10, 64)
+			log.Println(i)
+			ge.Int64 = i
+		}
+
+		fe := matrix_db.GetUserFeedEventsParams{
+			OriginServerTS: ge,
+			UserID: pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			},
+		}
+
+		events, err := c.MatrixDB.Queries.GetUserFeedEvents(context.Background(), fe)
+
+		if err != nil {
+			log.Println("error getting events: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "internal server error",
+				},
+			})
+			return
+		}
+
+		var items []interface{}
+
+		for _, item := range events {
+
+			json, err := gabs.ParseJSON([]byte(item.JSON.String))
+			if err != nil {
+				log.Println("error parsing json: ", err)
+			}
+
+			s := ProcessComplexEvent(&EventProcessor{
+				EventID:     item.EventID,
+				Slug:        item.Slug,
+				RoomAlias:   GetLocalPart(item.RoomAlias.String),
+				JSON:        json,
+				DisplayName: item.DisplayName.String,
+				AvatarURL:   item.AvatarUrl.String,
+				ReplyCount:  item.Replies,
+				Reactions:   item.Reactions,
+			})
+
+			items = append(items, s)
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"events": items,
+			},
+		})
+
+	}
+}
+
 func (c *App) GetEvent() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -93,6 +175,150 @@ func (c *App) GetEvent() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"event": event,
+			},
+		})
+
+	}
+}
+
+func (c *App) SSE() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		query := r.URL.Query()
+		token := query.Get("token")
+
+		user, err := c.GetTokenUser(token)
+		if err != nil || token == "" {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "couldn't get event replies",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		log.Println("starting to sync for", user.Username)
+
+		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
+		if err != nil {
+			log.Println(err)
+		}
+
+		//events := []any{}
+
+		// Create a new channel to send events to the client
+		eventCh := make(chan any)
+
+		syncer := matrix.Syncer.(*gomatrix.DefaultSyncer)
+		syncer.OnEventType("m.room.message", func(ev *gomatrix.Event) {
+			//fmt.Println("Message: ", ev)
+			//events = append(events, ev)
+			eventCh <- ev
+		})
+
+		go func() {
+			for {
+				if err := matrix.Sync(); err != nil {
+					fmt.Println("Sync() returned ", err)
+				}
+				// Optional: Wait a period of time before trying to sync again.
+			}
+		}()
+
+		log.Println("sending SSE to ", user.Username)
+
+		// Set the content type to text/event-stream
+		w.Header().Set("Content-Type", "text/event-stream")
+		// Set cache-control header to prevent caching of the response
+		w.Header().Set("Cache-Control", "no-cache")
+		// Set connection header to keep the connection open
+		w.Header().Set("Connection", "keep-alive")
+
+		// Continuously listen for events and write them to the response
+
+		for {
+			event := <-eventCh
+			data, err := json.Marshal(event)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher, ok := w.(http.Flusher)
+			if ok {
+				flusher.Flush()
+			}
+		}
+
+	}
+}
+
+func generateEvent() string {
+	// Generate a random event
+	return time.Now().Format("2006-01-02 15:04:05")
+}
+
+func (c *App) Sync() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := c.LoggedInUser(r)
+
+		log.Println("starting to sync for", user.Username)
+
+		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
+		if err != nil {
+			log.Println(err)
+		}
+
+		events := []any{}
+
+		syncer := matrix.Syncer.(*gomatrix.DefaultSyncer)
+		syncer.OnEventType("m.room.message", func(ev *gomatrix.Event) {
+			fmt.Println("Message: ", ev)
+			events = append(events, ev)
+		})
+
+		query := r.URL.Query()
+		timeout := query.Get("timeout")
+
+		go func() {
+			for {
+				if err := matrix.Sync(); err != nil {
+					fmt.Println("Sync() returned ", err)
+				}
+				// Optional: Wait a period of time before trying to sync again.
+			}
+		}()
+
+		if timeout != "" {
+			log.Println("got since", timeout)
+			duration, err := time.ParseDuration(timeout + "ms")
+			if err != nil {
+				fmt.Println("Error parsing duration:", err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusInternalServerError,
+					JSON: map[string]any{
+						"error": "bad since value",
+					},
+				})
+				return
+			}
+
+			time.Sleep(duration)
+		}
+		matrix.StopSync()
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"syncing": true,
+				"events":  events,
 			},
 		})
 
@@ -222,6 +448,17 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 				Valid: true,
 			},
 			RoomAlias: alias,
+		}
+
+		query := r.URL.Query()
+		last := query.Get("last")
+
+		// get events for this space
+
+		if last != "" {
+			i, _ := strconv.ParseInt(last, 10, 64)
+			log.Println(i)
+			sreq.OriginServerTS.Int64 = i
 		}
 
 		// get events for this space

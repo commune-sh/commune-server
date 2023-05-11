@@ -131,3 +131,34 @@ GROUP BY
 ORDER BY events.origin_server_ts DESC LIMIT 30;
 
 
+-- name: GetUserFeedEvents :many
+SELECT ej.event_id, 
+    ej.json, 
+    room_aliases.room_alias,
+    ud.display_name,
+    ud.avatar_url,
+    RIGHT(events.event_id, 7) as slug,
+    COALESCE(rc.count, 0) as replies,
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
+FROM event_json ej
+LEFT JOIN events on events.event_id = ej.event_id
+LEFT JOIN user_directory ud ON ud.user_id = events.sender
+LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
+LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
+LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
+JOIN membership_state ms ON ms.room_id = ej.room_id AND ms.user_id = $2
+WHERE events.type = 'm.room.message'
+AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
+AND room_aliases.room_alias is not null
+AND events.origin_server_ts < $1
+GROUP BY
+    ej.event_id, 
+    events.event_id, 
+    rc.count,
+    ej.json,
+    ud.display_name,
+    ud.avatar_url,
+    events.origin_server_ts,
+    room_aliases.room_alias
+ORDER BY events.origin_server_ts DESC LIMIT 30;
+

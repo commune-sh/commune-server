@@ -19,7 +19,7 @@ import (
 )
 
 func (c *App) Routes() {
-	compressor := middleware.NewCompressor(5, "text/html", "text/css")
+	compressor := middleware.NewCompressor(5, "text/html", "text/css", "text/event-stream")
 	compressor.SetEncoder("nop", func(w io.Writer, _ int) io.Writer {
 		return w
 	})
@@ -103,8 +103,19 @@ func routes(c *App) chi.Router {
 		})
 	})
 
+	r.Route("/feed", func(r chi.Router) {
+		r.Use(c.RequireAuthentication)
+		r.Get("/", c.UserFeedEvents())
+	})
+
 	r.Route("/events", func(r chi.Router) {
 		r.Get("/", c.AllEvents())
+	})
+
+	r.Route("/sse", func(r chi.Router) {
+		r.Route("/", func(r chi.Router) {
+			r.Get("/", c.SSE())
+		})
 	})
 
 	r.Route("/event", func(r chi.Router) {
