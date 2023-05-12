@@ -130,7 +130,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			log.Println(err)
 		}
 
-		err = c.StoreUserSession(&User{
+		user := &User{
 			UserID:            idu,
 			Username:          p.Username,
 			Email:             creds.Email,
@@ -142,9 +142,15 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			MatrixDeviceID:    resp.DeviceID,
 			UserSpaceID:       userspace,
 			Age:               creds.CreatedAt.Time.Unix(),
-		})
+		}
+
+		err = c.StoreUserSession(user)
 
 		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), resp.UserID)
+		if err != nil {
+			log.Println(err)
+		}
+		rooms, err := c.MatrixDB.Queries.GetJoinedRooms(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
 		if err != nil {
 			log.Println(err)
 		}
@@ -154,19 +160,9 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			JSON: map[string]any{
 				"authenticated": true,
 				"access_token":  token,
-				"credentials": map[string]any{
-					"id":                  idu,
-					"username":            p.Username,
-					"matrix_user_id":      resp.UserID,
-					"matrix_device_id":    resp.DeviceID,
-					"matrix_access_token": resp.AccessToken,
-					"user_space_id":       userspace,
-					"display_name":        profile.Displayname.String,
-					"avatar_url":          profile.AvatarUrl.String,
-					"email":               creds.Email,
-					"age":                 creds.CreatedAt.Time.Unix(),
-				},
-				"spaces": spaces,
+				"credentials":   user,
+				"spaces":        spaces,
+				"rooms":         rooms,
 			},
 		})
 
@@ -224,12 +220,18 @@ func (c *App) ValidateSession() http.HandlerFunc {
 			log.Println(err)
 		}
 
+		rooms, err := c.MatrixDB.Queries.GetJoinedRooms(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+		if err != nil {
+			log.Println(err)
+		}
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"valid":       true,
 				"credentials": user,
 				"spaces":      spaces,
+				"rooms":       rooms,
 			},
 		})
 

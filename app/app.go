@@ -41,9 +41,6 @@ type App struct {
 func (c *App) Activate() {
 	log.Println("Started App.")
 
-	tok, _ := GenerateAccessToken()
-	log.Println(tok)
-
 	idleConnsClosed := make(chan struct{})
 
 	go func() {
@@ -156,7 +153,7 @@ func Start(s *StartRequest) {
 
 	// c.Build()
 
-	// c.Setup()
+	c.Setup()
 
 	// go c.Cron.AddFunc("*/15 * * * *", c.RefreshCache)
 	// go c.Cron.Start()

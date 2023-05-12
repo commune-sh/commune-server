@@ -189,13 +189,7 @@ func (c *App) SSE() http.HandlerFunc {
 
 		user, err := c.GetTokenUser(token)
 		if err != nil || token == "" {
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":  "couldn't get event replies",
-					"exists": false,
-				},
-			})
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -498,8 +492,6 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 			items = append(items, s)
 		}
 
-		isMember := false
-
 		user := c.LoggedInUser(r)
 
 		if user != nil {
@@ -517,17 +509,16 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 			if err != nil {
 				log.Println("error getting event: ", err)
 			}
-			isMember = mem
+			if mem {
+				sps.Joined = true
+			}
 		}
-
-		log.Println("is member is ", isMember)
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"state":  sps,
 				"events": items,
-				"member": isMember,
 			},
 		})
 

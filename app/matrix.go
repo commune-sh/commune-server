@@ -321,6 +321,7 @@ type SpaceState struct {
 	Owner          string `json:"owner"`
 	Space          any    `json:"space"`
 	Children       any    `json:"children,omitempty"`
+	Joined         bool   `json:"joined,omitempty"`
 }
 
 type state struct {

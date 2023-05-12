@@ -21,6 +21,7 @@ type Matrix struct {
 	FederationServer string `toml:"federation_server"`
 	PublicServer     string `toml:"public_server"`
 	Port             int    `toml:"port"`
+	Password         string `toml:"password"`
 }
 
 type DB struct {

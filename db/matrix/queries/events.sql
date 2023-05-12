@@ -146,7 +146,10 @@ LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
-JOIN membership_state ms ON ms.room_id = ej.room_id AND ms.user_id = $2
+JOIN membership_state ms 
+    ON ms.room_id = ej.room_id 
+    AND ms.user_id = $2
+    AND ms.membership = 'join'
 WHERE events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND room_aliases.room_alias is not null
