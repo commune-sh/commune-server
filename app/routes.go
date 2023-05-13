@@ -129,8 +129,10 @@ func routes(c *App) chi.Router {
 
 	r.Route("/{space}", func(r chi.Router) {
 		r.Use(secureMiddleware.Handler)
-		r.Get("/{slug}", c.SpaceEvent())
-		r.Get("/", c.SpaceEvents())
+		r.Get("/post/{slug}", c.SpaceEvent())
+		r.Get("/events", c.SpaceEvents())
+		r.Get("/{room}/events", c.SpaceRoomEvents())
+		r.Get("/{room}/post/{slug}", c.SpaceEvent())
 	})
 
 	r.Route("/", func(r chi.Router) {

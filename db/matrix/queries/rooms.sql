@@ -20,7 +20,7 @@ LEFT JOIN rooms ON room_aliases.room_id = rooms.room_id;
 -- name: GetSpaceState :one
 SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
 	jsonb_build_object('name', rs.name,'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header) as state,
-	COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'slug', ch.slug)) FILTER (WHERE ch.room_id IS NOT NULL), null) as children
+	COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'slug', ch.child_room_alias)) FILTER (WHERE ch.room_id IS NOT NULL), null) as children
 FROM room_aliases ra 
 LEFT JOIN (
 	SELECT * FROM room_state
@@ -33,6 +33,11 @@ LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 WHERE ra.room_alias = $1
 GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rs.name, rs.topic, rs.avatar, rs.header;
 
+-- name: GetSpaceChild :one
+SELECT child_room_id 
+FROM space_children
+WHERE parent_room_alias = $1
+AND child_room_alias = $2;
 
 -- name: GetSpaceChildren :many
 WITH sel AS (

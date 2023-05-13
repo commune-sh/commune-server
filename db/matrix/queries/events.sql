@@ -31,7 +31,7 @@ LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
-WHERE room_aliases.room_alias = $1
+WHERE ej.room_id = $1
 AND events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND events.origin_server_ts < $2
@@ -63,7 +63,6 @@ LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 WHERE RIGHT(events.event_id, 7) = $1
-AND room_aliases.room_alias = $2 
 GROUP BY
     ej.event_id, 
     events.event_id, 
