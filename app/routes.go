@@ -127,6 +127,13 @@ func routes(c *App) chi.Router {
 		r.Get("/{event}/replies", c.GetEventReplies())
 	})
 
+	r.Route("/room", func(r chi.Router) {
+		r.Route("/joined", func(r chi.Router) {
+			r.Use(c.RequireAuthentication)
+			r.Get("/", c.RoomJoined())
+		})
+	})
+
 	r.Route("/{space}", func(r chi.Router) {
 		r.Use(secureMiddleware.Handler)
 		r.Get("/post/{slug}", c.SpaceEvent())

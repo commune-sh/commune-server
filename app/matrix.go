@@ -346,6 +346,7 @@ func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {
 		Owner:          m.Owner.String,
 		Space:          st,
 		Children:       m.Children,
+		Joined:         m.Joined,
 	}
 
 	return s

@@ -412,12 +412,25 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 func (c *App) SpaceEvents() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		user := c.LoggedInUser(r)
+
 		space := chi.URLParam(r, "space")
 
 		alias := c.ConstructMatrixRoomID(space)
 
+		ssp := matrix_db.GetSpaceStateParams{
+			RoomAlias: alias,
+		}
+
+		if user != nil && user.MatrixUserID != "" {
+			ssp.UserID = pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			}
+		}
+
 		// check if space exists in DB
-		state, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), alias)
+		state, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), ssp)
 
 		if err != nil {
 			log.Println("error getting event: ", err)
@@ -492,27 +505,27 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 			items = append(items, s)
 		}
 
-		user := c.LoggedInUser(r)
+		/*
+			if user != nil {
 
-		if user != nil {
-
-			mem, err := c.MatrixDB.Queries.IsUserSpaceMember(context.Background(), matrix_db.IsUserSpaceMemberParams{
-				UserID: pgtype.Text{
-					String: user.MatrixUserID,
-					Valid:  true,
-				},
-				RoomID: pgtype.Text{
-					String: state.RoomID,
-					Valid:  true,
-				},
-			})
-			if err != nil {
-				log.Println("error getting event: ", err)
+				mem, err := c.MatrixDB.Queries.IsUserSpaceMember(context.Background(), matrix_db.IsUserSpaceMemberParams{
+					UserID: pgtype.Text{
+						String: user.MatrixUserID,
+						Valid:  true,
+					},
+					RoomID: pgtype.Text{
+						String: state.RoomID,
+						Valid:  true,
+					},
+				})
+				if err != nil {
+					log.Println("error getting event: ", err)
+				}
+				if mem {
+					sps.Joined = true
+				}
 			}
-			if mem {
-				sps.Joined = true
-			}
-		}
+		*/
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -528,6 +541,8 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 func (c *App) SpaceRoomEvents() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		user := c.LoggedInUser(r)
+
 		space := chi.URLParam(r, "space")
 		room := chi.URLParam(r, "room")
 
@@ -536,8 +551,19 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 
 		alias := c.ConstructMatrixRoomID(space)
 
+		ssp := matrix_db.GetSpaceStateParams{
+			RoomAlias: alias,
+		}
+
+		if user != nil && user.MatrixUserID != "" {
+			ssp.UserID = pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			}
+		}
+
 		// check if space exists in DB
-		state, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), alias)
+		state, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), ssp)
 
 		if err != nil {
 			log.Println("error getting event: ", err)
@@ -553,7 +579,7 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 
 		sps := ProcessState(state)
 
-		childRoomID, err := c.MatrixDB.Queries.GetSpaceChild(context.Background(), matrix_db.GetSpaceChildParams{
+		scp := matrix_db.GetSpaceChildParams{
 			ParentRoomAlias: pgtype.Text{
 				String: alias,
 				Valid:  true,
@@ -562,9 +588,19 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 				String: room,
 				Valid:  true,
 			},
-		})
+		}
 
-		if err != nil || childRoomID.String == "" {
+		if user != nil {
+			log.Println("user is ", user.MatrixUserID)
+			scp.UserID = pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			}
+		}
+
+		crs, err := c.MatrixDB.Queries.GetSpaceChild(context.Background(), scp)
+
+		if err != nil || crs.ChildRoomID.String == "" {
 			log.Println("error getting event: ", err)
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
@@ -576,14 +612,14 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 			})
 			return
 		}
-		log.Println("what is child room ID?", childRoomID)
+		log.Println("what is child room ID?", crs.ChildRoomID)
 
 		sreq := matrix_db.GetSpaceEventsParams{
 			OriginServerTS: pgtype.Int8{
 				Int64: time.Now().UnixMilli(),
 				Valid: true,
 			},
-			RoomID: childRoomID.String,
+			RoomID: crs.ChildRoomID.String,
 		}
 
 		query := r.URL.Query()
@@ -634,8 +670,6 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 			items = append(items, s)
 		}
 
-		user := c.LoggedInUser(r)
-
 		if user != nil {
 
 			mem, err := c.MatrixDB.Queries.IsUserSpaceMember(context.Background(), matrix_db.IsUserSpaceMemberParams{
@@ -659,8 +693,9 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"state":  sps,
-				"events": items,
+				"state":      sps,
+				"room_state": crs,
+				"events":     items,
 			},
 		})
 
