@@ -7,10 +7,10 @@ vendorbuild:
 	go build -mod=vendor -o bin/shpong cmd/shpong/main.go
 clean: 
 	rm -f bin/shpong
-rebuild: stopUnit clean buildJS build startUnit
-production: stopUnit reset clean buildJS build startUnit
+rebuild: stopUnit clean build startUnit
+production: stopUnit reset clean build startUnit
 cleanBuild: clean build
-dev: devReset clean buildJS build modd
+dev: devReset clean build modd
 modd:
 	-modd
 refresh: reset clean build run
@@ -32,28 +32,19 @@ startSynapse:
 	-cd ..;cd synapse;source env/bin/activate;synctl start;
 runMigrations:
 	-cd db/migrations;goose postgres "postgres://shpong:@localhost:5432/shpong?sslmode=disable" up;
+resetMigrations:
+	-cd db/migrations;goose postgres "postgres://shpong:@localhost:5432/shpong?sslmode=disable" reset;
 sqlc:
 	-cd db;sqlc generate --experimental;
 	-cd db/matrix;sqlc generate --experimental;
 flushRedis: SHELL := /bin/bash
 flushRedis:
 	-REDISCLI_AUTH=$$REDISAUTH redis-cli -n 1 flushdb
-buildJS:
-	-cd ui/js;npm run production;
 startUnit:
 	-systemctl --user start shpong-dev.service
 stopUnit:
 	-systemctl --user stop shpong-dev.service
-setup:
+deps:
+	-go install github.com/kyleconroy/sqlc/cmd/sqlc@latest;
 	-go get -d github.com/cortesi/modd/cmd/modd;
 	-go install github.com/pressly/goose/v3/cmd/goose@latest;
-	-cd ..;git clone https://github.com/matrix-org/synapse;cd synapse;cp ../shpong/docs/alt* demo/;python3 -m venv ./env;source ./env/bin/activate;pip install -e ".[all,dev]";
-stopDevSynapse: SHELL := /bin/bash
-stopDevSynapse:
-	-cd ..;cd synapse;source env/bin/activate;./demo/stop.sh;
-startDevSynapse: SHELL := /bin/bash
-startDevSynapse:
-	-cd ..;cd synapse;source env/bin/activate;./demo/alt-start.sh;
-cleanDevSynapse: SHELL := /bin/bash
-cleanDevSynapse:
-	-cd ..;cd synapse;source env/bin/activate;./demo/alt-clean.sh;

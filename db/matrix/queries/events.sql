@@ -22,7 +22,7 @@ SELECT ej.event_id,
     ej.json, 
     ud.display_name,
     ud.avatar_url,
-    RIGHT(events.event_id, 7) as slug,
+    RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
@@ -62,7 +62,7 @@ LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
-WHERE RIGHT(events.event_id, 7) = $1
+WHERE RIGHT(events.event_id, 11) = $1
 GROUP BY
     ej.event_id, 
     events.event_id, 
@@ -78,7 +78,7 @@ SELECT ej.event_id,
     ej.json, 
     ud.display_name,
     ud.avatar_url,
-    RIGHT(events.event_id, 7) as slug,
+    RIGHT(events.event_id, 11) as slug,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
@@ -105,7 +105,7 @@ SELECT ej.event_id,
     room_aliases.room_alias,
     ud.display_name,
     ud.avatar_url,
-    RIGHT(events.event_id, 7) as slug,
+    RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
@@ -136,7 +136,7 @@ SELECT ej.event_id,
     room_aliases.room_alias,
     ud.display_name,
     ud.avatar_url,
-    RIGHT(events.event_id, 7) as slug,
+    RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej

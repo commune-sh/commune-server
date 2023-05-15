@@ -169,12 +169,81 @@ func (c *App) GetEvent() http.HandlerFunc {
 
 		event := chi.URLParam(r, "event")
 
-		log.Println("event id is ", event)
+		//user := c.LoggedInUser(r)
+
+		//space := chi.URLParam(r, "space")
+
+		//alias := c.ConstructMatrixRoomID(space)
+
+		item, err := c.MatrixDB.Queries.GetSpaceEvent(context.Background(), event)
+
+		if err != nil {
+			log.Println("error getting event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "event not found",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		json, err := gabs.ParseJSON([]byte(item.JSON.String))
+		if err != nil {
+			log.Println("error parsing json: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "event not found",
+				},
+			})
+			return
+		}
+
+		s := ProcessComplexEvent(&EventProcessor{
+			EventID:     item.EventID,
+			JSON:        json,
+			DisplayName: item.DisplayName.String,
+			AvatarURL:   item.AvatarUrl.String,
+			ReplyCount:  item.Replies,
+			Reactions:   item.Reactions,
+		})
+
+		// get event replies
+		eventReplies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), item.EventID)
+
+		if err != nil {
+			log.Println("error getting event replies: ", err)
+		}
+
+		var replies []interface{}
+		{
+
+			for _, item := range eventReplies {
+
+				json, err := gabs.ParseJSON([]byte(item.JSON.String))
+				if err != nil {
+					log.Println("error parsing json: ", err)
+				}
+
+				s := ProcessComplexEvent(&EventProcessor{
+					EventID:     item.EventID,
+					JSON:        json,
+					DisplayName: item.DisplayName.String,
+					AvatarURL:   item.AvatarUrl.String,
+					Reactions:   item.Reactions,
+				})
+
+				replies = append(replies, s)
+			}
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"event": event,
+				"event":   s,
+				"replies": replies,
 			},
 		})
 
