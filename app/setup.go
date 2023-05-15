@@ -12,10 +12,12 @@ func (c *App) Setup() {
 	if err != nil {
 		log.Println(err)
 	}
-	err = c.SetupDefaultSpaces()
-	if err != nil {
-		log.Println(err)
-	}
+	/*
+		err = c.SetupDefaultSpaces()
+		if err != nil {
+			log.Println(err)
+		}
+	*/
 }
 
 func (c *App) SetupDefaultMatrixAccount() error {
@@ -28,7 +30,7 @@ func (c *App) SetupDefaultMatrixAccount() error {
 		return err
 	}
 
-	username := c.Config.App.Domain
+	username := c.Config.Name
 	password := c.Config.Matrix.Password
 
 	server := fmt.Sprintf(`http://%s:%d`, c.Config.Matrix.Homeserver, c.Config.Matrix.Port)
