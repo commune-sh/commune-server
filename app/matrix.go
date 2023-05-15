@@ -164,7 +164,7 @@ func (c *App) NewMatrixClient(userID, accessToken string) (*gomatrix.Client, err
 
 func QueryMatrixServerHealth(c config.Matrix) {
 
-	a := fmt.Sprintf(`http://%s:%d/_matrix/client/versions`, c.PublicServer, c.Port)
+	a := fmt.Sprintf(`http://%s:%d/_matrix/client/versions`, c.Homeserver, c.Port)
 
 	resp, err := http.Get(a)
 	if err != nil {
