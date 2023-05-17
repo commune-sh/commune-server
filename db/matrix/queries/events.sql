@@ -31,11 +31,12 @@ LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
-JOIN redactions ON redactions.redacts != ej.event_id
+LEFT JOIN redactions ON redactions.redacts = ej.event_id
 WHERE ej.room_id = $1
 AND events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND events.origin_server_ts < $2
+AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
     events.event_id, 
@@ -63,8 +64,9 @@ LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
-JOIN redactions ON redactions.redacts != ej.event_id
+LEFT JOIN redactions ON redactions.redacts = ej.event_id
 WHERE RIGHT(events.event_id, 11) = $1
+AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
     events.event_id, 
@@ -87,9 +89,10 @@ LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN event_relations ON event_relations.event_id = ej.event_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
-JOIN redactions ON redactions.redacts != ej.event_id
+LEFT JOIN redactions ON redactions.redacts = ej.event_id
 WHERE events.type = 'm.room.message'
 AND event_relations.relates_to_id = $1
+AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
     ej.json,
@@ -117,11 +120,12 @@ LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
-JOIN redactions ON redactions.redacts != ej.event_id
+LEFT JOIN redactions ON redactions.redacts = ej.event_id
 WHERE events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND room_aliases.room_alias is not null
 AND events.origin_server_ts < $1
+AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
     events.event_id, 
@@ -149,7 +153,7 @@ LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN room_aliases ON room_aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
-JOIN redactions ON redactions.redacts != ej.event_id
+LEFT JOIN redactions ON redactions.redacts = ej.event_id
 JOIN membership_state ms 
     ON ms.room_id = ej.room_id 
     AND ms.user_id = $2
@@ -158,6 +162,7 @@ WHERE events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND room_aliases.room_alias is not null
 AND events.origin_server_ts < $1
+AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
     events.event_id, 
