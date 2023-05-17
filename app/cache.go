@@ -1,9 +1,9 @@
 package app
 
 import (
-	config "shpong/config"
 	"encoding/json"
 	"log"
+	config "shpong/config"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -12,7 +12,7 @@ import (
 
 type Cache struct {
 	VerificationCodes *buntdb.DB
-	Posts             *redis.Client
+	Events            *redis.Client
 }
 
 func NewCache(conf *config.Config) (*Cache, error) {
@@ -30,7 +30,7 @@ func NewCache(conf *config.Config) (*Cache, error) {
 
 	c := &Cache{
 		VerificationCodes: db,
-		Posts:             pdb,
+		Events:            pdb,
 	}
 
 	err = db.Update(func(tx *buntdb.Tx) error {

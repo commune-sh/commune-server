@@ -43,6 +43,33 @@ func (c *App) AllEvents() http.HandlerFunc {
 			ge.Int64 = i
 		}
 
+		if c.Config.Cache.IndexEvents {
+
+			// get events for this space from cache
+			cached, err := c.Cache.Events.Get("index").Result()
+			if err != nil {
+				log.Println("index events not in cache")
+			}
+
+			if cached != "" {
+				var events []Event
+				err = json.Unmarshal([]byte(cached), &events)
+				if err != nil {
+					log.Println(err)
+				} else {
+					log.Println("responding with cached events")
+
+					RespondWithJSON(w, &JSONResponse{
+						Code: http.StatusOK,
+						JSON: map[string]any{
+							"events": events,
+						},
+					})
+					return
+				}
+			}
+		}
+
 		events, err := c.MatrixDB.Queries.GetEvents(context.Background(), ge)
 
 		if err != nil {
@@ -78,6 +105,22 @@ func (c *App) AllEvents() http.HandlerFunc {
 
 			items = append(items, s)
 		}
+
+		go func() {
+			if c.Config.Cache.IndexEvents {
+
+				serialized, err := json.Marshal(items)
+				if err != nil {
+					log.Println(err)
+				}
+
+				err = c.Cache.Events.Set("index", serialized, 0).Err()
+				if err != nil {
+					log.Println(err)
+				}
+			}
+
+		}()
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,

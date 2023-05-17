@@ -36,6 +36,10 @@ type Redis struct {
 	PostsDB    int    `toml:"posts_DB"`
 }
 
+type Cache struct {
+	IndexEvents bool `toml:"index_events"`
+}
+
 type Auth struct {
 	VerifyEmail                bool   `toml:"verify_email"`
 	DisableRegistration        bool   `toml:"disable_registration"`
@@ -68,6 +72,7 @@ type Config struct {
 	Matrix     Matrix  `toml:"matrix"`
 	DB         DB      `toml:"db"`
 	Redis      Redis   `toml:"redis"`
+	Cache      Cache   `toml:"cache"`
 	YoutubeKey string  `toml:"youtube_key"`
 	Auth       Auth    `toml:"auth"`
 	Privacy    Privacy `toml:"privacy"`

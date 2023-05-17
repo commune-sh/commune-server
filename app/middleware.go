@@ -35,7 +35,6 @@ func (c *App) GetAuthorizationToken(h http.Handler) http.Handler {
 
 		at, err := ExtractAccessToken(r)
 		if err != nil {
-			log.Println(err)
 			h.ServeHTTP(w, r)
 			return
 		}
