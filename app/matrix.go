@@ -215,15 +215,15 @@ func QueryMatrixServerHealth(c config.Matrix) {
 }
 
 func (c *App) ConstructMatrixID(username string) string {
-	return fmt.Sprintf("@%s:%s", username, c.Config.Matrix.Homeserver)
+	return fmt.Sprintf("@%s:%s", username, c.Config.Matrix.PublicServer)
 }
 
 func (c *App) ConstructMatrixUserRoomID(username string) string {
-	return fmt.Sprintf("#@%s:%s", username, c.Config.Matrix.Homeserver)
+	return fmt.Sprintf("#@%s:%s", username, c.Config.Matrix.PublicServer)
 }
 
 func (c *App) ConstructMatrixRoomID(username string) string {
-	return fmt.Sprintf("#%s:%s", username, c.Config.Matrix.Homeserver)
+	return fmt.Sprintf("#%s:%s", username, c.Config.Matrix.PublicServer)
 }
 
 type sender struct {
