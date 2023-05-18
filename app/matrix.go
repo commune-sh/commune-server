@@ -228,6 +228,7 @@ func (c *App) ConstructMatrixRoomID(username string) string {
 
 type sender struct {
 	ID          string `json:"id"`
+	Username    string `json:"username"`
 	AvatarURL   string `json:"avatar_url"`
 	DisplayName string `json:"display_name"`
 }
@@ -271,6 +272,8 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 		OriginServerTs: ep.JSON.Path("origin_server_ts").Data().(any),
 		Unsigned:       ep.JSON.Path("unsigned").Data().(any),
 	}
+
+	e.Sender.Username = GetLocalPart(e.Sender.ID)
 
 	e.EventID = ep.EventID
 	e.Slug = ep.Slug
