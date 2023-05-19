@@ -13,7 +13,7 @@ func (c *App) Setup() {
 	log.Println("setting up app")
 	exists, err := c.SetupDefaultMatrixAccount()
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	if exists {
 		c.DefaultMatrixAccount = fmt.Sprintf(`@%s:%s`, c.Config.Name, c.Config.Matrix.PublicServer)
@@ -21,7 +21,7 @@ func (c *App) Setup() {
 
 	room_id, err := c.SetupPublicSpace()
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	if room_id != "" && len(room_id) > 0 {
