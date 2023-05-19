@@ -1,3 +1,6 @@
+-- name: DoesDefaultSpaceExist :one
+SELECT room_id from room_aliases where room_alias = $1;
+
 -- name: DoesSpaceExist :one
 SELECT exists(select 1 from room_aliases where room_alias = $1 OR slug = $2);
 

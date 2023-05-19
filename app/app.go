@@ -26,16 +26,18 @@ func init() {
 }
 
 type App struct {
-	Config        *config.Config
-	Router        *chi.Mux
-	HTTP          *http.Server
-	Templates     *Template
-	Sessions      *sessions.CookieStore
-	SessionsStore *redis.Client
-	DB            *DB
-	MatrixDB      *MatrixDB
-	Cron          *cron.Cron
-	Cache         *Cache
+	Config               *config.Config
+	Router               *chi.Mux
+	HTTP                 *http.Server
+	Templates            *Template
+	Sessions             *sessions.CookieStore
+	SessionsStore        *redis.Client
+	DB                   *DB
+	MatrixDB             *MatrixDB
+	Cron                 *cron.Cron
+	Cache                *Cache
+	DefaultMatrixAccount string
+	DefaultMatrixSpace   string
 }
 
 func (c *App) Activate() {
@@ -82,8 +84,6 @@ func Start(s *StartRequest) {
 	if err != nil {
 		panic(err)
 	}
-
-	log.Println(conf.Auth)
 
 	PRODUCTION_MODE = conf.Mode == "production"
 

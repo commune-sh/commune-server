@@ -1,17 +1,34 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"shpong/gomatrix"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (c *App) Setup() {
 	log.Println("setting up app")
-	err := c.SetupDefaultMatrixAccount()
+	exists, err := c.SetupDefaultMatrixAccount()
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
+	if exists {
+		c.DefaultMatrixAccount = fmt.Sprintf(`@%s:%s`, c.Config.Name, c.Config.Matrix.PublicServer)
+	}
+
+	room_id, err := c.SetupPublicSpace()
+	if err != nil {
+		panic(err)
+	}
+
+	if room_id != "" && len(room_id) > 0 {
+		c.DefaultMatrixSpace = room_id
+	}
+
+	log.Println(c.DefaultMatrixAccount, c.DefaultMatrixSpace)
 	/*
 		err = c.SetupDefaultSpaces()
 		if err != nil {
@@ -20,14 +37,27 @@ func (c *App) Setup() {
 	*/
 }
 
-func (c *App) SetupDefaultMatrixAccount() error {
+func (c *App) SetupDefaultMatrixAccount() (bool, error) {
+
+	user := fmt.Sprintf(`@%s:%s`, c.Config.Name, c.Config.Matrix.PublicServer)
+
+	exists, err := c.MatrixDB.Queries.DoesMatrixUserExist(context.Background(), pgtype.Text{String: user, Valid: true})
+
+	if err != nil {
+		log.Println(err)
+		return false, err
+	}
+
+	if exists {
+		return true, nil
+	}
 
 	serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
 	matrix, err := gomatrix.NewClient(serverName, "", "")
 	if err != nil {
 		log.Println(err)
-		return err
+		return false, err
 	}
 
 	username := c.Config.Name
@@ -39,7 +69,7 @@ func (c *App) SetupDefaultMatrixAccount() error {
 	nonce, err := GetNonce(server)
 	if err != nil {
 		log.Println(err)
-		return err
+		return false, err
 	}
 
 	//actually register the user
@@ -50,7 +80,7 @@ func (c *App) SetupDefaultMatrixAccount() error {
 	}, nonce, c.Config.Auth.SharedSecret)
 	if err != nil {
 		log.Println(err)
-		return err
+		return false, err
 	}
 
 	req := &gomatrix.ReqLegacyRegister{
@@ -65,12 +95,101 @@ func (c *App) SetupDefaultMatrixAccount() error {
 	resp, _, err := matrix.LegacyRegister(req)
 
 	if err != nil || resp == nil {
-		return err
+		return false, err
 	}
 
 	log.Println("registered default matrix user", resp)
 
-	return nil
+	return true, nil
+}
+
+func (c *App) SetupPublicSpace() (string, error) {
+
+	alias := fmt.Sprintf(`#%s:%s`, c.Config.Matrix.PublicServer, c.Config.Matrix.PublicServer)
+
+	room_id, err := c.MatrixDB.Queries.DoesDefaultSpaceExist(context.Background(), alias)
+
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	if room_id != "" && len(room_id) > 0 {
+		return room_id, nil
+	}
+
+	matrix, resp, err := c.DefaultMatrixClient()
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	pl := gomatrix.Event{
+		Type: "m.room.power_levels",
+		Content: map[string]interface{}{
+			"ban": 60,
+			"events": map[string]interface{}{
+				"m.room.name":         60,
+				"m.room.power_levels": 100,
+				"m.room.create":       10,
+				"m.space.child":       10,
+				"m.space.parent":      10,
+			},
+			"events_default": 10,
+			"invite":         10,
+			"kick":           60,
+			"notifications": map[string]interface{}{
+				"room": 20,
+			},
+			"redact":        10,
+			"state_default": 10,
+			"users": map[string]interface{}{
+				resp.UserID: 100,
+			},
+			"users_default": 10,
+		},
+	}
+
+	initState := []gomatrix.Event{
+		gomatrix.Event{
+			Type: "m.room.history_visibility",
+			Content: map[string]interface{}{
+				"history_visibility": "world_readable",
+			},
+		}, gomatrix.Event{
+			Type: "m.room.guest_access",
+			Content: map[string]interface{}{
+				"guest_access": "can_join",
+			},
+		}, gomatrix.Event{
+			Type: "m.room.name",
+			Content: map[string]interface{}{
+				"name": c.Config.Matrix.PublicServer,
+			},
+		},
+		pl,
+	}
+
+	creq := &gomatrix.ReqCreateRoom{
+		RoomAliasName: c.Config.Matrix.PublicServer,
+		Preset:        "public_chat",
+		Visibility:    "public",
+		CreationContent: map[string]interface{}{
+			"type": "m.space",
+		},
+		InitialState: initState,
+	}
+
+	crr, err := matrix.CreateRoom(creq)
+
+	if err != nil || crr == nil {
+		log.Println(err)
+		return "", err
+	}
+
+	log.Println("Was default space created?", crr)
+
+	return crr.RoomID, nil
 }
 
 func (c *App) SetupDefaultSpaces() error {
@@ -127,11 +246,6 @@ func (c *App) SetupDefaultSpaces() error {
 				Type: "m.room.name",
 				Content: map[string]interface{}{
 					"name": space,
-				},
-			}, gomatrix.Event{
-				Type: "shpong.room",
-				Content: map[string]interface{}{
-					"room_type": "profile",
 				},
 			},
 			pl,

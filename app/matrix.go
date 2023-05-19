@@ -111,7 +111,7 @@ func (c *App) CreateMatrixUserAccount(username, password string) (*MatrixAccount
 				"name": fmt.Sprintf(`@%s`, username),
 			},
 		}, gomatrix.Event{
-			Type: "shpong.room",
+			Type: "shpong.profile.space",
 			Content: map[string]interface{}{
 				"room_type": "profile",
 			},
@@ -133,6 +133,14 @@ func (c *App) CreateMatrixUserAccount(username, password string) (*MatrixAccount
 
 	if err != nil || crr == nil {
 		log.Println(err)
+	}
+
+	re, err := matrix.JoinRoom(c.DefaultMatrixSpace, "", nil)
+	if err != nil {
+		log.Println("could not join default space", err)
+	}
+	if re != nil {
+		log.Println(re)
 	}
 
 	log.Println("Was Room created?", crr)
