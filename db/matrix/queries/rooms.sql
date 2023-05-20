@@ -28,7 +28,7 @@ LEFT JOIN rooms ON room_aliases.room_id = rooms.room_id;
 SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner, 
     rooms.is_public,
 	jsonb_build_object('name', rs.name, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header) as state,
-	COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'type', ch.type, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'alias', ch.child_room_alias)) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
+    COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'type', ch.type, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'alias', ch.child_room_alias) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
     CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined
 FROM room_aliases ra 
 JOIN rooms on rooms.room_id = ra.room_id
@@ -36,7 +36,10 @@ LEFT JOIN (
 	SELECT * FROM room_state
 ) as rs ON rs.room_id = ra.room_id
 LEFT JOIN (
-	SELECT * FROM room_state JOIN space_children ON space_children.child_room_id = room_state.room_id
+    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts
+	FROM room_state rst
+	JOIN space_children sc ON sc.child_room_id = rst.room_id
+	JOIN events ON events.room_id = rst.room_id AND events.type = 'm.room.create'
 ) as ch ON ch.parent_room_id = ra.room_id
 LEFT JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
