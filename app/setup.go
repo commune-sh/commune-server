@@ -109,11 +109,6 @@ func (c *App) SetupPublicSpace() (string, error) {
 
 	room_id, err := c.MatrixDB.Queries.DoesDefaultSpaceExist(context.Background(), alias)
 
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-
 	if room_id != "" && len(room_id) > 0 {
 		return room_id, nil
 	}
@@ -285,7 +280,7 @@ func (c *App) DefaultMatrixClient() (*gomatrix.Client, *gomatrix.RespLogin, erro
 		return nil, nil, err
 	}
 
-	username := c.Config.App.Domain
+	username := c.Config.Name
 	password := c.Config.Matrix.Password
 
 	resp, err := matrix.Login(&gomatrix.ReqLogin{

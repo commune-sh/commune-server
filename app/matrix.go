@@ -135,13 +135,16 @@ func (c *App) CreateMatrixUserAccount(username, password string) (*MatrixAccount
 		log.Println(err)
 	}
 
-	re, err := matrix.JoinRoom(c.DefaultMatrixSpace, "", nil)
-	if err != nil {
-		log.Println("could not join default space", err)
-	}
-	if re != nil {
-		log.Println(re)
-	}
+	// don't join default public space
+	/*
+		re, err := matrix.JoinRoom(c.DefaultMatrixSpace, "", nil)
+		if err != nil {
+			log.Println("could not join default space", err)
+		}
+		if re != nil {
+			log.Println(re)
+		}
+	*/
 
 	log.Println("Was Room created?", crr)
 

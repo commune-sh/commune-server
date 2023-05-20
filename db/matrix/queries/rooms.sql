@@ -25,11 +25,13 @@ LEFT JOIN rooms ON room_aliases.room_id = rooms.room_id;
 
 
 -- name: GetSpaceState :one
-SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
-	jsonb_build_object('name', rs.name,'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header) as state,
-	COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'alias', ch.child_room_alias)) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
+SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner, 
+    rooms.is_public,
+	jsonb_build_object('name', rs.name, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header) as state,
+	COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'type', ch.type, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'alias', ch.child_room_alias)) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
     CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined
 FROM room_aliases ra 
+JOIN rooms on rooms.room_id = ra.room_id
 LEFT JOIN (
 	SELECT * FROM room_state
 ) as rs ON rs.room_id = ra.room_id
@@ -40,7 +42,7 @@ LEFT JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = $2
 WHERE ra.room_alias = $1
-GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rs.name, rs.topic, rs.avatar, rs.header, ms.membership;
+GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.topic, rs.avatar, rs.header, ms.membership;
 
 
 
@@ -75,31 +77,4 @@ ORDER BY sel.child_room_id, events.origin_server_ts DESC;
 
 
 
-
-/*
--- name: GetSpaceState :one
-SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
-	jsonb_build_object('name', rs.name,'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header) as state,
-	COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'slug', ch.child_room_alias, 'joined', ch.joined)) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
-    CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined
-FROM room_aliases ra 
-LEFT JOIN (
-	SELECT * FROM room_state
-) as rs ON rs.room_id = ra.room_id
-LEFT JOIN (
-	SELECT rst.room_id, rst.name, rst.topic, rst.avatar, rst.header, rst.slug, sc.parent_room_id, sc.child_room_alias,
-    CASE WHEN mst.membership = 'join' THEN true ELSE false END as joined
-    FROM room_state rst
-    JOIN space_children sc
-    ON sc.child_room_id = rst.room_id
-    LEFT JOIN membership_state mst 
-    ON mst.room_id = rst.room_id 
-    AND mst.user_id = $2
-) as ch ON ch.parent_room_id = ra.room_id
-LEFT JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
-LEFT JOIN room_members rm ON rm.room_id = ra.room_id
-LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = $2
-WHERE ra.room_alias = $1
-GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rs.name, rs.topic, rs.avatar, rs.header, ms.membership;
-*/
 

@@ -556,6 +556,9 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 			return
 		}
 
+		hideRoom := state.IsPublic.Bool != state.Joined
+		log.Println("should we hide room? ", hideRoom)
+
 		// get all space room state events
 		//state_events, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), alias)
 

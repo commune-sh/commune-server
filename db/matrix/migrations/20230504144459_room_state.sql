@@ -3,11 +3,11 @@
 CREATE TABLE IF NOT EXISTS room_state (
     room_id text,
     room_alias text,
+    type text,
     name text,
     topic text,
     avatar text,
-    header text,
-    slug text
+    header text
 );
 -- +goose StatementEnd
 
