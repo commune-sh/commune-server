@@ -186,7 +186,7 @@ func (c *App) UserFeedEvents() http.HandlerFunc {
 			s := ProcessComplexEvent(&EventProcessor{
 				EventID:     item.EventID,
 				Slug:        item.Slug,
-				RoomAlias:   GetLocalPart(item.RoomAlias.String),
+				RoomAlias:   item.RoomAlias.String,
 				JSON:        json,
 				DisplayName: item.DisplayName.String,
 				AvatarURL:   item.AvatarUrl.String,

@@ -10,10 +10,10 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS space_children AS
     LEFT JOIN current_state_events as cse ON cse.room_id = ra.room_id AND cse.type ='m.space.child'
     LEFT JOIN event_json ev ON ev.event_id = cse.event_id
     LEFT JOIN (
-	SELECT cs.state_key, ej.json::jsonb->'content'->>'alias' as alias FROM current_state_events cs 
+	SELECT cs.room_id, ej.json::jsonb->'content'->>'name' as alias FROM current_state_events cs 
 	JOIN event_json ej ON ej.event_id = cs.event_id
-	WHERE cs.type = 'm.space.child.alias'
-    ) as sc ON sc.state_key = cse.state_key
+	WHERE cs.type = 'm.room.name'
+    ) as sc ON sc.room_id = cse.state_key
     WHERE ev.json::jsonb->'content'->>'via' is not null;
 
 CREATE UNIQUE INDEX IF NOT EXISTS space_children_idx ON space_children (child_room_id);
