@@ -258,6 +258,7 @@ type Event struct {
 	ReplyCount     int64    `json:"reply_count"`
 	Reactions      any      `json:"reactions,omitempty"`
 	UserReactions  []string `json:"user_reactions,omitempty"`
+	Children       []Event  `json:"children,omitempty"`
 }
 
 type EventProcessor struct {

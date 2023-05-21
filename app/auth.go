@@ -146,7 +146,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 
 		err = c.StoreUserSession(user)
 
-		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), resp.UserID)
+		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), pgtype.Text{String: resp.UserID, Valid: true})
 		if err != nil {
 			log.Println(err)
 		}
@@ -215,7 +215,7 @@ func (c *App) ValidateSession() http.HandlerFunc {
 			return
 		}
 
-		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), user.MatrixUserID)
+		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
 		if err != nil {
 			log.Println(err)
 		}

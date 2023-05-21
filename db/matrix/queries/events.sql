@@ -79,6 +79,7 @@ LIMIT 1;
 
 -- name: GetSpaceEventReplies :many
 SELECT ej.event_id, 
+    ej.json::jsonb->'content'->'m.relates_to'->'m.in_reply_to'->>'event_id' as reply_to,
     ej.json, 
     ud.display_name,
     ud.avatar_url,
@@ -100,7 +101,7 @@ GROUP BY
     ud.display_name,
     ud.avatar_url,
     events.origin_server_ts
-ORDER BY events.origin_server_ts DESC LIMIT 1000;
+ORDER BY events.origin_server_ts ASC LIMIT 1000;
 
 
 
