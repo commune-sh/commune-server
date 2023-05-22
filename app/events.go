@@ -455,14 +455,23 @@ func (c *App) NewPost() http.HandlerFunc {
 			log.Println(err)
 		}
 
-		resp, err := matrix.SendMessageEvent(user.UserSpaceID, "m.room.message", p.Content)
-
-		log.Println("resp is ", resp, err)
+		resp, err := matrix.SendMessageEvent(p.RoomID, "m.room.message", p.Content)
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":   err,
+					"success": "false",
+				},
+			})
+			return
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"event": "test",
+				"success":  "true",
+				"event_id": resp.EventID,
 			},
 		})
 

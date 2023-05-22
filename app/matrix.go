@@ -341,6 +341,7 @@ type SpaceState struct {
 
 type state struct {
 	Name   string `json:"name,omitempty"`
+	Type   string `json:"type,omitempty"`
 	Topic  string `json:"topic,omitempty"`
 	Avatar string `json:"avatar,omitempty"`
 	Header string `json:"header,omitempty"`
