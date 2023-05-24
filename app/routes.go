@@ -108,8 +108,13 @@ func routes(c *App) chi.Router {
 		r.Get("/", c.UserFeedEvents())
 	})
 
+	r.Route("/default_spaces", func(r chi.Router) {
+		r.Get("/", c.DefaultSpaces())
+	})
+
 	r.Route("/events", func(r chi.Router) {
 		r.Get("/", c.AllEvents())
+		r.Get("/{room}", c.RoomEvents())
 	})
 
 	r.Route("/sse", func(r chi.Router) {
@@ -138,6 +143,7 @@ func routes(c *App) chi.Router {
 		r.Use(secureMiddleware.Handler)
 		r.Get("/post/{slug}", c.SpaceEvent())
 		r.Get("/events", c.SpaceEvents())
+		r.Get("/state", c.SpaceState())
 		r.Get("/{room}/events", c.SpaceRoomEvents())
 		r.Get("/{room}/post/{slug}", c.SpaceEvent())
 	})

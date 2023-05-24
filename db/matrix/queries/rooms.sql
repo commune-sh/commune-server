@@ -79,5 +79,11 @@ ORDER BY sel.child_room_id, events.origin_server_ts DESC;
 
 
 
+-- name: GetDefaultSpaces :many
+SELECT spaces.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header
+FROM spaces 
+LEFT JOIN room_state rs ON rs.room_id = spaces.room_id
+WHERE spaces.default = true
+ORDER BY spaces.space_alias ASC;
 
 

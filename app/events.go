@@ -530,6 +530,129 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 	}
 }
 
+func (c *App) SpaceState() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := c.LoggedInUser(r)
+
+		space := chi.URLParam(r, "space")
+
+		alias := c.ConstructMatrixRoomID(space)
+
+		ssp := matrix_db.GetSpaceStateParams{
+			RoomAlias: alias,
+		}
+
+		if user != nil && user.MatrixUserID != "" {
+			ssp.UserID = pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			}
+		}
+
+		// check if space exists in DB
+		state, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), ssp)
+
+		if err != nil {
+			log.Println("error getting event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "space does not exist",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		hideRoom := state.IsPublic.Bool != state.Joined
+		log.Println("should we hide room? ", hideRoom)
+
+		sps := ProcessState(state)
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"state": sps,
+			},
+		})
+
+	}
+}
+
+func (c *App) RoomEvents() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		//user := c.LoggedInUser(r)
+
+		room := chi.URLParam(r, "room")
+
+		sreq := matrix_db.GetSpaceEventsParams{
+			OriginServerTS: pgtype.Int8{
+				Int64: time.Now().UnixMilli(),
+				Valid: true,
+			},
+			RoomID: room,
+		}
+
+		query := r.URL.Query()
+		last := query.Get("last")
+
+		// get events for this space
+
+		if last != "" {
+			i, _ := strconv.ParseInt(last, 10, 64)
+			log.Println(i)
+			sreq.OriginServerTS.Int64 = i
+		}
+
+		// get events for this space
+		events, err := c.MatrixDB.Queries.GetSpaceEvents(context.Background(), sreq)
+
+		if err != nil {
+			log.Println("error getting event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "internal server error",
+				},
+			})
+			return
+		}
+
+		var items []interface{}
+
+		for _, item := range events {
+
+			json, err := gabs.ParseJSON([]byte(item.JSON.String))
+			if err != nil {
+				log.Println("error parsing json: ", err)
+			}
+
+			s := ProcessComplexEvent(&EventProcessor{
+				EventID:     item.EventID,
+				Slug:        item.Slug,
+				JSON:        json,
+				RoomAlias:   item.RoomAlias.String,
+				DisplayName: item.DisplayName.String,
+				AvatarURL:   item.AvatarUrl.String,
+				ReplyCount:  item.Replies,
+				Reactions:   item.Reactions,
+			})
+
+			items = append(items, s)
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"events": items,
+			},
+		})
+
+	}
+}
+
 func (c *App) SpaceEvents() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -910,6 +1033,31 @@ func (c *App) SpaceEvent() http.HandlerFunc {
 				"replies": replies,
 			},
 		})
+	}
+}
+
+func (c *App) DefaultSpaces() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		spaces, err := c.MatrixDB.Queries.GetDefaultSpaces(context.Background())
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "error getting default spaces",
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"spaces": spaces,
+			},
+		})
+
 	}
 }
 

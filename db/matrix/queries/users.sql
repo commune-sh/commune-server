@@ -2,7 +2,7 @@
 SELECT exists(select 1 from users where name = $1);
 
 -- name: GetUserSpaces :many
-SELECT ms.room_id, spaces.space_alias, rs.name, rs.topic, rs.avatar, rs.header
+SELECT ms.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header
 FROM membership_state ms 
 JOIN spaces ON spaces.room_id = ms.room_id
 LEFT JOIN room_state rs ON rs.room_id = ms.room_id

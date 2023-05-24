@@ -22,6 +22,7 @@ SELECT ej.event_id,
     ej.json, 
     ud.display_name,
     ud.avatar_url,
+    aliases.room_alias,
     RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
@@ -44,6 +45,7 @@ GROUP BY
     ej.json,
     ud.display_name,
     ud.avatar_url,
+    aliases.room_alias,
     events.origin_server_ts
 ORDER BY events.origin_server_ts DESC LIMIT 30;
 
@@ -56,6 +58,7 @@ SELECT ej.event_id,
     ej.json,
     ud.display_name,
     ud.avatar_url,
+    aliases.room_alias,
     COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
@@ -73,6 +76,7 @@ GROUP BY
     ej.json,
     ud.display_name,
     ud.avatar_url,
+    aliases.room_alias,
     rc.count
 LIMIT 1;
 
