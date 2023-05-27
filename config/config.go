@@ -16,6 +16,11 @@ type App struct {
 	JWTKey          string `toml:"jwt_key"`
 }
 
+type Features struct {
+	Social     bool `toml:"social"`
+	SpaceRooms bool `toml:"space_rooms"`
+}
+
 type Matrix struct {
 	Homeserver       string `toml:"homeserver"`
 	FederationServer string `toml:"federation_server"`
