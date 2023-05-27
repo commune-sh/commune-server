@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 DROP FUNCTION IF EXISTS gen_random_bytes;
 DROP FUNCTION IF EXISTS random_string;
 DROP FUNCTION IF EXISTS unique_random;
