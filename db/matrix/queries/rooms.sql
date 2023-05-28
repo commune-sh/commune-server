@@ -27,7 +27,7 @@ LEFT JOIN rooms ON room_aliases.room_id = rooms.room_id;
 -- name: GetSpaceState :one
 SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner, 
     rooms.is_public,
-	jsonb_build_object('name', rs.name ,'type', rs.type, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header) as state,
+	jsonb_build_object('name', rs.name ,'type', rs.type, 'is_profile', rs.is_profile, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header) as state,
     COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'type', ch.type, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'alias', ch.child_room_alias) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
     CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined
 FROM room_aliases ra 
@@ -45,7 +45,7 @@ LEFT JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = $2
 WHERE ra.room_alias = $1
-GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.type, rs.topic, rs.avatar, rs.header, ms.membership;
+GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, ms.membership;
 
 
 

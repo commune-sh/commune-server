@@ -238,6 +238,62 @@ func (c *App) ValidateSession() http.HandlerFunc {
 	}
 }
 
+func (c *App) ValidateToken() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		at, err := ExtractAccessToken(r)
+
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusUnauthorized,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		user, err := c.GetTokenUser(at.Token)
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		exists, err := c.MatrixDB.Queries.IsAccessTokenValid(context.Background(), matrix_db.IsAccessTokenValidParams{
+			UserID: user.MatrixUserID,
+			Token:  user.MatrixAccessToken,
+		})
+		if err != nil || !exists {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusUnauthorized,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"valid": true,
+			},
+		})
+
+	}
+}
+
 func (c *App) SendCode() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

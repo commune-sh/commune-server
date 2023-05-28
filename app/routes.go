@@ -97,6 +97,7 @@ func routes(c *App) chi.Router {
 		r.Use(secureMiddleware.Handler)
 		r.Post("/login", c.ValidateLogin())
 		r.Post("/session", c.ValidateSession())
+		r.Post("/token", c.ValidateToken())
 		r.Post("/", c.CreateAccount())
 		r.Route("/available", func(r chi.Router) {
 			r.Post("/", c.UsernameAvailable())

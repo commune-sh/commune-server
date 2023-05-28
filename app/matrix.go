@@ -111,9 +111,9 @@ func (c *App) CreateMatrixUserAccount(username, password string) (*MatrixAccount
 				"name": fmt.Sprintf(`@%s`, username),
 			},
 		}, gomatrix.Event{
-			Type: "shpong.profile.space",
+			Type: "m.space.type",
 			Content: map[string]interface{}{
-				"room_type": "profile",
+				"type": "profile",
 			},
 		},
 		pl,
@@ -340,11 +340,12 @@ type SpaceState struct {
 }
 
 type state struct {
-	Name   string `json:"name,omitempty"`
-	Type   string `json:"type,omitempty"`
-	Topic  string `json:"topic,omitempty"`
-	Avatar string `json:"avatar,omitempty"`
-	Header string `json:"header,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Type      string `json:"type,omitempty"`
+	IsProfile bool   `json:"is_profile,omitempty"`
+	Topic     string `json:"topic,omitempty"`
+	Avatar    string `json:"avatar,omitempty"`
+	Header    string `json:"header,omitempty"`
 }
 
 func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {
