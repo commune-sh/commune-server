@@ -99,8 +99,8 @@ func routes(c *App) chi.Router {
 		r.Post("/session", c.ValidateSession())
 		r.Post("/token", c.ValidateToken())
 		r.Post("/", c.CreateAccount())
-		r.Route("/available", func(r chi.Router) {
-			r.Post("/", c.UsernameAvailable())
+		r.Route("/username", func(r chi.Router) {
+			r.Get("/{username}", c.UsernameAvailable())
 		})
 	})
 

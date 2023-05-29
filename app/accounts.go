@@ -10,6 +10,7 @@ import (
 	db "shpong/db/gen"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -116,7 +117,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 		hash, _ := HashPassword(p.Password)
 
 		// create user
-		user, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
+		userID, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
 			Email:    p.Email,
 			Username: p.Username,
 			Password: hash,
@@ -135,11 +136,11 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			return
 		}
 
-		idu := encodeUUID(user.ID.Bytes)
+		idu := encodeUUID(userID.ID.Bytes)
 
 		token := RandomString(32)
 
-		err = c.StoreUserSession(&User{
+		user := &User{
 			UserID:            idu,
 			Username:          p.Username,
 			Email:             p.Email,
@@ -148,26 +149,18 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			MatrixUserID:      resp.Response.UserID,
 			MatrixDeviceID:    resp.Response.DeviceID,
 			UserSpaceID:       resp.UserSpaceID,
-			Age:               user.CreatedAt.Time.Unix(),
-		})
+			Age:               userID.CreatedAt.Time.Unix(),
+		}
+
+		err = c.StoreUserSession(user)
 
 		// send success JSON
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"created": true,
-				"credentials": map[string]any{
-					"id":                  idu,
-					"username":            p.Username,
-					"access_token":        token,
-					"matrix_user_id":      resp.Response.UserID,
-					"matrix_device_id":    resp.Response.DeviceID,
-					"matrix_access_token": resp.Response.AccessToken,
-					"user_space_id":       resp.UserSpaceID,
-					"display_name":        p.Username,
-					"email":               p.Email,
-					"age":                 user.CreatedAt.Time.Unix(),
-				},
+				"created":      true,
+				"access_token": token,
+				"credentials":  user,
 			},
 		})
 	}
@@ -176,16 +169,9 @@ func (c *App) CreateAccount() http.HandlerFunc {
 func (c *App) UsernameAvailable() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		p, err := ReadRequestJSON(r, w, &struct {
-			Username string `json:"username"`
-		}{})
+		username := chi.URLParam(r, "username")
 
-		if err != nil {
-			RespondWithBadRequestError(w)
-			return
-		}
-
-		exists, err := c.DB.Queries.DoesUsernameExist(context.Background(), p.Username)
+		exists, err := c.DB.Queries.DoesUsernameExist(context.Background(), username)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "DoesUsernameExist failed: %v\n", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -197,7 +183,17 @@ func (c *App) UsernameAvailable() http.HandlerFunc {
 			return
 		}
 
-		mname := fmt.Sprintf(`@%s:%s`, p.Username, c.Config.Matrix.Homeserver)
+		if exists {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"available": false,
+				},
+			})
+			return
+		}
+
+		mname := fmt.Sprintf(`@%s:%s`, username, c.Config.Matrix.Homeserver)
 		exists, _ = c.MatrixDB.Queries.DoesMatrixUserExist(context.Background(), pgtype.Text{String: mname, Valid: true})
 
 		if exists {
@@ -215,11 +211,11 @@ func (c *App) UsernameAvailable() http.HandlerFunc {
 			Exists bool `json:"exists"`
 		}
 
-		ff := Response{Exists: exists}
-
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
-			JSON: ff,
+			JSON: map[string]any{
+				"available": !exists,
+			},
 		})
 	}
 }

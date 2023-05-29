@@ -7,7 +7,9 @@ FROM membership_state ms
 JOIN spaces ON spaces.room_id = ms.room_id
 LEFT JOIN room_state rs ON rs.room_id = ms.room_id
 WHERE ms.user_id = $1
-AND ms.membership = 'join';
+AND ms.membership = 'join'
+AND rs.is_profile is false
+ORDER BY spaces.space_alias ASC;
 
 -- name: GetJoinedRooms :many
 SELECT ms.room_id 
