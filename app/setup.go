@@ -105,7 +105,7 @@ func (c *App) SetupDefaultMatrixAccount() (bool, error) {
 
 func (c *App) SetupPublicSpace() (string, error) {
 
-	alias := fmt.Sprintf(`#%s:%s`, c.Config.Matrix.PublicServer, c.Config.Matrix.PublicServer)
+	alias := fmt.Sprintf(`#%s:%s`, c.Config.Name, c.Config.Matrix.PublicServer)
 
 	room_id, err := c.MatrixDB.Queries.DoesDefaultSpaceExist(context.Background(), alias)
 
@@ -161,6 +161,11 @@ func (c *App) SetupPublicSpace() (string, error) {
 			Content: map[string]interface{}{
 				"name": c.Config.Matrix.PublicServer,
 			},
+		}, gomatrix.Event{
+			Type: "m.space.default",
+			Content: map[string]interface{}{
+				"default": true,
+			},
 		},
 		pl,
 	}
@@ -196,9 +201,19 @@ func (c *App) SetupDefaultSpaces() error {
 	}
 	//spaces = []string{"animals", "art", "books", "business", "cars", "celebrities", "comics", "culture", "education", "entertainment", "fashion", "food", "gaming", "health", "howto", "humor", "internet", "lifestyle", "movies", "music", "news", "nsfw", "parenting", "politics", "religion", "science", "space", "sports", "technology", "travel", "other"}
 
-	spaces := []string{"zoink", "boink", "loink"}
+	spaces := []string{c.Config.Name}
 
 	for _, space := range spaces {
+
+		alias := fmt.Sprintf(`#%s:%s`, space, c.Config.Matrix.PublicServer)
+
+		exists, err := c.MatrixDB.Queries.DoesSpaceExist(context.Background(), alias)
+
+		if err != nil {
+			return err
+		} else if exists {
+			return nil
+		}
 
 		pl := gomatrix.Event{
 			Type: "m.room.power_levels",
@@ -241,6 +256,11 @@ func (c *App) SetupDefaultSpaces() error {
 				Type: "m.room.name",
 				Content: map[string]interface{}{
 					"name": space,
+				},
+			}, gomatrix.Event{
+				Type: "m.space.default",
+				Content: map[string]interface{}{
+					"default": true,
 				},
 			},
 			pl,

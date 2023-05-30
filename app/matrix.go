@@ -135,7 +135,6 @@ func (c *App) CreateMatrixUserAccount(username, password string) (*MatrixAccount
 		log.Println(err)
 	}
 
-	// don't join default public space
 	/*
 		re, err := matrix.JoinRoom(c.DefaultMatrixSpace, "", nil)
 		if err != nil {

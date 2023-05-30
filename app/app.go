@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"syscall"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"shpong/config"
 	"shpong/static"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/sessions"
@@ -36,8 +38,10 @@ type App struct {
 	MatrixDB             *MatrixDB
 	Cron                 *cron.Cron
 	Cache                *Cache
+	MediaStorage         *s3.Client
 	DefaultMatrixAccount string
 	DefaultMatrixSpace   string
+	Version              string
 }
 
 func (c *App) Activate() {
@@ -76,9 +80,8 @@ var PRODUCTION_MODE bool
 var AssetFiles map[string]string
 
 func Start(s *StartRequest) {
-	CONFIG_FILE = s.Config
 
-	log.Println(time.Now().Unix())
+	CONFIG_FILE = s.Config
 
 	conf, err := config.Read(s.Config)
 	if err != nil {
@@ -147,6 +150,23 @@ func Start(s *StartRequest) {
 		Cron:          cron,
 		Cache:         cache,
 	}
+
+	media, err := c.NewMediaStorage()
+	if err != nil {
+		panic(err)
+	}
+	c.MediaStorage = media
+
+	c.Version = func() string {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			for _, setting := range info.Settings {
+				if setting.Key == "vcs.revision" {
+					return setting.Value
+				}
+			}
+		}
+		return ""
+	}()
 
 	c.Middleware()
 	c.Routes()

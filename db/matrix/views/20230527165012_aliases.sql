@@ -7,7 +7,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS aliases AS
     SELECT rooms.room_id, CASE WHEN sc.child_room_id IS NULL THEN substring(split_part(ra.room_alias, ':', 1) FROM 2) ELSE substring(split_part(sc.parent_room_alias, ':', 1) FROM 2)::text || '/' || (sc.child_room_alias) END as room_alias
     FROM rooms
     LEFT JOIN room_aliases ra ON ra.room_id = rooms.room_id
-    LEFT JOIN space_children sc ON sc.child_room_id = rooms.room_id;
+    LEFT JOIN space_rooms sc ON sc.child_room_id = rooms.room_id;
 
 CREATE UNIQUE INDEX IF NOT EXISTS aliases_idx ON aliases (room_id);
 

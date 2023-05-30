@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE IF NOT EXISTS space_children (
+CREATE TABLE IF NOT EXISTS space_rooms (
     parent_room_alias text,
     parent_room_id text,
     child_room_alias text,
@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS space_children (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE space_children;
+DROP TABLE space_rooms;
 -- +goose StatementEnd

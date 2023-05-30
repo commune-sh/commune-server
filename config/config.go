@@ -17,8 +17,9 @@ type App struct {
 }
 
 type Features struct {
-	Social     bool `toml:"social"`
-	SpaceRooms bool `toml:"space_rooms"`
+	ShowIndex  bool `toml:"show_index" json:"show_index"`
+	Social     bool `toml:"social" json:"social"`
+	SpaceRooms bool `toml:"space_rooms" json:"space_rooms"`
 }
 
 type Matrix struct {
@@ -70,19 +71,30 @@ type Tenor struct {
 	Key string `toml:"key"`
 }
 
+type Storage struct {
+	BucketName      string `toml:"bucket_name"`
+	Region          string `toml:"region"`
+	AccountID       string `toml:"account_id"`
+	AccessKeyID     string `toml:"access_key_id"`
+	AccessKeySecret string `toml:"access_key_secret"`
+	Endpoint        string `toml:"endpoint"`
+}
+
 type Config struct {
-	Name       string  `toml:"name"`
-	Mode       string  `toml:"mode"`
-	App        App     `toml:"app"`
-	Matrix     Matrix  `toml:"matrix"`
-	DB         DB      `toml:"db"`
-	Redis      Redis   `toml:"redis"`
-	Cache      Cache   `toml:"cache"`
-	YoutubeKey string  `toml:"youtube_key"`
-	Auth       Auth    `toml:"auth"`
-	Privacy    Privacy `toml:"privacy"`
-	SMTP       SMTP    `toml:"smtp"`
-	Tenor      Tenor   `toml:"tenor"`
+	Name       string   `toml:"name"`
+	Mode       string   `toml:"mode"`
+	App        App      `toml:"app"`
+	Matrix     Matrix   `toml:"matrix"`
+	DB         DB       `toml:"db"`
+	Redis      Redis    `toml:"redis"`
+	Cache      Cache    `toml:"cache"`
+	YoutubeKey string   `toml:"youtube_key"`
+	Auth       Auth     `toml:"auth"`
+	Privacy    Privacy  `toml:"privacy"`
+	SMTP       SMTP     `toml:"smtp"`
+	Tenor      Tenor    `toml:"tenor"`
+	Features   Features `toml:"features"`
+	Storage    Storage  `toml:"storage"`
 }
 
 var conf Config

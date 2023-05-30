@@ -109,6 +109,11 @@ func routes(c *App) chi.Router {
 		r.Get("/", c.UserFeedEvents())
 	})
 
+	r.Route("/media", func(r chi.Router) {
+		r.Use(c.RequireAuthentication)
+		r.Get("/presigned_url", c.GetPresignedURL())
+	})
+
 	r.Route("/default_spaces", func(r chi.Router) {
 		r.Get("/", c.DefaultSpaces())
 	})

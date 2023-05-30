@@ -2,7 +2,7 @@
 SELECT room_id from room_aliases where room_alias = $1;
 
 -- name: DoesSpaceExist :one
-SELECT exists(select 1 from room_aliases where room_alias = $1 OR slug = $2);
+SELECT exists(select 1 from room_aliases where room_alias = $1);
 
 -- name: RoomJoined :one
 SELECT exists(select 1 from membership_state where user_id = $1 
@@ -38,7 +38,7 @@ LEFT JOIN (
 LEFT JOIN (
     	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts
 	FROM room_state rst
-	JOIN space_children sc ON sc.child_room_id = rst.room_id
+	JOIN space_rooms sc ON sc.child_room_id = rst.room_id
 	JOIN events ON events.room_id = rst.room_id AND events.type = 'm.room.create'
 ) as ch ON ch.parent_room_id = ra.room_id
 LEFT JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
@@ -53,7 +53,7 @@ GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public
 -- name: GetSpaceChild :one
 SELECT child_room_id,
 CASE WHEN membership_state.membership = 'join' THEN true ELSE false END as joined
-FROM space_children
+FROM space_rooms
 LEFT JOIN membership_state 
 ON membership_state.room_id = child_room_id
 AND membership_state.user_id = $3

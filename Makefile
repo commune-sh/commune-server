@@ -1,7 +1,6 @@
 all: clean sqlc build 
 build: 
-	go build -o bin/shpong cmd/shpong/main.go
-	#./build.sh
+	cd cmd/shpong;go build -o ../../bin/shpong
 setup:
 	./db/matrix/views/build.sh
 vendor: clean vendorbuild 

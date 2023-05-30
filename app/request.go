@@ -75,7 +75,9 @@ func (c *App) HealthCheck() http.HandlerFunc {
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"healthy": true,
+				"healthy":  true,
+				"version":  c.Version,
+				"features": c.Config.Features,
 			},
 		})
 
