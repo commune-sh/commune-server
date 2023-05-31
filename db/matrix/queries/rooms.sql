@@ -27,8 +27,8 @@ LEFT JOIN rooms ON room_aliases.room_id = rooms.room_id;
 -- name: GetSpaceState :one
 SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner, 
     rooms.is_public,
-	jsonb_build_object('name', rs.name ,'type', rs.type, 'is_profile', rs.is_profile, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header, 'streams', room_streams.streams) as state,
-    COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'type', ch.type, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'alias', ch.child_room_alias, 'streams', ch.streams) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
+	jsonb_build_object('name', rs.name ,'type', rs.type, 'is_profile', rs.is_profile, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header, 'topics', room_topics.topics) as state,
+    COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'type', ch.type, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'alias', ch.child_room_alias, 'topics', ch.topics) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
     CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined
 FROM room_aliases ra 
 JOIN rooms on rooms.room_id = ra.room_id
@@ -36,18 +36,18 @@ LEFT JOIN (
 	SELECT * FROM room_state
 ) as rs ON rs.room_id = ra.room_id
 LEFT JOIN (
-    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.streams
+    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics
 	FROM room_state rst
 	JOIN space_rooms sc ON sc.child_room_id = rst.room_id
 	JOIN events ON events.room_id = rst.room_id AND events.type = 'm.room.create'
-    LEFT JOIN room_streams rstm ON rstm.room_id = rst.room_id
+    LEFT JOIN room_topics rstm ON rstm.room_id = rst.room_id
 ) as ch ON ch.parent_room_id = ra.room_id
-LEFT JOIN room_streams ON room_streams.room_id = ra.room_id
+LEFT JOIN room_topics ON room_topics.room_id = ra.room_id
 LEFT JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = $2
 WHERE ra.room_alias = $1
-GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, room_streams.streams, ms.membership;
+GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, room_topics.topics, ms.membership;
 
 
 
