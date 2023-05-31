@@ -335,6 +335,7 @@ type SpaceState struct {
 	Owner          string `json:"owner"`
 	Space          any    `json:"space"`
 	Children       any    `json:"children,omitempty"`
+	Streams        any    `json:"streams,omitempty"`
 	Joined         bool   `json:"joined,omitempty"`
 }
 
@@ -345,6 +346,7 @@ type state struct {
 	Topic     string `json:"topic,omitempty"`
 	Avatar    string `json:"avatar,omitempty"`
 	Header    string `json:"header,omitempty"`
+	Streams   any    `json:"streams,omitempty"`
 }
 
 func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {
