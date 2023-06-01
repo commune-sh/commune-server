@@ -49,7 +49,22 @@ LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = $2
 WHERE ra.room_alias = $1
 GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, room_topics.topics, ms.membership;
 
+-- name: GetSpaceInfo :one
+SELECT ra.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header
+FROM room_aliases ra
+JOIN spaces ON spaces.room_id = ra.room_id
+LEFT JOIN room_state rs ON rs.room_id = ra.room_id
+WHERE ra.room_alias = $1
+AND rs.is_profile is false;
 
+
+-- name: GetSpaceRoomIDs :one
+SELECT ra.room_id, array_agg(sr.child_room_id)::text[] as rooms
+FROM room_aliases ra 
+JOIN rooms on rooms.room_id = ra.room_id
+LEFT JOIN space_rooms sr ON sr.parent_room_id = ra.room_id
+WHERE ra.room_alias = $1
+GROUP BY ra.room_id;
 
 
 -- name: GetSpaceChild :one

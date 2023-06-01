@@ -11,6 +11,7 @@ AND ms.membership = 'join'
 AND rs.is_profile is false
 ORDER BY spaces.space_alias ASC;
 
+
 -- name: GetJoinedRooms :many
 SELECT ms.room_id 
 FROM membership_state ms 

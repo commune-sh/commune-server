@@ -139,10 +139,15 @@ func routes(c *App) chi.Router {
 	})
 
 	r.Route("/room", func(r chi.Router) {
+		r.Use(c.RequireAuthentication)
 		r.Route("/joined", func(r chi.Router) {
-			r.Use(c.RequireAuthentication)
 			r.Get("/", c.RoomJoined())
 		})
+		r.Post("/join", c.JoinRoom())
+	})
+	r.Route("/space", func(r chi.Router) {
+		r.Use(c.RequireAuthentication)
+		r.Post("/{space}/join", c.JoinSpace())
 	})
 
 	r.Route("/{space}", func(r chi.Router) {

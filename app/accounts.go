@@ -158,10 +158,12 @@ func (c *App) CreateAccount() http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 		}
-		rooms, err := c.MatrixDB.Queries.GetJoinedRooms(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
-		if err != nil {
-			log.Println(err)
-		}
+		/*
+			rooms, err := c.MatrixDB.Queries.GetJoinedRooms(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+			if err != nil {
+				log.Println(err)
+			}
+		*/
 
 		// send success JSON
 		RespondWithJSON(w, &JSONResponse{
@@ -171,7 +173,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 				"access_token": token,
 				"credentials":  user,
 				"spaces":       spaces,
-				"rooms":        rooms,
+				//"rooms":        rooms,
 			},
 		})
 	}
