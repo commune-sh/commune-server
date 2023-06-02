@@ -39,17 +39,14 @@ func (c *App) Routes() {
 
 	ad := fmt.Sprintf(`%s:%d`, c.Config.App.Domain, c.Config.App.Port)
 
-	if c.Config.Mode == "production" {
-		ad = c.Config.App.Domain
-	}
-
-	sad := fmt.Sprintf(`%s:%d`, c.Config.App.SSRDomain, c.Config.App.Port)
-	if c.Config.Mode == "production" {
-		sad = c.Config.App.SSRDomain
-	}
+	/*
+		if c.Config.Mode == "production" {
+			ad = c.Config.App.Domain
+		}
+	*/
 
 	hr.Map(ad, routes(c))
-	hr.Map(sad, SSRDomain(c))
+	hr.Map(c.Config.App.SSRDomain, SSRDomain(c))
 	// local dev please ignore
 	hr.Map("192.168.1.12:8989", routes(c))
 
