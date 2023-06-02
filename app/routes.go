@@ -43,11 +43,34 @@ func (c *App) Routes() {
 		ad = c.Config.App.Domain
 	}
 
+	sad := fmt.Sprintf(`%s:%d`, c.Config.App.SSRDomain, c.Config.App.Port)
+	if c.Config.Mode == "production" {
+		sad = c.Config.App.SSRDomain
+	}
+
 	hr.Map(ad, routes(c))
+	hr.Map(sad, SSRDomain(c))
 	// local dev please ignore
 	hr.Map("192.168.1.12:8989", routes(c))
 
 	c.Router.Mount("/", hr)
+}
+
+func SSRDomain(c *App) chi.Router {
+
+	r := chi.NewRouter()
+
+	compressor := middleware.NewCompressor(5, "text/html", "text/css")
+	compressor.SetEncoder("nop", func(w io.Writer, _ int) io.Writer {
+		return w
+	})
+
+	r.Use(compressor.Handler)
+	//r.Get("/", c.cdindex())
+	r.Get("/", c.SSRIndex())
+
+	r.NotFound(c.NotFound)
+	return r
 }
 
 func routes(c *App) chi.Router {

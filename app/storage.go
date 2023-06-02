@@ -41,8 +41,11 @@ func (c *App) NewMediaStorage() (*s3.Client, error) {
 func (c *App) GetPresignedURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		query := r.URL.Query()
+		filetype := query.Get("filetype")
+
 		filename := RandomString(32)
-		key := fmt.Sprintf("media/%s", filename)
+		key := fmt.Sprintf("media/attachments/%s.%s", filename, filetype)
 
 		presignClient := s3.NewPresignClient(c.MediaStorage)
 
@@ -59,6 +62,7 @@ func (c *App) GetPresignedURL() http.HandlerFunc {
 				},
 			})
 		}
+		log.Println("returning ", key)
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,

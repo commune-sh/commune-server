@@ -9,6 +9,7 @@ import (
 
 type App struct {
 	Domain          string `toml:"domain"`
+	SSRDomain       string `toml:"ssr_domain"`
 	ShortlinkDomain string `toml:"shortlink_domain"`
 	Port            int    `toml:"port"`
 	CookieName      string `toml:"cookie_name"`

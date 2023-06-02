@@ -10,6 +10,12 @@ import (
 	"github.com/unrolled/secure"
 )
 
+func (c *App) SSRIndex() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello world"))
+
+	}
+}
 func (c *App) Index() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
