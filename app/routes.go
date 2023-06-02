@@ -67,14 +67,8 @@ func routes(c *App) chi.Router {
 		ContentSecurityPolicy: "script-src 'self' 'unsafe-eval' 'unsafe-inline' $NONCE",
 		IsDevelopment:         false,
 		AllowedHosts: []string{
-			fmt.Sprintf(`%s:%d`, c.Config.App.Domain, c.Config.App.Port),
-			"localhost:8989",
-			"localhost:5713",
+			c.Config.App.Domain,
 		},
-	}
-
-	if c.Config.Mode == "production" {
-		sop.AllowedHosts = []string{c.Config.App.Domain}
 	}
 
 	secureMiddleware := secure.New(sop)
