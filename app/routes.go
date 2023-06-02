@@ -37,15 +37,7 @@ func (c *App) Routes() {
 
 	hr := hostrouter.New()
 
-	ad := fmt.Sprintf(`%s:%d`, c.Config.App.Domain, c.Config.App.Port)
-
-	/*
-		if c.Config.Mode == "production" {
-			ad = c.Config.App.Domain
-		}
-	*/
-
-	hr.Map(ad, routes(c))
+	hr.Map(c.Config.App.Domain, routes(c))
 	hr.Map(c.Config.App.SSRDomain, SSRDomain(c))
 	// local dev please ignore
 	hr.Map("192.168.1.12:8989", routes(c))
