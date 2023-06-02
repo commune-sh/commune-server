@@ -248,9 +248,12 @@ func (c *App) GetEvent() http.HandlerFunc {
 			EventID:     item.EventID,
 			JSON:        json,
 			DisplayName: item.DisplayName.String,
-			AvatarURL:   item.AvatarUrl.String,
-			ReplyCount:  item.Replies,
-			Reactions:   item.Reactions,
+			Slug:        item.Slug,
+
+			RoomAlias:  item.RoomAlias.String,
+			AvatarURL:  item.AvatarUrl.String,
+			ReplyCount: item.Replies,
+			Reactions:  item.Reactions,
 		})
 
 		// get event replies
@@ -274,6 +277,7 @@ func (c *App) GetEvent() http.HandlerFunc {
 					EventID:     item.EventID,
 					JSON:        json,
 					DisplayName: item.DisplayName.String,
+					RoomAlias:   item.RoomAlias.String,
 					AvatarURL:   item.AvatarUrl.String,
 					Reactions:   item.Reactions,
 				})
@@ -440,6 +444,7 @@ func (c *App) NewPost() http.HandlerFunc {
 		}{})
 
 		if err != nil {
+			log.Println(err)
 			RespondWithBadRequestError(w)
 			return
 		}
@@ -467,11 +472,49 @@ func (c *App) NewPost() http.HandlerFunc {
 			return
 		}
 
+		slug := resp.EventID[len(resp.EventID)-11:]
+
+		item, err := c.MatrixDB.Queries.GetSpaceEvent(context.Background(), slug)
+
+		if err != nil {
+			log.Println("error getting event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "event created but could not be fetched",
+				},
+			})
+			return
+		}
+
+		json, err := gabs.ParseJSON([]byte(item.JSON.String))
+		if err != nil {
+			log.Println("error parsing json: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "event not found",
+				},
+			})
+			return
+		}
+
+		s := ProcessComplexEvent(&EventProcessor{
+			EventID:     item.EventID,
+			JSON:        json,
+			Slug:        item.Slug,
+			DisplayName: item.DisplayName.String,
+			RoomAlias:   item.RoomAlias.String,
+			AvatarURL:   item.AvatarUrl.String,
+			ReplyCount:  item.Replies,
+			Reactions:   item.Reactions,
+		})
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"success":  "true",
-				"event_id": resp.EventID,
+				"success": "true",
+				"event":   s,
 			},
 		})
 
@@ -513,6 +556,7 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 				Slug:        item.Slug,
 				JSON:        json,
 				DisplayName: item.DisplayName.String,
+				RoomAlias:   item.RoomAlias.String,
 				AvatarURL:   item.AvatarUrl.String,
 				Reactions:   item.Reactions,
 			})
@@ -907,7 +951,7 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 				EventID:     item.EventID,
 				Slug:        item.Slug,
 				JSON:        json,
-				RoomAlias:   space,
+				RoomAlias:   item.RoomAlias.String,
 				DisplayName: item.DisplayName.String,
 				AvatarURL:   item.AvatarUrl.String,
 				ReplyCount:  item.Replies,
