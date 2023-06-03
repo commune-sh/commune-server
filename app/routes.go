@@ -56,7 +56,7 @@ func SSRDomain(c *App) chi.Router {
 
 	r.Use(compressor.Handler)
 	//r.Get("/", c.cdindex())
-	r.Get("/", c.SSRIndex())
+	r.Get("/", c.Index())
 
 	r.NotFound(c.NotFound)
 	return r

@@ -3,19 +3,19 @@
   <head>
     <title>{{.AppName}}</title>
       <meta name="description" content="Turn on, tune in, drop out.">
-  <link rel="stylesheet" href="{{ InsertAsset "home.css" }}" as="style">
+  <link rel="stylesheet" href="{{ InsertAsset "main.css" }}" as="style">
     {{template "common-head" .}}
 
   </head>
   <body>
     <div id="root">
+            {{.AppName}}
+    </div>
 
 <script nonce={{.Nonce}}>
     let nonce={{.Nonce}}
 </script>
-  <script defer nonce={{.Nonce}} type="module" src="{{ InsertAsset "home.js" }}"></script>
 
-    </div>
   </body>
 </html>
 {{end}}
