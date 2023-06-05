@@ -94,7 +94,7 @@ func (c *App) NewPost() http.HandlerFunc {
 
 		if p.IsReply && p.InThread != "" {
 			//slug := p.InThread[len(p.InThread)-11:]
-			go c.UpdateEventRepliesCache(p.InThread)
+			go c.UpdateEventRepliesCache(p.InThread, p.RoomID)
 		} else {
 			go c.UpdateSpaceEventsCache(p.RoomID)
 		}
@@ -225,7 +225,7 @@ func (c *App) UpdateIndexEvents() error {
 	return nil
 }
 
-func (c *App) UpdateEventRepliesCache(event string) error {
+func (c *App) UpdateEventRepliesCache(event string, roomID string) error {
 	log.Println("updating cache for event slug", event)
 	replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), event)
 
@@ -268,6 +268,7 @@ func (c *App) UpdateEventRepliesCache(event string) error {
 		return err
 	}
 
+	go c.UpdateSpaceEventsCache(roomID)
 	go c.UpdateIndexEvents()
 
 	return nil
