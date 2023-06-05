@@ -43,7 +43,7 @@ func (c *App) AllEvents() http.HandlerFunc {
 			ge.Int64 = i
 		}
 
-		if c.Config.Cache.IndexEvents {
+		if c.Config.Cache.IndexEvents && last == "" {
 
 			// get events for this space from cache
 			cached, err := c.Cache.Events.Get("index").Result()
@@ -106,8 +106,8 @@ func (c *App) AllEvents() http.HandlerFunc {
 			items = append(items, s)
 		}
 
-		go func() {
-			if c.Config.Cache.IndexEvents {
+		if c.Config.Cache.IndexEvents && last == "" {
+			go func() {
 
 				serialized, err := json.Marshal(items)
 				if err != nil {
@@ -118,9 +118,9 @@ func (c *App) AllEvents() http.HandlerFunc {
 				if err != nil {
 					log.Println(err)
 				}
-			}
 
-		}()
+			}()
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -435,98 +435,39 @@ func (c *App) Sync() http.HandlerFunc {
 	}
 }
 
-func (c *App) NewPost() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		p, err := ReadRequestJSON(r, w, &struct {
-			RoomID  string `json:"room_id"`
-			Content any    `json:"content"`
-		}{})
-
-		if err != nil {
-			log.Println(err)
-			RespondWithBadRequestError(w)
-			return
-		}
-
-		user := c.LoggedInUser(r)
-
-		log.Println("what is room id ????", p.RoomID, p.Content)
-
-		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
-
-		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
-		if err != nil {
-			log.Println(err)
-		}
-
-		resp, err := matrix.SendMessageEvent(p.RoomID, "m.room.message", p.Content)
-		if err != nil {
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":   err,
-					"success": "false",
-				},
-			})
-			return
-		}
-
-		slug := resp.EventID[len(resp.EventID)-11:]
-
-		item, err := c.MatrixDB.Queries.GetSpaceEvent(context.Background(), slug)
-
-		if err != nil {
-			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error": "event created but could not be fetched",
-				},
-			})
-			return
-		}
-
-		json, err := gabs.ParseJSON([]byte(item.JSON.String))
-		if err != nil {
-			log.Println("error parsing json: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusInternalServerError,
-				JSON: map[string]any{
-					"error": "event not found",
-				},
-			})
-			return
-		}
-
-		s := ProcessComplexEvent(&EventProcessor{
-			EventID:     item.EventID,
-			JSON:        json,
-			Slug:        item.Slug,
-			DisplayName: item.DisplayName.String,
-			RoomAlias:   item.RoomAlias.String,
-			AvatarURL:   item.AvatarUrl.String,
-			ReplyCount:  item.Replies,
-			Reactions:   item.Reactions,
-		})
-
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: map[string]any{
-				"success": "true",
-				"event":   s,
-			},
-		})
-
-	}
-}
-
 func (c *App) GetEventReplies() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		event := chi.URLParam(r, "event")
 
 		log.Println("event id is ", event)
+
+		if c.Config.Cache.EventReplies {
+
+			// get events for this space from cache
+			cached, err := c.Cache.Events.Get(event).Result()
+			if err != nil {
+				log.Println("event replies for %s not in cache", event)
+			}
+
+			if cached != "" {
+				var events []Event
+				err = json.Unmarshal([]byte(cached), &events)
+				if err != nil {
+					log.Println(err)
+				} else {
+					log.Println("responding with cached event replies")
+
+					RespondWithJSON(w, &JSONResponse{
+						Code: http.StatusOK,
+						JSON: map[string]any{
+							"replies": events,
+						},
+					})
+					return
+				}
+			}
+		}
 
 		replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), event)
 
@@ -563,6 +504,22 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 
 			items = append(items, s)
 		}
+
+		go func() {
+			if c.Config.Cache.EventReplies {
+
+				serialized, err := json.Marshal(items)
+				if err != nil {
+					log.Println(err)
+				}
+
+				err = c.Cache.Events.Set(event, serialized, 0).Err()
+				if err != nil {
+					log.Println(err)
+				}
+			}
+
+		}()
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -759,6 +716,33 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 			sreq.OriginServerTS.Int64 = i
 		}
 
+		if c.Config.Cache.SpaceEvents && last == "" {
+
+			// get events for this space from cache
+			cached, err := c.Cache.Events.Get(state.RoomID).Result()
+			if err != nil {
+				log.Println("index events not in cache")
+			}
+
+			if cached != "" {
+				var events []Event
+				err = json.Unmarshal([]byte(cached), &events)
+				if err != nil {
+					log.Println(err)
+				} else {
+					log.Println("responding with cached events")
+					RespondWithJSON(w, &JSONResponse{
+						Code: http.StatusOK,
+						JSON: map[string]any{
+							"state":  sps,
+							"events": events,
+						},
+					})
+					return
+				}
+			}
+		}
+
 		// get events for this space
 		events, err := c.MatrixDB.Queries.GetSpaceEvents(context.Background(), sreq)
 
@@ -786,7 +770,7 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 				EventID:     item.EventID,
 				Slug:        item.Slug,
 				JSON:        json,
-				RoomAlias:   space,
+				RoomAlias:   item.RoomAlias.String,
 				DisplayName: item.DisplayName.String,
 				AvatarURL:   item.AvatarUrl.String,
 				ReplyCount:  item.Replies,
@@ -817,6 +801,22 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 				}
 			}
 		*/
+
+		if c.Config.Cache.SpaceEvents && last == "" {
+			go func() {
+
+				serialized, err := json.Marshal(items)
+				if err != nil {
+					log.Println(err)
+				}
+
+				err = c.Cache.Events.Set(state.RoomID, serialized, 0).Err()
+				if err != nil {
+					log.Println(err)
+				}
+
+			}()
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,

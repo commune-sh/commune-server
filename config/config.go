@@ -44,7 +44,9 @@ type Redis struct {
 }
 
 type Cache struct {
-	IndexEvents bool `toml:"index_events"`
+	IndexEvents  bool `toml:"index_events"`
+	SpaceEvents  bool `toml:"space_events"`
+	EventReplies bool `toml:"event_replies"`
 }
 
 type Auth struct {
