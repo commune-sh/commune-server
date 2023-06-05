@@ -268,5 +268,7 @@ func (c *App) UpdateEventRepliesCache(event string) error {
 		return err
 	}
 
+	go c.UpdateIndexEvents()
+
 	return nil
 }
