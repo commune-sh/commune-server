@@ -515,7 +515,7 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 		go func() {
 			if c.Config.Cache.EventReplies {
 
-				serialized, err := json.Marshal(items)
+				serialized, err := json.Marshal(sorted)
 				if err != nil {
 					log.Println(err)
 				}
