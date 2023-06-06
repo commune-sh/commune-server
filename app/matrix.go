@@ -247,7 +247,7 @@ type Event struct {
 	Type           any      `json:"type"`
 	Content        any      `json:"content"`
 	Sender         sender   `json:"sender"`
-	EventID        any      `json:"event_id"`
+	EventID        string   `json:"event_id"`
 	StateKey       any      `json:"state_key,omitempty"`
 	RoomAlias      any      `json:"room_alias,omitempty"`
 	RoomID         any      `json:"room_id"`
@@ -257,7 +257,8 @@ type Event struct {
 	ReplyCount     int64    `json:"reply_count"`
 	Reactions      any      `json:"reactions,omitempty"`
 	UserReactions  []string `json:"user_reactions,omitempty"`
-	Children       []Event  `json:"children,omitempty"`
+	Children       []*Event `json:"children,omitempty"`
+	InReplyTo      string   `json:"in_reply_to,omitempty"`
 }
 
 type EventProcessor struct {

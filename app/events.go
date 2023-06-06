@@ -483,7 +483,7 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 			return
 		}
 
-		var items []interface{}
+		var items []*Event
 
 		for _, item := range replies {
 
@@ -501,9 +501,16 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 				AvatarURL:   item.AvatarUrl.String,
 				Reactions:   item.Reactions,
 			})
+			pid, _ := json.Search("content", "m.relates_to", "m.in_reply_to", "event_id").Data().(string)
+			log.Println("pid is ", pid)
+			if pid != "" {
+				s.InReplyTo = pid
+			}
 
-			items = append(items, s)
+			items = append(items, &s)
 		}
+
+		sorted := SortEvents(items)
 
 		go func() {
 			if c.Config.Cache.EventReplies {
@@ -524,7 +531,7 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"replies": items,
+				"replies": sorted,
 			},
 		})
 
