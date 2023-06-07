@@ -110,6 +110,55 @@ func (c *App) NewPost() http.HandlerFunc {
 	}
 }
 
+func (c *App) RedactPost() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		p, err := ReadRequestJSON(r, w, &struct {
+			RoomID  string `json:"room_id"`
+			EventID string `json:"event_id"`
+			Reason  string `json:"reason"`
+		}{})
+
+		if err != nil {
+			log.Println(err)
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		user := c.LoggedInUser(r)
+
+		log.Println("what is room id ????", p.RoomID)
+
+		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
+		if err != nil {
+			log.Println(err)
+		}
+
+		resp, err := matrix.RedactEvent(p.RoomID, p.EventID, &gomatrix.ReqRedact{Reason: p.Reason})
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":    err,
+					"redacted": "false",
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"redacted": "true",
+				"event":    resp.EventID,
+			},
+		})
+
+	}
+}
+
 func (c *App) UpdateSpaceEventsCache(roomID string) error {
 
 	log.Println("updating cache for space", roomID)

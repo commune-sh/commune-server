@@ -257,40 +257,42 @@ func (c *App) GetEvent() http.HandlerFunc {
 		})
 
 		// get event replies
-		eventReplies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), item.EventID)
+		/*
+			eventReplies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), item.EventID)
 
-		if err != nil {
-			log.Println("error getting event replies: ", err)
-		}
-
-		var replies []interface{}
-		{
-
-			for _, item := range eventReplies {
-
-				json, err := gabs.ParseJSON([]byte(item.JSON.String))
-				if err != nil {
-					log.Println("error parsing json: ", err)
-				}
-
-				s := ProcessComplexEvent(&EventProcessor{
-					EventID:     item.EventID,
-					JSON:        json,
-					DisplayName: item.DisplayName.String,
-					RoomAlias:   item.RoomAlias.String,
-					AvatarURL:   item.AvatarUrl.String,
-					Reactions:   item.Reactions,
-				})
-
-				replies = append(replies, s)
+			if err != nil {
+				log.Println("error getting event replies: ", err)
 			}
-		}
+
+			var replies []interface{}
+			{
+
+				for _, item := range eventReplies {
+
+					json, err := gabs.ParseJSON([]byte(item.JSON.String))
+					if err != nil {
+						log.Println("error parsing json: ", err)
+					}
+
+					s := ProcessComplexEvent(&EventProcessor{
+						EventID:     item.EventID,
+						JSON:        json,
+						DisplayName: item.DisplayName.String,
+						RoomAlias:   item.RoomAlias.String,
+						AvatarURL:   item.AvatarUrl.String,
+						Reactions:   item.Reactions,
+					})
+
+					replies = append(replies, s)
+				}
+			}
+		*/
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"event":   s,
-				"replies": replies,
+				"event": s,
+				//"replies": replies,
 			},
 		})
 
@@ -501,10 +503,8 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 				AvatarURL:   item.AvatarUrl.String,
 				Reactions:   item.Reactions,
 			})
-			pid, _ := json.Search("content", "m.relates_to", "m.in_reply_to", "event_id").Data().(string)
-			if pid != "" {
-				s.InReplyTo = pid
-			}
+
+			s.InReplyTo = item.InReplyTo
 
 			items = append(items, &s)
 		}

@@ -83,33 +83,45 @@ LIMIT 1;
 
 
 -- name: GetSpaceEventReplies :many
+WITH RECURSIVE recursive_events AS (
+    SELECT event_id, relates_to_id
+    FROM event_relations
+    WHERE event_relations.relates_to_id = $1
+    AND event_relations.relation_type = 'm.nested_reply'
+
+    UNION
+
+    SELECT er.event_id, er.relates_to_id
+    FROM event_relations er
+    INNER JOIN recursive_events re ON re.event_id = er.relates_to_id
+)
 SELECT ej.event_id, 
-    ej.json::jsonb->'content'->'m.relates_to'->'m.in_reply_to'->>'event_id' as reply_to,
     ej.json, 
+    rev.relates_to_id as in_reply_to,
     ud.display_name,
     ud.avatar_url,
     aliases.room_alias,
     RIGHT(events.event_id, 11) as slug,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
 FROM event_json ej
+JOIN recursive_events rev ON rev.event_id = ej.event_id
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
-LEFT JOIN event_relations ON event_relations.event_id = ej.event_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
 WHERE events.type = 'm.room.message'
-AND event_relations.relates_to_id = $1
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
     ej.json,
+    rev.relates_to_id,
     events.event_id,
     ud.display_name,
     ud.avatar_url,
     aliases.room_alias,
     events.origin_server_ts
-ORDER BY events.origin_server_ts ASC LIMIT 1000;
+ORDER BY events.origin_server_ts ASC;
 
 
 
