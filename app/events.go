@@ -502,7 +502,6 @@ func (c *App) GetEventReplies() http.HandlerFunc {
 				Reactions:   item.Reactions,
 			})
 			pid, _ := json.Search("content", "m.relates_to", "m.in_reply_to", "event_id").Data().(string)
-			log.Println("pid is ", pid)
 			if pid != "" {
 				s.InReplyTo = pid
 			}

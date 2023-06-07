@@ -135,6 +135,10 @@ func routes(c *App) chi.Router {
 		})
 	})
 
+	r.Route("/link", func(r chi.Router) {
+		r.Get("/metadata", c.FetchLinkMetadata())
+	})
+
 	r.Route("/event", func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
 			r.Use(c.RequireAuthentication)

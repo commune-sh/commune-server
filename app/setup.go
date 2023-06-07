@@ -159,7 +159,7 @@ func (c *App) SetupPublicSpace() (string, error) {
 		}, gomatrix.Event{
 			Type: "m.room.name",
 			Content: map[string]interface{}{
-				"name": c.Config.Matrix.PublicServer,
+				"name": c.Config.Name,
 			},
 		}, gomatrix.Event{
 			Type: "m.space.default",
@@ -171,7 +171,7 @@ func (c *App) SetupPublicSpace() (string, error) {
 	}
 
 	creq := &gomatrix.ReqCreateRoom{
-		RoomAliasName: c.Config.Matrix.PublicServer,
+		RoomAliasName: c.Config.Name,
 		Preset:        "public_chat",
 		Visibility:    "public",
 		CreationContent: map[string]interface{}{
