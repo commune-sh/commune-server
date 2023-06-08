@@ -18,9 +18,11 @@ type App struct {
 }
 
 type Features struct {
-	ShowIndex  bool `toml:"show_index" json:"show_index"`
-	Social     bool `toml:"social" json:"social"`
-	SpaceRooms bool `toml:"space_rooms" json:"space_rooms"`
+	ShowIndex            bool `toml:"show_index" json:"show_index"`
+	Social               bool `toml:"social" json:"social"`
+	SpaceRooms           bool `toml:"space_rooms" json:"space_rooms"`
+	RegistrationEnabled  bool `toml:"registration_enabled" json:"registration_enabled"`
+	SpaceCreationEnabled bool `toml:"space_creation_enabled" json:"space_creation_enabled"`
 }
 
 type Matrix struct {

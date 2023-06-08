@@ -36,7 +36,7 @@ LEFT JOIN redactions ON redactions.redacts = ej.event_id
 WHERE ej.room_id = $1
 AND events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
-AND events.origin_server_ts < $2
+AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
@@ -47,7 +47,14 @@ GROUP BY
     ud.avatar_url,
     aliases.room_alias,
     events.origin_server_ts
-ORDER BY events.origin_server_ts DESC LIMIT 30;
+ORDER BY CASE
+    WHEN @order_by::text = 'ASC' THEN events.origin_server_ts 
+END ASC, CASE 
+    WHEN @order_by::text = 'DESC' THEN events.origin_server_ts 
+END DESC, CASE
+    WHEN @order_by::text = '' THEN events.origin_server_ts 
+END DESC
+LIMIT 30;
 
 
 

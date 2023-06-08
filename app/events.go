@@ -704,22 +704,33 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 		sps := ProcessState(state)
 
 		sreq := matrix_db.GetSpaceEventsParams{
-			OriginServerTS: pgtype.Int8{
-				Int64: time.Now().UnixMilli(),
-				Valid: true,
-			},
+			/*
+				OriginServerTS: pgtype.Int8{
+					Int64: time.Now().UnixMilli(),
+					Valid: true,
+				},
+			*/
 			RoomID: state.RoomID,
 		}
 
 		query := r.URL.Query()
 		last := query.Get("last")
+		after := query.Get("after")
 
 		// get events for this space
 
 		if last != "" {
 			i, _ := strconv.ParseInt(last, 10, 64)
+			log.Println("adding last", i)
+			sreq.OriginServerTS = pgtype.Int8{
+				Int64: i,
+				Valid: true,
+			}
+		}
+
+		if after != "" {
+			i, _ := strconv.ParseInt(after, 10, 64)
 			log.Println(i)
-			sreq.OriginServerTS.Int64 = i
 		}
 
 		if c.Config.Cache.SpaceEvents && last == "" {
@@ -740,7 +751,7 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 					RespondWithJSON(w, &JSONResponse{
 						Code: http.StatusOK,
 						JSON: map[string]any{
-							"state":  sps,
+							//"state":  sps,
 							"events": events,
 						},
 					})
