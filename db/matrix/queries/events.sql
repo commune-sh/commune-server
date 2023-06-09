@@ -37,6 +37,7 @@ WHERE ej.room_id = $1
 AND events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
+AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 

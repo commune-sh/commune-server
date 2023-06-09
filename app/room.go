@@ -90,20 +90,23 @@ func (c *App) JoinSpace() http.HandlerFunc {
 			return
 		}
 
-		go func() {
-			for _, room_id := range sri.Rooms {
+		//join all space child rooms
+		/*
+			go func() {
+				for _, room_id := range sri.Rooms {
 
-				re, err := matrix.JoinRoom(room_id, "", nil)
+					re, err := matrix.JoinRoom(room_id, "", nil)
 
-				if err != nil {
-					log.Println("could not join room", err)
+					if err != nil {
+						log.Println("could not join room", err)
+					}
+
+					if re != nil {
+						log.Println(re)
+					}
 				}
-
-				if re != nil {
-					log.Println(re)
-				}
-			}
-		}()
+			}()
+		*/
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,

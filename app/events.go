@@ -716,6 +716,14 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 		query := r.URL.Query()
 		last := query.Get("last")
 		after := query.Get("after")
+		topic := query.Get("topic")
+
+		if len(topic) > 0 {
+			sreq.Topic = pgtype.Text{
+				String: topic,
+				Valid:  true,
+			}
+		}
 
 		// get events for this space
 
