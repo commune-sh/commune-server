@@ -185,12 +185,12 @@ LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
 JOIN membership_state ms 
     ON ms.room_id = ej.room_id 
-    AND ms.user_id = $2
+    AND ms.user_id = $1
     AND ms.membership = 'join'
 WHERE events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND aliases.room_alias is not null
-AND events.origin_server_ts < $1
+AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 

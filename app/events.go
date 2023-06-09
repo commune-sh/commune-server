@@ -142,23 +142,20 @@ func (c *App) UserFeedEvents() http.HandlerFunc {
 
 		// get events for this space
 
-		ge := pgtype.Int8{
-			Int64: time.Now().UnixMilli(),
-			Valid: true,
+		fe := matrix_db.GetUserFeedEventsParams{
+			UserID: pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			},
 		}
 
 		if last != "" {
 			i, _ := strconv.ParseInt(last, 10, 64)
 			log.Println(i)
-			ge.Int64 = i
-		}
-
-		fe := matrix_db.GetUserFeedEventsParams{
-			OriginServerTS: ge,
-			UserID: pgtype.Text{
-				String: user.MatrixUserID,
-				Valid:  true,
-			},
+			fe.OriginServerTS = pgtype.Int8{
+				Int64: i,
+				Valid: true,
+			}
 		}
 
 		events, err := c.MatrixDB.Queries.GetUserFeedEvents(context.Background(), fe)
