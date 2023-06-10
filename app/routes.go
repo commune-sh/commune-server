@@ -129,9 +129,9 @@ func routes(c *App) chi.Router {
 		r.Get("/{room}", c.RoomEvents())
 	})
 
-	r.Route("/sse", func(r chi.Router) {
+	r.Route("/sync", func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
-			r.Get("/", c.SSE())
+			r.Get("/", c.SyncEvents())
 		})
 	})
 

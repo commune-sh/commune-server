@@ -94,7 +94,7 @@ LIMIT 1;
 WITH RECURSIVE recursive_events AS (
     SELECT event_id, relates_to_id
     FROM event_relations
-    WHERE event_relations.relates_to_id = $1
+    WHERE RIGHT(event_relations.relates_to_id, 11) = $1
     AND event_relations.relation_type = 'm.nested_reply'
 
     UNION
