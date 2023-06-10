@@ -663,6 +663,8 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 				AvatarURL:   item.AvatarUrl.String,
 				ReplyCount:  item.Replies,
 				Reactions:   item.Reactions,
+				Upvotes:     item.Upvotes.Int64,
+				Downvotes:   item.Downvotes.Int64,
 			})
 
 			items = append(items, s)

@@ -25,12 +25,15 @@ SELECT ej.event_id,
     aliases.room_alias,
     RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
-    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
+    votes.upvotes, 
+    votes.downvotes
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
+LEFT JOIN event_votes votes ON votes.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
 WHERE ej.room_id = $1
@@ -47,11 +50,15 @@ GROUP BY
     ud.display_name,
     ud.avatar_url,
     aliases.room_alias,
+    votes.upvotes, 
+    votes.downvotes,
     events.origin_server_ts
 ORDER BY CASE
     WHEN @order_by::text = 'ASC' THEN events.origin_server_ts 
 END ASC, CASE 
     WHEN @order_by::text = 'DESC' THEN events.origin_server_ts 
+END DESC, CASE
+    WHEN @order_by::text = 'upvotes' THEN votes.upvotes
 END DESC, CASE
     WHEN @order_by::text = '' THEN events.origin_server_ts 
 END DESC
