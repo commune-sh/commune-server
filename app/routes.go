@@ -143,6 +143,8 @@ func routes(c *App) chi.Router {
 		r.Route("/", func(r chi.Router) {
 			r.Use(c.RequireAuthentication)
 			r.Post("/", c.NewPost())
+			r.Post("/redact", c.RedactPost())
+			r.Post("/redact/reaction", c.RedactReaction())
 		})
 		r.Get("/{event}", c.GetEvent())
 		r.Get("/{event}/replies", c.GetEventReplies())

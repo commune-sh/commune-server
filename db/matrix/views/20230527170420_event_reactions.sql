@@ -16,12 +16,19 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY event_reactions;
     RETURN NULL;
+
+    IF (TG_OP = 'DELETE') THEN
+        REFRESH MATERIALIZED VIEW CONCURRENTLY event_reactions;
+    ELSIF (NEW.relation_type = 'm.annotation') THEN
+        REFRESH MATERIALIZED VIEW CONCURRENTLY event_reactions;
+    END IF;
+
+    RETURN NULL; 
 END;
 $$;
 
 CREATE TRIGGER event_reactions_mv_trigger 
-AFTER INSERT 
+AFTER INSERT OR UPDATE OR DELETE
 ON event_relations
 FOR EACH ROW
-WHEN (NEW.relation_type = 'm.annotation')
 EXECUTE FUNCTION event_reactions_mv_refresh();

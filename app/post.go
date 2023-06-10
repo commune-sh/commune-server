@@ -23,6 +23,7 @@ func (c *App) NewPost() http.HandlerFunc {
 			Content  any    `json:"content"`
 			IsReply  bool   `json:"is_reply"`
 			InThread string `json:"in_thread"`
+			Type     string `json:"type"`
 		}{})
 
 		if err != nil {
@@ -42,7 +43,7 @@ func (c *App) NewPost() http.HandlerFunc {
 			log.Println(err)
 		}
 
-		resp, err := matrix.SendMessageEvent(p.RoomID, "m.room.message", p.Content)
+		resp, err := matrix.SendMessageEvent(p.RoomID, p.Type, p.Content)
 		if err != nil {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
@@ -104,55 +105,6 @@ func (c *App) NewPost() http.HandlerFunc {
 			JSON: map[string]any{
 				"success": "true",
 				"event":   s,
-			},
-		})
-
-	}
-}
-
-func (c *App) RedactPost() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		p, err := ReadRequestJSON(r, w, &struct {
-			RoomID  string `json:"room_id"`
-			EventID string `json:"event_id"`
-			Reason  string `json:"reason"`
-		}{})
-
-		if err != nil {
-			log.Println(err)
-			RespondWithBadRequestError(w)
-			return
-		}
-
-		user := c.LoggedInUser(r)
-
-		log.Println("what is room id ????", p.RoomID)
-
-		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
-
-		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
-		if err != nil {
-			log.Println(err)
-		}
-
-		resp, err := matrix.RedactEvent(p.RoomID, p.EventID, &gomatrix.ReqRedact{Reason: p.Reason})
-		if err != nil {
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":    err,
-					"redacted": "false",
-				},
-			})
-			return
-		}
-
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: map[string]any{
-				"redacted": "true",
-				"event":    resp.EventID,
 			},
 		})
 
