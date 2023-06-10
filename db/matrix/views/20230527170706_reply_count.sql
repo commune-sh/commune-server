@@ -7,6 +7,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS reply_count AS
     WITH RECURSIVE recursive_events AS (
         SELECT event_id, relates_to_id, 1 AS reply_count
         FROM event_relations
+        WHERE relation_type = 'm.nested_reply'
 
         UNION
 

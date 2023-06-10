@@ -6,7 +6,7 @@ DROP FUNCTION room_topics_mv_refresh();
 CREATE MATERIALIZED VIEW IF NOT EXISTS room_topics AS 
     SELECT DISTINCT ON (cse.room_id) cse.room_id, COALESCE(array_agg(DISTINCT cse.state_key), null) as topics
     FROM current_state_events cse 
-    WHERE cse.type = 'm.room.stream'
+    WHERE cse.type = 'topic'
     AND cse.state_key != ''
     GROUP BY cse.room_id;
 
