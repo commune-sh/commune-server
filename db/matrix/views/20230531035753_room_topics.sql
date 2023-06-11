@@ -4,11 +4,10 @@ DROP TRIGGER room_topics_mv_trigger on current_state_events;
 DROP FUNCTION room_topics_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS room_topics AS 
-    SELECT DISTINCT ON (cse.room_id) cse.room_id, COALESCE(array_agg(DISTINCT cse.state_key), null) as topics
-    FROM current_state_events cse 
-    WHERE cse.type = 'topic'
-    AND cse.state_key != ''
-    GROUP BY cse.room_id;
+    SELECT ej.room_id, ej.json::json->'content'->>'topics' AS topics
+    FROM current_state_events cse
+    JOIN event_json ej ON ej.event_id = cse.event_id
+    WHERE cse.type = 'm.room.topics' ;
 
 CREATE UNIQUE INDEX IF NOT EXISTS room_topics_idx ON room_topics (room_id);
 

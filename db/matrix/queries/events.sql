@@ -16,6 +16,12 @@ AND events.type = 'm.room.message'
 ORDER BY events.origin_server_ts DESC LIMIT 100;
 
 
+-- name: GetPinnedEvents :many
+SELECT ej.room_id, ej.json::json->'content'->>'pinned' AS events
+FROM current_state_events cse
+JOIN event_json ej ON ej.event_id = cse.event_id
+WHERE cse.type = 'm.room.pinned_events' 
+AND cse.room_id = $1;
 
 -- name: GetSpaceEvents :many
 SELECT ej.event_id, 

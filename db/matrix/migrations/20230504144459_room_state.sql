@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS room_state (
     name text,
     topic text,
     avatar text,
-    header text
+    header text,
+    pinned_events text
 );
 -- +goose StatementEnd
 
