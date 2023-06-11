@@ -40,10 +40,10 @@ func (c *App) FetchLinkMetadata() http.HandlerFunc {
 }
 
 type LinkMetaData struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Image       string `json:"image"`
-	Author      string `json:"author"`
+	Title       string `json:"title",omitempty`
+	Description string `json:"description",omitempty`
+	Image       string `json:"image",omitempty`
+	Author      string `json:"author",omitempty`
 }
 
 func (c *App) Scrape(link string) LinkMetaData {
@@ -92,10 +92,8 @@ func (c *App) Scrape(link string) LinkMetaData {
 
 	})
 
-	co.OnRequest(func(r *colly.Request) {
-	})
-
 	co.Visit(link)
 
 	return lmd
+
 }

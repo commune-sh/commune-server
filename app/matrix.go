@@ -259,8 +259,6 @@ type Event struct {
 	UserReactions  []string `json:"user_reactions,omitempty"`
 	Children       []*Event `json:"children,omitempty"`
 	InReplyTo      string   `json:"in_reply_to,omitempty"`
-	Upvotes        int64    `json:"upvotes"`
-	Downvotes      int64    `json:"downvotes"`
 }
 
 type EventProcessor struct {
@@ -272,8 +270,6 @@ type EventProcessor struct {
 	RoomAlias   string
 	ReplyCount  int64
 	Reactions   any
-	Upvotes     int64
-	Downvotes   int64
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {
@@ -302,8 +298,6 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 	e.ReplyCount = ep.ReplyCount
 
 	e.Reactions = ep.Reactions
-	e.Upvotes = ep.Upvotes
-	e.Downvotes = ep.Downvotes
 
 	sk, ok := ep.JSON.Path("state_key").Data().(string)
 	if ok {

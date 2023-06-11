@@ -1,7 +1,5 @@
 package app
 
-import "log"
-
 func SortEvents(flatEvents []*Event) []*Event {
 	eventMap := make(map[string]*Event)
 	nestedEvents := make([]*Event, 0)
@@ -13,7 +11,6 @@ func SortEvents(flatEvents []*Event) []*Event {
 
 	// Iterate over the events to build the nested structure
 	for _, event := range flatEvents {
-		log.Println(event.InReplyTo)
 		parentID := event.InReplyTo
 		parentEvent, parentExists := eventMap[parentID]
 
