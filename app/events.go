@@ -316,11 +316,25 @@ func (c *App) Event() http.HandlerFunc {
 			return
 		}
 
+		resp := map[string]any{
+			"event": item,
+		}
+
+		query := r.URL.Query()
+		replies := query.Get("replies")
+
+		if replies == "true" {
+			replies, err := c.GetEventReplies(&GetEventRepliesParams{
+				Slug: event,
+			})
+			if err == nil && replies != nil {
+				resp["replies"] = replies
+			}
+		}
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
-			JSON: map[string]any{
-				"event": item,
-			},
+			JSON: resp,
 		})
 
 	}
