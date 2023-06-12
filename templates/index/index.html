@@ -8,13 +8,16 @@
 
   </head>
   <body>
-    <div id="root">
-            {{.AppName}}
-    </div>
-
-<script nonce={{.Nonce}}>
-    let nonce={{.Nonce}}
-</script>
+      {{range $idx, $event := .Events}}
+        <div class="event " style="padding: 1rem;">
+            {{$body := index $event.Content "formatted_body"}}
+            {{if $body}}
+                {{HTML ($body)}}
+            {{else}}
+                {{index $event.Content "body"}}
+            {{end}}
+        </div>
+      {{end}}
 
   </body>
 </html>

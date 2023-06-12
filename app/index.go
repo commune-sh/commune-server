@@ -12,22 +12,40 @@ func (c *App) SSRIndex() http.HandlerFunc {
 
 	}
 }
+
 func (c *App) Index() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		us := c.LoggedInUser(r)
-		type NotFoundPage struct {
+
+		type Page struct {
 			LoggedInUser interface{}
 			AppName      string
 			Nonce        string
 			Secret       string
+			Events       *[]Event
+		}
+
+		query := r.URL.Query()
+		last := query.Get("last")
+
+		// get events for this space
+
+		events, err := c.GetIndexEvents(&IndexEventsParams{
+			Last: last,
+		})
+
+		if err != nil {
+			c.Error(w, r)
+			return
 		}
 
 		nonce := secure.CSPNonce(r.Context())
-		pg := NotFoundPage{
+		pg := Page{
 			LoggedInUser: us,
 			AppName:      c.Config.Name,
 			Nonce:        nonce,
+			Events:       events,
 		}
 
 		c.Templates.ExecuteTemplate(w, "index", pg)

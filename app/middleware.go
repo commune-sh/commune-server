@@ -81,28 +81,25 @@ func (c *App) RequireAuthentication(h http.Handler) http.Handler {
 	})
 }
 
-// makes sure this route is autehnticated
-func (c *App) GuestsOnly(h http.Handler) http.Handler {
+func (c *App) GetAuthSession(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		s, err := GetSession(r, c)
 		if err != nil {
 			log.Println(err)
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			h.ServeHTTP(w, r)
+			return
+		}
+		token, ok := s.Values["token"].(string)
+		if ok {
+			log.Println("found token", token)
+			ctx := context.WithValue(r.Context(), "token", token)
+			h.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
-		token, ok := s.Values["access_token"].(string)
-
-		if ok && len(token) > 0 {
-			userid, err := c.SessionsStore.Get(token).Result()
-			if err == nil && userid != "" {
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-				return
-			}
-		}
-
 		h.ServeHTTP(w, r)
+
 	})
 }
 
