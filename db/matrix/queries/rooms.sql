@@ -59,7 +59,7 @@ AND rs.is_profile is false;
 
 
 -- name: GetSpaceRoomIDs :one
-SELECT ra.room_id, array_agg(sr.child_room_id)::text[] as rooms
+SELECT ra.room_id, COALESCE(array_agg(sr.child_room_id)::text[], NULL) as rooms
 FROM room_aliases ra 
 JOIN rooms on rooms.room_id = ra.room_id
 LEFT JOIN space_rooms sr ON sr.parent_room_id = ra.room_id

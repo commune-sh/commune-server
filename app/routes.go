@@ -126,7 +126,7 @@ func routes(c *App) chi.Router {
 
 	r.Route("/events", func(r chi.Router) {
 		r.Get("/", c.AllEvents())
-		r.Get("/{room}", c.RoomEvents())
+		//r.Get("/{room}", c.RoomEvents())
 	})
 
 	r.Route("/sync", func(r chi.Router) {
@@ -142,12 +142,12 @@ func routes(c *App) chi.Router {
 	r.Route("/event", func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
 			r.Use(c.RequireAuthentication)
-			r.Post("/", c.NewPost())
+			r.Post("/", c.CreatePost())
 			r.Post("/redact", c.RedactPost())
 			r.Post("/redact/reaction", c.RedactReaction())
 		})
-		r.Get("/{event}", c.GetEvent())
-		r.Get("/{event}/replies", c.GetEventReplies())
+		r.Get("/{event}", c.Event())
+		r.Get("/{event}/replies", c.EventReplies())
 	})
 
 	r.Route("/room", func(r chi.Router) {
@@ -165,11 +165,11 @@ func routes(c *App) chi.Router {
 
 	r.Route("/{space}", func(r chi.Router) {
 		r.Use(secureMiddleware.Handler)
-		r.Get("/post/{slug}", c.SpaceEvent())
+		//r.Get("/post/{slug}", c.SpaceEvent())
 		r.Get("/events", c.SpaceEvents())
 		r.Get("/state", c.SpaceState())
 		r.Get("/{room}/events", c.SpaceRoomEvents())
-		r.Get("/{room}/post/{slug}", c.SpaceEvent())
+		//r.Get("/{room}/post/{slug}", c.SpaceEvent())
 	})
 
 	r.Route("/", func(r chi.Router) {

@@ -15,16 +15,74 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func (c *App) NewPost() http.HandlerFunc {
+type NewPostBody struct {
+	RoomID   string `json:"room_id"`
+	Content  any    `json:"content"`
+	IsReply  bool   `json:"is_reply"`
+	InThread string `json:"in_thread"`
+	Type     string `json:"type"`
+}
+
+type NewPostParams struct {
+	Body              *NewPostBody
+	MatrixUserID      string
+	MatrixAccessToken string
+}
+
+func (c *App) NewPost(p *NewPostParams) (*Event, error) {
+
+	serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+	matrix, err := gomatrix.NewClient(serverName, p.MatrixUserID, p.MatrixAccessToken)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	resp, err := matrix.SendMessageEvent(p.Body.RoomID, p.Body.Type, p.Body.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	slug := resp.EventID[len(resp.EventID)-11:]
+
+	item, err := c.MatrixDB.Queries.GetSpaceEvent(context.Background(), slug)
+
+	if err != nil {
+		log.Println("error getting event: ", err)
+		return nil, err
+	}
+
+	json, err := gabs.ParseJSON([]byte(item.JSON.String))
+	if err != nil {
+		log.Println("error parsing json: ", err)
+		return nil, err
+	}
+
+	s := ProcessComplexEvent(&EventProcessor{
+		EventID:     item.EventID,
+		JSON:        json,
+		Slug:        item.Slug,
+		DisplayName: item.DisplayName.String,
+		RoomAlias:   item.RoomAlias.String,
+		AvatarURL:   item.AvatarUrl.String,
+		ReplyCount:  item.Replies,
+		Reactions:   item.Reactions,
+	})
+
+	if p.Body.IsReply && p.Body.InThread != "" {
+		go c.UpdateEventRepliesCache(p.Body.InThread, p.Body.RoomID)
+	} else {
+		go c.UpdateSpaceEventsCache(p.Body.RoomID)
+	}
+
+	return &s, nil
+}
+
+func (c *App) CreatePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		p, err := ReadRequestJSON(r, w, &struct {
-			RoomID   string `json:"room_id"`
-			Content  any    `json:"content"`
-			IsReply  bool   `json:"is_reply"`
-			InThread string `json:"in_thread"`
-			Type     string `json:"type"`
-		}{})
+		p, err := ReadRequestJSON(r, w, &NewPostBody{})
 
 		if err != nil {
 			log.Println(err)
@@ -34,77 +92,17 @@ func (c *App) NewPost() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		log.Println("what is room id ????", p.RoomID, p.Content)
-
-		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
-
-		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
-		if err != nil {
-			log.Println(err)
-		}
-
-		resp, err := matrix.SendMessageEvent(p.RoomID, p.Type, p.Content)
-		if err != nil {
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":   err,
-					"success": "false",
-				},
-			})
-			return
-		}
-
-		slug := resp.EventID[len(resp.EventID)-11:]
-
-		item, err := c.MatrixDB.Queries.GetSpaceEvent(context.Background(), slug)
-
-		if err != nil {
-			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error": "event created but could not be fetched",
-				},
-			})
-			return
-		}
-
-		json, err := gabs.ParseJSON([]byte(item.JSON.String))
-		if err != nil {
-			log.Println("error parsing json: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusInternalServerError,
-				JSON: map[string]any{
-					"error": "event not found",
-				},
-			})
-			return
-		}
-
-		s := ProcessComplexEvent(&EventProcessor{
-			EventID:     item.EventID,
-			JSON:        json,
-			Slug:        item.Slug,
-			DisplayName: item.DisplayName.String,
-			RoomAlias:   item.RoomAlias.String,
-			AvatarURL:   item.AvatarUrl.String,
-			ReplyCount:  item.Replies,
-			Reactions:   item.Reactions,
+		event, err := c.NewPost(&NewPostParams{
+			Body:              p,
+			MatrixUserID:      user.MatrixUserID,
+			MatrixAccessToken: user.MatrixAccessToken,
 		})
-
-		if p.IsReply && p.InThread != "" {
-			//slug := p.InThread[len(p.InThread)-11:]
-			go c.UpdateEventRepliesCache(p.InThread, p.RoomID)
-		} else {
-			go c.UpdateSpaceEventsCache(p.RoomID)
-		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"success": "true",
-				"event":   s,
+				"event":   event,
 			},
 		})
 
