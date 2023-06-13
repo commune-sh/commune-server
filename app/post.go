@@ -228,14 +228,17 @@ func (c *App) UpdateIndexEventsCache() error {
 
 func (c *App) UpdateEventRepliesCache(event string, roomID string) error {
 	log.Println("updating cache for event slug", event)
-	replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), event)
+
+	slug := event[len(event)-11:]
+
+	replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), slug)
 
 	if err != nil {
 		log.Println("error getting event replies: ", err)
 		return err
 	}
 
-	var items []interface{}
+	var items []*Event
 
 	for _, item := range replies {
 
@@ -254,16 +257,20 @@ func (c *App) UpdateEventRepliesCache(event string, roomID string) error {
 			Reactions:   item.Reactions,
 		})
 
-		items = append(items, s)
+		s.InReplyTo = item.InReplyTo
+
+		items = append(items, &s)
 	}
 
-	serialized, err := json.Marshal(items)
+	sorted := SortEvents(items)
+
+	serialized, err := json.Marshal(sorted)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	err = c.Cache.Events.Set(event, serialized, 0).Err()
+	err = c.Cache.Events.Set(slug, serialized, 0).Err()
 	if err != nil {
 		log.Println(err)
 		return err
