@@ -178,6 +178,8 @@ func Start(s *StartRequest) {
 	// go c.Cron.AddFunc("*/15 * * * *", c.RefreshCache)
 	// go c.Cron.Start()
 
+	c.UpdateIndexEventsCache()
+
 	c.Activate()
 }
 

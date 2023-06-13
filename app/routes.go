@@ -140,6 +140,10 @@ func routes(c *App) chi.Router {
 		r.Get("/metadata", c.FetchLinkMetadata())
 	})
 
+	r.Route("/domain", func(r chi.Router) {
+		r.Get("/{domain}/api", c.DomainAPIEndpoint())
+	})
+
 	r.Route("/event", func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
 			r.Use(c.RequireAuthentication)

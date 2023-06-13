@@ -76,6 +76,8 @@ func (c *App) NewPost(p *NewPostParams) (*Event, error) {
 		go c.UpdateSpaceEventsCache(p.Body.RoomID)
 	}
 
+	go c.UpdateIndexEventsCache()
+
 	return &s, nil
 }
 
@@ -164,12 +166,12 @@ func (c *App) UpdateSpaceEventsCache(roomID string) error {
 		return err
 	}
 
-	go c.UpdateIndexEvents()
+	go c.UpdateIndexEventsCache()
 
 	return nil
 }
 
-func (c *App) UpdateIndexEvents() error {
+func (c *App) UpdateIndexEventsCache() error {
 
 	log.Println("updating cache for index")
 
@@ -268,7 +270,7 @@ func (c *App) UpdateEventRepliesCache(event string, roomID string) error {
 	}
 
 	go c.UpdateSpaceEventsCache(roomID)
-	go c.UpdateIndexEvents()
+	go c.UpdateIndexEventsCache()
 
 	return nil
 }

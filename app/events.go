@@ -41,6 +41,7 @@ func (c *App) GetIndexEvents(p *IndexEventsParams) (*[]Event, error) {
 		}
 
 		if cached != "" {
+			log.Println("returning index events from cache")
 			var events []Event
 			err = json.Unmarshal([]byte(cached), &events)
 			if err != nil {

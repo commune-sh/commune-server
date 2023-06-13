@@ -1,9 +1,73 @@
 package app
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
+
+func (c *App) DomainAPIEndpoint() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		domain := chi.URLParam(r, "domain")
+
+		if !strings.HasPrefix(domain, "https://") {
+			domain = "https://" + domain
+		}
+
+		domain = fmt.Sprintf("%s/.well-known/api", domain)
+
+		resp, err := http.Get(domain)
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"exists": false,
+				},
+			})
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		type Response struct {
+			URL string `json:"url"`
+		}
+		var response Response
+		err = json.Unmarshal(body, &response)
+		if err != nil {
+			fmt.Println("Error:", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"url": response.URL,
+			},
+		})
+	}
+}
 
 func (c *App) CreateSpace() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
