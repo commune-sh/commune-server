@@ -77,6 +77,7 @@ func (c *App) GetIndexEvents(p *IndexEventsParams) (*[]Event, error) {
 			AvatarURL:   item.AvatarUrl.String,
 			ReplyCount:  item.Replies,
 			Reactions:   item.Reactions,
+			Edited:      item.Edited,
 		})
 
 		items = append(items, s)
@@ -187,6 +188,7 @@ func (c *App) GetUserFeedEvents(p *FeedEventsParams) (*[]Event, error) {
 			AvatarURL:   item.AvatarUrl.String,
 			ReplyCount:  item.Replies,
 			Reactions:   item.Reactions,
+			Edited:      item.Edited,
 		})
 
 		items = append(items, s)
@@ -259,6 +261,7 @@ func (c *App) GetEvent(p *GetEventParams) (*Event, error) {
 		AvatarURL:  item.AvatarUrl.String,
 		ReplyCount: item.Replies,
 		Reactions:  item.Reactions,
+		Edited:     item.Edited,
 	})
 
 	// get event replies
@@ -392,6 +395,7 @@ func (c *App) GetEventReplies(p *GetEventRepliesParams) (*[]*Event, error) {
 			RoomAlias:   item.RoomAlias.String,
 			AvatarURL:   item.AvatarUrl.String,
 			Reactions:   item.Reactions,
+			Edited:      item.Edited,
 		})
 
 		s.InReplyTo = item.InReplyTo
@@ -607,6 +611,7 @@ func (c *App) GetSpaceEvents(p *SpaceEventsParams) (*[]Event, error) {
 			AvatarURL:   item.AvatarUrl.String,
 			ReplyCount:  item.Replies,
 			Reactions:   item.Reactions,
+			Edited:      item.Edited,
 		})
 
 		items = append(items, s)

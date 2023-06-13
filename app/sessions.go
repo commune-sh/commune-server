@@ -20,6 +20,7 @@ type User struct {
 	UserSpaceID       string `json:"user_space_id"`
 	Email             string `json:"email"`
 	Age               int64  `json:"age"`
+	Admin             bool   `json:"admin"`
 }
 
 func NewSession(sec string) *sessions.CookieStore {

@@ -270,6 +270,7 @@ type EventProcessor struct {
 	RoomAlias   string
 	ReplyCount  int64
 	Reactions   any
+	Edited      interface{}
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {
@@ -283,6 +284,23 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 		RoomID:         ep.JSON.Path("room_id").Data().(string),
 		OriginServerTs: ep.JSON.Path("origin_server_ts").Data().(any),
 		Unsigned:       ep.JSON.Path("unsigned").Data().(any),
+	}
+
+	if ep.Edited != nil {
+
+		if bytes, ok := ep.Edited.(string); ok {
+			var result map[string]interface{}
+			err := json.Unmarshal([]byte(bytes), &result)
+			if err != nil {
+				log.Println("Failed to unmarshal JSON:", err)
+			} else {
+				log.Println(result["body"])
+				ep.JSON.Set(result["body"], "content", "body")
+				ep.JSON.Set(result["title"], "content", "title")
+				e.Content = ep.JSON.Path("content").Data().(any)
+			}
+		}
+
 	}
 
 	e.Sender.Username = GetLocalPart(e.Sender.ID)

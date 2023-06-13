@@ -31,7 +31,8 @@ SELECT ej.event_id,
     aliases.room_alias,
     RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
-    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
+    ed.json::jsonb->'content'->>'m.new_content' as edited
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
@@ -39,6 +40,15 @@ LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
+LEFT JOIN (
+	SELECT ejs.json, evr.relates_to_id
+	FROM event_json ejs
+	JOIN event_relations evr ON evr.event_id = ejs.event_id
+	JOIN events evs ON evr.event_id = evs.event_id
+	AND evr.relation_type = 'm.replace'
+	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
+	ORDER BY evs.origin_server_ts DESC LIMIT 1
+) ed ON ed.relates_to_id = ej.event_id
 WHERE ej.room_id = $1
 AND events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
@@ -47,6 +57,7 @@ AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topi
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
+    ed.json,
     events.event_id, 
     rc.count,
     ej.json,
@@ -75,7 +86,8 @@ SELECT ej.event_id,
     aliases.room_alias,
     RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
-    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
+    ed.json::jsonb->'content'->>'m.new_content' as edited
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
@@ -83,10 +95,20 @@ LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
+LEFT JOIN (
+	SELECT ejs.json, evr.relates_to_id
+	FROM event_json ejs
+	JOIN event_relations evr ON evr.event_id = ejs.event_id
+	JOIN events evs ON evr.event_id = evs.event_id
+	AND evr.relation_type = 'm.replace'
+	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
+	ORDER BY evs.origin_server_ts DESC LIMIT 1
+) ed ON ed.relates_to_id = ej.event_id
 WHERE RIGHT(events.event_id, 11) = $1
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
+    ed.json,
     events.event_id, 
     ej.json,
     ud.display_name,
@@ -108,6 +130,7 @@ WITH RECURSIVE recursive_events AS (
     SELECT er.event_id, er.relates_to_id
     FROM event_relations er
     INNER JOIN recursive_events re ON re.event_id = er.relates_to_id
+    WHERE er.relation_type != 'm.replace'
 )
 SELECT ej.event_id, 
     ej.json, 
@@ -116,7 +139,8 @@ SELECT ej.event_id,
     ud.avatar_url,
     aliases.room_alias,
     RIGHT(events.event_id, 11) as slug,
-    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
+    ed.json::jsonb->'content'->>'m.new_content' as edited
 FROM event_json ej
 JOIN recursive_events rev ON rev.event_id = ej.event_id
 LEFT JOIN events on events.event_id = ej.event_id
@@ -124,11 +148,21 @@ LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
+LEFT JOIN (
+	SELECT ejs.json, evr.relates_to_id
+	FROM event_json ejs
+	JOIN event_relations evr ON evr.event_id = ejs.event_id
+	JOIN events evs ON evr.event_id = evs.event_id
+	AND evr.relation_type = 'm.replace'
+	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
+	ORDER BY evs.origin_server_ts DESC LIMIT 1
+) ed ON ed.relates_to_id = ej.event_id
 WHERE events.type = 'm.room.message'
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
     ej.json,
+    ed.json,
     rev.relates_to_id,
     events.event_id,
     ud.display_name,
@@ -148,7 +182,8 @@ SELECT ej.event_id,
     ud.avatar_url,
     RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
-    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
+    ed.json::jsonb->'content'->>'m.new_content' as edited
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
@@ -156,6 +191,15 @@ LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
+LEFT JOIN (
+	SELECT ejs.json, evr.relates_to_id
+	FROM event_json ejs
+	JOIN event_relations evr ON evr.event_id = ejs.event_id
+	JOIN events evs ON evr.event_id = evs.event_id
+	AND evr.relation_type = 'm.replace'
+	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
+	ORDER BY evs.origin_server_ts DESC LIMIT 1
+) ed ON ed.relates_to_id = ej.event_id
 WHERE events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND aliases.room_alias is not null
@@ -163,6 +207,7 @@ AND events.origin_server_ts < $1
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
+    ed.json,
     events.event_id, 
     rc.count,
     ej.json,
@@ -181,7 +226,8 @@ SELECT ej.event_id,
     ud.avatar_url,
     RIGHT(events.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
-    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
+    ed.json::jsonb->'content'->>'m.new_content' as edited
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
@@ -189,6 +235,15 @@ LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
+LEFT JOIN (
+	SELECT ejs.json, evr.relates_to_id
+	FROM event_json ejs
+	JOIN event_relations evr ON evr.event_id = ejs.event_id
+	JOIN events evs ON evr.event_id = evs.event_id
+	AND evr.relation_type = 'm.replace'
+	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
+	ORDER BY evs.origin_server_ts DESC LIMIT 1
+) ed ON ed.relates_to_id = ej.event_id
 JOIN membership_state ms 
     ON ms.room_id = ej.room_id 
     AND ms.user_id = $1
@@ -200,6 +255,7 @@ AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origi
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
+    ed.json,
     events.event_id, 
     rc.count,
     ej.json,

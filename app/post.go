@@ -21,6 +21,7 @@ type NewPostBody struct {
 	IsReply  bool   `json:"is_reply"`
 	InThread string `json:"in_thread"`
 	Type     string `json:"type"`
+	Editing  bool   `json:"editing"`
 }
 
 type NewPostParams struct {
@@ -99,6 +100,17 @@ func (c *App) CreatePost() http.HandlerFunc {
 			MatrixUserID:      user.MatrixUserID,
 			MatrixAccessToken: user.MatrixAccessToken,
 		})
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":   err,
+					"success": false,
+				},
+			})
+			return
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
