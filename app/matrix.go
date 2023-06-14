@@ -259,6 +259,7 @@ type Event struct {
 	UserReactions  []string `json:"user_reactions,omitempty"`
 	Children       []*Event `json:"children,omitempty"`
 	InReplyTo      string   `json:"in_reply_to,omitempty"`
+	EditedOn       any      `json:"edited_on,omitempty"`
 }
 
 type EventProcessor struct {
@@ -271,6 +272,7 @@ type EventProcessor struct {
 	ReplyCount  int64
 	Reactions   any
 	Edited      interface{}
+	EditedOn    interface{}
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {
@@ -294,13 +296,16 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 			if err != nil {
 				log.Println("Failed to unmarshal JSON:", err)
 			} else {
-				log.Println(result["body"])
 				ep.JSON.Set(result["body"], "content", "body")
 				ep.JSON.Set(result["title"], "content", "title")
 				e.Content = ep.JSON.Path("content").Data().(any)
 			}
 		}
+	}
 
+	if ep.EditedOn != nil {
+
+		e.EditedOn = ep.EditedOn
 	}
 
 	e.Sender.Username = GetLocalPart(e.Sender.ID)
