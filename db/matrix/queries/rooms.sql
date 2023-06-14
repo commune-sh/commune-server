@@ -50,8 +50,10 @@ WHERE ra.room_alias = $1
 GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, room_topics.topics, ms.membership;
 
 -- name: GetSpaceInfo :one
-SELECT ra.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header
+SELECT ra.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header, 
+CASE WHEN rooms.creator = $2 THEN true ELSE false END as is_owner
 FROM room_aliases ra
+JOIN rooms on ra.room_id = rooms.room_id
 JOIN spaces ON spaces.room_id = ra.room_id
 LEFT JOIN room_state rs ON rs.room_id = ra.room_id
 WHERE ra.room_alias = $1

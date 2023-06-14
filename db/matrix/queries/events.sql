@@ -124,7 +124,7 @@ LIMIT 1;
 WITH RECURSIVE recursive_events AS (
     SELECT event_id, relates_to_id
     FROM event_relations
-    WHERE RIGHT(event_relations.relates_to_id, 11) = $1
+    WHERE RIGHT(event_relations.relates_to_id, 11) = sqlc.narg('slug')
     AND event_relations.relation_type = 'm.nested_reply'
 
     UNION
@@ -143,13 +143,17 @@ SELECT ej.event_id,
     RIGHT(events.event_id, 11) as slug,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
     ed.json::jsonb->'content'->>'m.new_content' as edited,
-    COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on
+    COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on,
+    votes.upvotes, votes.downvotes,
+    CASE WHEN voted.aggregation_key = 'upvote' THEN TRUE ELSE FALSE END as upvoted,
+    CASE WHEN voted.aggregation_key = 'downvote' THEN TRUE ELSE FALSE END as downvoted
 FROM event_json ej
 JOIN recursive_events rev ON rev.event_id = ej.event_id
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
+LEFT JOIN event_votes votes ON votes.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
 LEFT JOIN (
 	SELECT DISTINCT ON(evr.relates_to_id) ejs.json, evr.relates_to_id
@@ -160,6 +164,12 @@ LEFT JOIN (
 	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
+LEFT JOIN (
+	SELECT er.relates_to_id, evts.sender, er.aggregation_key
+	FROM event_relations er
+	JOIN events evts ON evts.event_id = er.event_id
+	WHERE er.relation_type = 'm.annotation' AND er.aggregation_key = 'upvote' OR er.aggregation_key = 'downvote'
+) voted ON voted.relates_to_id = ej.event_id AND voted.sender = sqlc.narg('sender')::text
 WHERE events.type = 'm.room.message'
 AND redactions.redacts is null
 GROUP BY
@@ -171,6 +181,9 @@ GROUP BY
     ud.display_name,
     ud.avatar_url,
     aliases.room_alias,
+    votes.upvotes, votes.downvotes,
+    voted.sender, 
+    voted.aggregation_key,
     events.origin_server_ts
 ORDER BY events.origin_server_ts ASC;
 

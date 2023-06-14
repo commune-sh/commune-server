@@ -260,6 +260,10 @@ type Event struct {
 	Children       []*Event `json:"children,omitempty"`
 	InReplyTo      string   `json:"in_reply_to,omitempty"`
 	EditedOn       any      `json:"edited_on,omitempty"`
+	Upvotes        int64    `json:"upvotes,omitempty"`
+	Downvotes      int64    `json:"downvotes,omitempty"`
+	Upvoted        bool     `json:"upvoted,omitempty"`
+	Downvoted      bool     `json:"downvoted,omitempty"`
 }
 
 type EventProcessor struct {
@@ -329,27 +333,6 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 
 	return e
 
-}
-
-func ProcessEvent(d *gabs.Container) Event {
-
-	e := Event{
-		Type:    d.Path("type").Data().(string),
-		Content: d.Path("content").Data().(any),
-		Sender: sender{
-			ID: d.Path("sender").Data().(string),
-		},
-		RoomID:         d.Path("room_id").Data().(string),
-		OriginServerTs: d.Path("origin_server_ts").Data().(any),
-		Unsigned:       d.Path("unsigned").Data().(any),
-	}
-
-	sk, ok := d.Path("state_key").Data().(string)
-	if ok {
-		e.StateKey = sk
-	}
-
-	return e
 }
 
 type SpaceState struct {

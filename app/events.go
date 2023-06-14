@@ -323,6 +323,8 @@ func (c *App) Event() http.HandlerFunc {
 			return
 		}
 
+		user := c.LoggedInUser(r)
+
 		resp := map[string]any{
 			"event": item,
 		}
@@ -331,9 +333,15 @@ func (c *App) Event() http.HandlerFunc {
 		replies := query.Get("replies")
 
 		if replies == "true" {
-			replies, err := c.GetEventReplies(&GetEventRepliesParams{
+			gep := &GetEventRepliesParams{
 				Slug: event,
-			})
+			}
+
+			if user != nil {
+				gep.MatrixUserID = user.MatrixUserID
+			}
+
+			replies, err := c.GetEventReplies(gep)
 			if err == nil && replies != nil {
 				resp["replies"] = replies
 			}
@@ -348,7 +356,8 @@ func (c *App) Event() http.HandlerFunc {
 }
 
 type GetEventRepliesParams struct {
-	Slug string
+	Slug         string
+	MatrixUserID string
 }
 
 func (c *App) GetEventReplies(p *GetEventRepliesParams) (*[]*Event, error) {
@@ -374,7 +383,15 @@ func (c *App) GetEventReplies(p *GetEventRepliesParams) (*[]*Event, error) {
 		}
 	}
 
-	replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), p.Slug)
+	gsp := matrix_db.GetSpaceEventRepliesParams{
+		Slug: pgtype.Text{String: p.Slug, Valid: true},
+	}
+
+	if p.MatrixUserID != "" {
+		gsp.Sender = pgtype.Text{String: p.MatrixUserID, Valid: true}
+	}
+
+	replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), gsp)
 
 	if err != nil {
 		log.Println("error getting event replies: ", err)
@@ -401,6 +418,12 @@ func (c *App) GetEventReplies(p *GetEventRepliesParams) (*[]*Event, error) {
 			Edited:      item.Edited,
 			EditedOn:    item.EditedOn,
 		})
+
+		s.Upvotes = item.Upvotes.Int64
+		s.Downvotes = item.Downvotes.Int64
+
+		s.Upvoted = item.Upvoted
+		s.Downvoted = item.Downvoted
 
 		s.InReplyTo = item.InReplyTo
 

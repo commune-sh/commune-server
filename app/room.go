@@ -76,7 +76,13 @@ func (c *App) JoinSpace() http.HandlerFunc {
 			log.Println(re)
 		}
 
-		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), alias)
+		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), matrix_db.GetSpaceInfoParams{
+			RoomAlias: alias,
+			Creator: pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			},
+		})
 
 		if err != nil {
 			log.Println("error getting space info: ", err)

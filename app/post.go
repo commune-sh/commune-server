@@ -243,7 +243,9 @@ func (c *App) UpdateEventRepliesCache(event string, roomID string) error {
 
 	slug := event[len(event)-11:]
 
-	replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), slug)
+	replies, err := c.MatrixDB.Queries.GetSpaceEventReplies(context.Background(), matrix_db.GetSpaceEventRepliesParams{
+		Slug: pgtype.Text{String: slug, Valid: true},
+	})
 
 	if err != nil {
 		log.Println("error getting event replies: ", err)
