@@ -31,7 +31,7 @@ func SortEvents(flatEvents []*Event) []*Event {
 	}
 
 	sort.Slice(nestedEvents, func(i, j int) bool {
-		return nestedEvents[i].Upvotes > nestedEvents[j].Upvotes
+		return (nestedEvents[i].Upvotes - nestedEvents[i].Downvotes) > (nestedEvents[j].Upvotes - nestedEvents[j].Downvotes)
 	})
 
 	return nestedEvents
