@@ -134,7 +134,7 @@ WITH RECURSIVE recursive_events AS (
     INNER JOIN recursive_events re ON re.event_id = er.relates_to_id
     WHERE er.relation_type != 'm.replace'
 )
-SELECT ej.event_id, 
+SELECT DISTINCT ON (ej.event_id) ej.event_id, 
     ej.json, 
     rev.relates_to_id as in_reply_to,
     ud.display_name,
@@ -144,9 +144,10 @@ SELECT ej.event_id,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
     ed.json::jsonb->'content'->>'m.new_content' as edited,
     COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on,
-    votes.upvotes, votes.downvotes,
-    CASE WHEN voted.aggregation_key = 'upvote' THEN TRUE ELSE FALSE END as upvoted,
-    CASE WHEN voted.aggregation_key = 'downvote' THEN TRUE ELSE FALSE END as downvoted
+    votes.upvotes, 
+    votes.downvotes,
+    CASE WHEN upvoted.sender IS NOT NULL THEN TRUE ELSE FALSE END as upvoted,
+    CASE WHEN downvoted.sender IS NOT NULL THEN TRUE ELSE FALSE END as downvoted
 FROM event_json ej
 JOIN recursive_events rev ON rev.event_id = ej.event_id
 LEFT JOIN events on events.event_id = ej.event_id
@@ -168,8 +169,16 @@ LEFT JOIN (
 	SELECT er.relates_to_id, evts.sender, er.aggregation_key
 	FROM event_relations er
 	JOIN events evts ON evts.event_id = er.event_id
-	WHERE er.relation_type = 'm.annotation' AND er.aggregation_key = 'upvote' OR er.aggregation_key = 'downvote'
-) voted ON voted.relates_to_id = ej.event_id AND voted.sender = sqlc.narg('sender')::text
+	WHERE er.relation_type = 'm.annotation' AND er.aggregation_key = 'upvote' 
+	AND evts.sender = sqlc.narg('sender')::text
+) upvoted ON upvoted.relates_to_id = ej.event_id
+LEFT JOIN (
+	SELECT er.relates_to_id, evts.sender, er.aggregation_key
+	FROM event_relations er
+	JOIN events evts ON evts.event_id = er.event_id
+	WHERE er.relation_type = 'm.annotation' AND er.aggregation_key = 'downvote' 
+	AND evts.sender = sqlc.narg('sender')::text
+) downvoted ON downvoted.relates_to_id = ej.event_id
 WHERE events.type = 'm.room.message'
 AND redactions.redacts is null
 GROUP BY
@@ -181,11 +190,11 @@ GROUP BY
     ud.display_name,
     ud.avatar_url,
     aliases.room_alias,
-    votes.upvotes, votes.downvotes,
-    voted.sender, 
-    voted.aggregation_key,
-    events.origin_server_ts
-ORDER BY events.origin_server_ts ASC;
+    votes.upvotes, 
+    votes.downvotes,
+    upvoted.sender, 
+    downvoted.sender,
+    events.origin_server_ts;
 
 
 

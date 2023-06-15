@@ -150,6 +150,8 @@ func routes(c *App) chi.Router {
 			r.Post("/", c.CreatePost())
 			r.Post("/redact", c.RedactPost())
 			r.Post("/redact/reaction", c.RedactReaction())
+			r.Put("/upvote", c.Upvote())
+			r.Put("/downvote", c.Downvote())
 		})
 		r.Get("/{event}", c.Event())
 		r.Get("/{event}/replies", c.EventReplies())

@@ -251,7 +251,7 @@ type Event struct {
 	StateKey       any      `json:"state_key,omitempty"`
 	RoomAlias      any      `json:"room_alias,omitempty"`
 	RoomID         any      `json:"room_id"`
-	OriginServerTs any      `json:"origin_server_ts"`
+	OriginServerTs float64  `json:"origin_server_ts"`
 	Unsigned       any      `json:"unsigned"`
 	Slug           string   `json:"slug,omitempty"`
 	ReplyCount     int64    `json:"reply_count"`
@@ -288,7 +288,7 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 			ID: ep.JSON.Path("sender").Data().(string),
 		},
 		RoomID:         ep.JSON.Path("room_id").Data().(string),
-		OriginServerTs: ep.JSON.Path("origin_server_ts").Data().(any),
+		OriginServerTs: ep.JSON.Path("origin_server_ts").Data().(float64),
 		Unsigned:       ep.JSON.Path("unsigned").Data().(any),
 	}
 

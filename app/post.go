@@ -100,6 +100,7 @@ func (c *App) CreatePost() http.HandlerFunc {
 			MatrixUserID:      user.MatrixUserID,
 			MatrixAccessToken: user.MatrixAccessToken,
 		})
+
 		if err != nil {
 			log.Println(err)
 			RespondWithJSON(w, &JSONResponse{

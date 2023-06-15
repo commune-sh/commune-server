@@ -11,6 +11,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type RedactEventParams struct {
+	RoomID            string `json:"room_id"`
+	EventID           string `json:"event_id"`
+	Reason            string `json:"reason"`
+	MatrixUserID      string `json:"matrix_user_id"`
+	MatrixAccessToken string `json:"matrix_access_token"`
+}
+
+func (c *App) RedactEvent(p *RedactEventParams) (*gomatrix.RespSendEvent, error) {
+
+	serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+	matrix, err := gomatrix.NewClient(serverName, p.MatrixUserID, p.MatrixAccessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := matrix.RedactEvent(p.RoomID, p.EventID, &gomatrix.ReqRedact{Reason: p.Reason})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 func (c *App) RedactPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -39,22 +64,14 @@ func (c *App) RedactPost() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+		resp, err := c.RedactEvent(&RedactEventParams{
+			RoomID:            p.RoomID,
+			EventID:           p.EventID,
+			Reason:            p.Reason,
+			MatrixUserID:      user.MatrixUserID,
+			MatrixAccessToken: user.MatrixAccessToken,
+		})
 
-		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
-		if err != nil {
-			log.Println(err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":    err,
-					"redacted": "false",
-				},
-			})
-			return
-		}
-
-		resp, err := matrix.RedactEvent(p.RoomID, p.EventID, &gomatrix.ReqRedact{Reason: p.Reason})
 		if err != nil {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
@@ -105,21 +122,6 @@ func (c *App) RedactReaction() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
-
-		matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
-		if err != nil {
-			log.Println(err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":    err,
-					"redacted": "false",
-				},
-			})
-			return
-		}
-
 		eventID, err := c.MatrixDB.Queries.GetReactionEventID(context.Background(), matrix_db.GetReactionEventIDParams{
 			RoomID:      p.RoomID,
 			RelatesToID: p.EventID,
@@ -143,7 +145,13 @@ func (c *App) RedactReaction() http.HandlerFunc {
 			return
 		}
 
-		resp, err := matrix.RedactEvent(p.RoomID, eventID, &gomatrix.ReqRedact{Reason: ""})
+		resp, err := c.RedactEvent(&RedactEventParams{
+			RoomID:            p.RoomID,
+			EventID:           eventID,
+			MatrixUserID:      user.MatrixUserID,
+			MatrixAccessToken: user.MatrixAccessToken,
+		})
+
 		if err != nil {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,

@@ -1,5 +1,7 @@
 package app
 
+import "sort"
+
 func SortEvents(flatEvents []*Event) []*Event {
 	eventMap := make(map[string]*Event)
 	nestedEvents := make([]*Event, 0)
@@ -27,6 +29,10 @@ func SortEvents(flatEvents []*Event) []*Event {
 			event.Children = SortEvents(event.Children)
 		}
 	}
+
+	sort.Slice(nestedEvents, func(i, j int) bool {
+		return nestedEvents[i].Upvotes > nestedEvents[j].Upvotes
+	})
 
 	return nestedEvents
 }
