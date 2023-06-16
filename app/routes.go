@@ -144,6 +144,10 @@ func routes(c *App) chi.Router {
 		r.Get("/{domain}/api", c.DomainAPIEndpoint())
 	})
 
+	r.Route("/search", func(r chi.Router) {
+		r.Get("/{room_id}/events", c.SearchEvents())
+	})
+
 	r.Route("/event", func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
 			r.Use(c.RequireAuthentication)

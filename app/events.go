@@ -556,6 +556,43 @@ func (c *App) SpaceState() http.HandlerFunc {
 	}
 }
 
+func (c *App) GetPinnedEvents(roomID string) ([]Event, error) {
+
+	events, err := c.MatrixDB.Queries.GetPinnedEvents(context.Background(), roomID)
+
+	if err != nil {
+		log.Println("error getting event: ", err)
+		return nil, err
+	}
+
+	pinned := []string{}
+
+	if bytes, ok := events.(string); ok {
+		err := json.Unmarshal([]byte(bytes), &pinned)
+		if err != nil {
+			log.Println("Failed to unmarshal JSON:", err)
+			return nil, err
+		}
+	}
+
+	items := []Event{}
+
+	if len(pinned) > 0 {
+		for _, event := range pinned {
+			slug := event[len(event)-11:]
+			item, err := c.GetEvent(&GetEventParams{
+				Slug: slug,
+			})
+			if err == nil && item != nil {
+				item.Pinned = true
+				items = append(items, *item)
+			}
+		}
+	}
+
+	return items, nil
+}
+
 type SpaceEventsParams struct {
 	RoomID string
 	Last   string
@@ -612,6 +649,18 @@ func (c *App) GetSpaceEvents(p *SpaceEventsParams) (*[]Event, error) {
 		}
 	}
 
+	items := []Event{}
+
+	if p.Last == "" {
+		pinned, err := c.GetPinnedEvents(p.RoomID)
+		if err != nil {
+			log.Println("error getting pinned events: ", err)
+		}
+		for _, item := range pinned {
+			items = append(items, item)
+		}
+	}
+
 	// get events for this space
 	events, err := c.MatrixDB.Queries.GetSpaceEvents(context.Background(), sreq)
 
@@ -619,8 +668,6 @@ func (c *App) GetSpaceEvents(p *SpaceEventsParams) (*[]Event, error) {
 		log.Println("error getting event: ", err)
 		return nil, err
 	}
-
-	items := []Event{}
 
 	for _, item := range events {
 
@@ -642,7 +689,18 @@ func (c *App) GetSpaceEvents(p *SpaceEventsParams) (*[]Event, error) {
 			EditedOn:    item.EditedOn,
 		})
 
-		items = append(items, s)
+		exists := false
+
+		for _, event := range items {
+			if s.EventID == event.EventID {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			items = append(items, s)
+		}
 	}
 
 	if c.Config.Cache.SpaceEvents && p.Last == "" {

@@ -264,6 +264,7 @@ type Event struct {
 	Downvotes      int64    `json:"downvotes,omitempty"`
 	Upvoted        bool     `json:"upvoted,omitempty"`
 	Downvoted      bool     `json:"downvoted,omitempty"`
+	Pinned         bool     `json:"pinned,omitempty"`
 }
 
 type EventProcessor struct {
