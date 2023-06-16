@@ -6,8 +6,11 @@ import (
 	"log"
 	"net/http"
 
+	matrix_db "shpong/db/matrix/gen"
+
 	"github.com/Jeffail/gabs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (c *App) SearchEvents() http.HandlerFunc {
@@ -30,19 +33,19 @@ func (c *App) SearchEvents() http.HandlerFunc {
 			return
 		}
 
-		q = fmt.Sprintf("%s:*", q)
-
-		events, err := c.MatrixDB.Queries.SearchEvents(context.Background(), q)
+		events, err := c.MatrixDB.Queries.SearchEvents(context.Background(), matrix_db.SearchEventsParams{
+			Query: pgtype.Text{
+				String: q,
+				Valid:  true,
+			},
+			Wildcard: pgtype.Text{
+				String: fmt.Sprintf("%s:*", q),
+				Valid:  true,
+			},
+		})
 
 		if err != nil {
 			log.Println(err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error": "no query provided",
-				},
-			})
-			return
 		}
 
 		items := []Event{}

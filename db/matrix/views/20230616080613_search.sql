@@ -1,6 +1,6 @@
 DROP INDEX IF EXISTS search_idx;
 DROP MATERIALIZED VIEW IF EXISTS search;
-DROP TRIGGER search_mv_trigger on event_relations;
+DROP TRIGGER search_mv_trigger on events;
 DROP FUNCTION search_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS search AS 
