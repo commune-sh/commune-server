@@ -26,13 +26,14 @@ LEFT JOIN (
 	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
-WHERE search.title_vec @@ websearch_to_tsquery('english', sqlc.narg('query'))
-OR search.body_vec @@ websearch_to_tsquery('english', sqlc.narg('query'))
-OR search.title_vec @@ websearch_to_tsquery('english', sqlc.narg('wildcard'))
-OR search.body_vec @@ websearch_to_tsquery('english', sqlc.narg('wildcard'))
+WHERE ej.room_id = $1
 AND events.type = 'm.room.message'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND redactions.redacts is null
+AND (search.title_vec @@ websearch_to_tsquery('english', sqlc.narg('query'))
+OR search.body_vec @@ websearch_to_tsquery('english', sqlc.narg('query'))
+OR search.title_vec @@ websearch_to_tsquery('english', sqlc.narg('wildcard'))
+OR search.body_vec @@ websearch_to_tsquery('english', sqlc.narg('wildcard')))
 GROUP BY
     ej.event_id, 
     ed.json,

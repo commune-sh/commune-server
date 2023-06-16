@@ -85,10 +85,6 @@ type Storage struct {
 	Endpoint        string `toml:"endpoint"`
 }
 
-type Search struct {
-	Store string `toml:"store"`
-}
-
 type Config struct {
 	Name       string   `toml:"name"`
 	Mode       string   `toml:"mode"`
@@ -104,7 +100,6 @@ type Config struct {
 	Tenor      Tenor    `toml:"tenor"`
 	Features   Features `toml:"features"`
 	Storage    Storage  `toml:"storage"`
-	Search     Search   `toml:"search"`
 }
 
 var conf Config
