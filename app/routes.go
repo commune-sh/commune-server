@@ -132,7 +132,7 @@ func routes(c *App) chi.Router {
 
 	r.Route("/sync", func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
-			r.Get("/", c.SyncEvents())
+			//r.Get("/", c.SyncEvents())
 		})
 	})
 

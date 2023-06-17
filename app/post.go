@@ -16,12 +16,13 @@ import (
 )
 
 type NewPostBody struct {
-	RoomID   string `json:"room_id"`
-	Content  any    `json:"content"`
-	IsReply  bool   `json:"is_reply"`
-	InThread string `json:"in_thread"`
-	Type     string `json:"type"`
-	Editing  bool   `json:"editing"`
+	RoomID     string `json:"room_id"`
+	Content    any    `json:"content"`
+	IsReply    bool   `json:"is_reply"`
+	InThread   string `json:"in_thread"`
+	ReplyingTo string `json:"replying_to"`
+	Type       string `json:"type"`
+	Editing    bool   `json:"editing"`
 }
 
 type NewPostParams struct {
@@ -91,6 +92,10 @@ func (c *App) CreatePost() http.HandlerFunc {
 			log.Println(err)
 			RespondWithBadRequestError(w)
 			return
+		}
+
+		if p.ReplyingTo != "" {
+			log.Println("replying to event: ", p.ReplyingTo)
 		}
 
 		user := c.LoggedInUser(r)

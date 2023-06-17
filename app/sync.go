@@ -59,6 +59,9 @@ func (c *App) SyncEvents() http.HandlerFunc {
 		// Set connection header to keep the connection open
 		w.Header().Set("Connection", "keep-alive")
 
+		disconnect := make(chan bool)
+		defer close(disconnect)
+
 		// Continuously listen for events and write them to the response
 
 		for {
@@ -72,6 +75,9 @@ func (c *App) SyncEvents() http.HandlerFunc {
 			flusher, ok := w.(http.Flusher)
 			if ok {
 				flusher.Flush()
+			}
+			if disconnect != nil {
+				eventCh = nil
 			}
 		}
 

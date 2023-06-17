@@ -5,13 +5,15 @@ DROP FUNCTION search_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS search AS 
     SELECT ej.event_id, 
-    to_tsvector('english', ej.json::jsonb->'content'->>'title') AS title_vec,
-    to_tsvector('english', ej.json::jsonb->'content'->>'body') AS body_vec
+    to_tsvector('simple', ej.json::jsonb->'content'->>'title') AS title_vec,
+    to_tsvector('simple', ej.json::jsonb->'content'->>'body') AS body_vec
     FROM event_json ej
     JOIN events ON events.event_id = ej.event_id
     WHERE events.type = 'm.room.message';
 
-CREATE UNIQUE INDEX IF NOT EXISTS search_idx ON search (event_id);
+CREATE INDEX search_idx
+ON search
+USING GIN (title_vec, body_vec);
 
 CREATE OR REPLACE FUNCTION search_mv_refresh()
 RETURNS trigger LANGUAGE plpgsql AS $$

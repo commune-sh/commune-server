@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -54,42 +55,62 @@ func (c *App) Scrape(link string) LinkMetaData {
 	lmd := LinkMetaData{}
 
 	co.OnHTML("head", func(e *colly.HTMLElement) {
+		// Extracting metadata using goquery
+		doc := e.DOM
 
-		// Extract meta tags from the document
-		metaTags := e.DOM.ParentsUntil("~").Find("meta")
+		log.Println("doc: ", doc.Html)
 
-		metaTags.Each(func(_ int, s *goquery.Selection) {
-			// Search for og:type meta tags
-			name, _ := s.Attr("name")
-			prop, _ := s.Attr("property")
+		// Get title
+		title := doc.Find("title").Text()
+		fmt.Println("Title:", title)
+		lmd.Title = title
 
-			if strings.EqualFold(name, "description") {
-				description, _ := s.Attr("content")
-				lmd.Description = description
-			}
+		// Get description
+		description, err := doc.Find("meta[name='description']").Attr("content")
+		if err {
+			log.Println(err)
+		}
+		fmt.Println("Description:", description)
+		lmd.Description = description
 
-			if strings.EqualFold(name, "author") {
-				author, _ := s.Attr("content")
-				lmd.Author = author
-			}
+		// Get author
+		author, _ := doc.Find("meta[name='author']").Attr("content")
+		fmt.Println("Author:", author)
+		lmd.Author = author
 
-			if strings.EqualFold(prop, "og:image") {
-				image, _ := s.Attr("content")
-				lmd.Image = image
-			}
-
-			if lmd.Image == "" && strings.EqualFold(prop, "twitter:image:src") {
-				image, _ := s.Attr("content")
-				lmd.Image = image
-			}
-
+		// Get image metadata
+		images := make([]string, 0)
+		doc.Find("meta[property='og:image'], meta[name='twitter:image']").Each(func(_ int, s *goquery.Selection) {
+			image, _ := s.Attr("content")
+			images = append(images, image)
 		})
+		fmt.Println("Images:", strings.Join(images, ", "))
+		if images != nil && len(images) > 0 {
 
+			lmd.Image = images[0]
+		}
+
+		// Get OpenGraph or Twitter metadata
+		ogMetadata := make(map[string]string)
+		doc.Find("meta[property^='og:'], meta[name^='twitter:']").Each(func(_ int, s *goquery.Selection) {
+			property, _ := s.Attr("property")
+			name, _ := s.Attr("name")
+			content, _ := s.Attr("content")
+			if property != "" {
+				ogMetadata[property] = content
+			} else if name != "" {
+				ogMetadata[name] = content
+			}
+		})
+		fmt.Println("OpenGraph/Twitter Metadata:")
+		for key, value := range ogMetadata {
+			fmt.Printf("%s: %s\n", key, value)
+		}
 	})
 
-	co.OnHTML("head title", func(e *colly.HTMLElement) {
-		lmd.Title = e.Text
-
+	// Set error handler
+	co.OnError(func(r *colly.Response, err error) {
+		log.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
 	})
 
 	co.Visit(link)
