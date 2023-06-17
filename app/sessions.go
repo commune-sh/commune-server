@@ -21,6 +21,7 @@ type User struct {
 	Email             string `json:"email"`
 	Age               int64  `json:"age"`
 	Admin             bool   `json:"admin"`
+	Verified          bool   `json:"verified"`
 }
 
 func NewSession(sec string) *sessions.CookieStore {

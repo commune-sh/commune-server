@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 
 	matrix_db "shpong/db/matrix/gen"
 
@@ -75,6 +76,8 @@ func (c *App) JoinSpace() http.HandlerFunc {
 		} else {
 			log.Println(re)
 		}
+
+		alias = strings.ToLower(alias)
 
 		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), matrix_db.GetSpaceInfoParams{
 			RoomAlias: alias,

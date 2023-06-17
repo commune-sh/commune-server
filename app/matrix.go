@@ -10,6 +10,7 @@ import (
 	"shpong/config"
 	matrix_db "shpong/db/matrix/gen"
 	"shpong/gomatrix"
+	"strings"
 
 	"github.com/Jeffail/gabs/v2"
 )
@@ -233,7 +234,7 @@ func (c *App) ConstructMatrixUserRoomID(username string) string {
 }
 
 func (c *App) ConstructMatrixRoomID(username string) string {
-	return fmt.Sprintf("#%s:%s", username, c.Config.Matrix.PublicServer)
+	return fmt.Sprintf("#%s:%s", strings.ToLower(username), c.Config.Matrix.PublicServer)
 }
 
 type sender struct {

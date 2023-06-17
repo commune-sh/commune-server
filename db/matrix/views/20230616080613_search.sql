@@ -1,4 +1,5 @@
 DROP INDEX IF EXISTS search_idx;
+DROP INDEX IF EXISTS search_vec_idx;
 DROP MATERIALIZED VIEW IF EXISTS search;
 DROP TRIGGER search_mv_trigger on events;
 DROP FUNCTION search_mv_refresh();
@@ -11,7 +12,8 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS search AS
     JOIN events ON events.event_id = ej.event_id
     WHERE events.type = 'm.room.message';
 
-CREATE INDEX search_idx
+CREATE UNIQUE INDEX IF NOT EXISTS search_idx ON search (event_id);
+CREATE INDEX search_vec_idx
 ON search
 USING GIN (title_vec, body_vec);
 

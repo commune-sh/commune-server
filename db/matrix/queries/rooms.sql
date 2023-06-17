@@ -46,7 +46,7 @@ LEFT JOIN room_topics ON room_topics.room_id = ra.room_id
 LEFT JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = $2
-WHERE ra.room_alias = $1
+WHERE LOWER(ra.room_alias) = $1
 GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, room_topics.topics, ms.membership;
 
 -- name: GetSpaceInfo :one
@@ -56,7 +56,7 @@ FROM room_aliases ra
 JOIN rooms on ra.room_id = rooms.room_id
 JOIN spaces ON spaces.room_id = ra.room_id
 LEFT JOIN room_state rs ON rs.room_id = ra.room_id
-WHERE ra.room_alias = $1
+WHERE LOWER(ra.room_alias) = $1
 AND rs.is_profile is false;
 
 

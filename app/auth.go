@@ -142,6 +142,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			MatrixDeviceID:    resp.DeviceID,
 			UserSpaceID:       userspace,
 			Age:               creds.CreatedAt.Time.Unix(),
+			Verified:          creds.Verified,
 		}
 
 		err = c.StoreUserSession(user)

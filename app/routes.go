@@ -172,6 +172,7 @@ func routes(c *App) chi.Router {
 		r.Use(c.RequireAuthentication)
 		r.Post("/{space}/join", c.JoinSpace())
 		r.Post("/create", c.CreateSpace())
+		r.Post("/room/create", c.CreateSpaceRoom())
 	})
 
 	r.Route("/{space}", func(r chi.Router) {

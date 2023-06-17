@@ -7,6 +7,7 @@ import (
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Jeffail/gabs/v2"
@@ -524,6 +525,8 @@ func (c *App) SpaceState() http.HandlerFunc {
 
 		space := chi.URLParam(r, "space")
 
+		space = strings.ToLower(space)
+
 		ssp := SpaceStateParams{
 			Slug: space,
 		}
@@ -731,6 +734,8 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 
 		alias := c.ConstructMatrixRoomID(space)
 
+		alias = strings.ToLower(alias)
+
 		ssp := matrix_db.GetSpaceStateParams{
 			RoomAlias: alias,
 		}
@@ -792,7 +797,9 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 		user := c.LoggedInUser(r)
 
 		space := chi.URLParam(r, "space")
+		space = strings.ToLower(space)
 		room := chi.URLParam(r, "room")
+		room = strings.ToLower(room)
 
 		log.Println("space is", space)
 		log.Println("room is", room)
