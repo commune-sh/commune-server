@@ -424,7 +424,7 @@ func (c *App) NewSpaceRoom(p *NewSpaceRoomParams) (string, error) {
 }
 
 type NewStateEventParams struct {
-	Content           map[string]interface{}
+	Content           any
 	RoomID            string
 	EventType         string
 	StateKey          string

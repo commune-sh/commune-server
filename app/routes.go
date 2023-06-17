@@ -152,6 +152,7 @@ func routes(c *App) chi.Router {
 		r.Route("/", func(r chi.Router) {
 			r.Use(c.RequireAuthentication)
 			r.Post("/", c.CreatePost())
+			r.Post("/state", c.CreateStateEvent())
 			r.Post("/redact", c.RedactPost())
 			r.Post("/redact/reaction", c.RedactReaction())
 			r.Put("/upvote", c.Upvote())

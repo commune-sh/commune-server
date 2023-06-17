@@ -29,6 +29,17 @@ func (c *App) CreateAccount() http.HandlerFunc {
 		}
 		p.Username = strings.ToLower(p.Username)
 
+		if !c.Config.Features.RegistrationEnabled {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"created": false,
+					"error":   "registration is disabled",
+				},
+			})
+			return
+		}
+
 		if c.Config.Auth.BlockPopularEmailProviders {
 
 			// let's ban the most common email providers to prevent spam
