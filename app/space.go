@@ -317,12 +317,11 @@ func (c *App) CreateSpaceRoom() http.HandlerFunc {
 			return
 		}
 
-		log.Println("event id", sse)
-
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"success": true,
+				"room_id": room,
 			},
 		})
 
@@ -387,6 +386,11 @@ func (c *App) NewSpaceRoom(p *NewSpaceRoomParams) (string, error) {
 			Type: "m.room.name",
 			Content: map[string]interface{}{
 				"name": p.Name,
+			},
+		}, gomatrix.Event{
+			Type: "m.space.child.type",
+			Content: map[string]interface{}{
+				"type": "board",
 			},
 		}, gomatrix.Event{
 			Type:     "m.space.parent",
