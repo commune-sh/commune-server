@@ -34,7 +34,10 @@ func (c *App) SearchEvents() http.HandlerFunc {
 		}
 
 		events, err := c.MatrixDB.Queries.SearchEvents(context.Background(), matrix_db.SearchEventsParams{
-			RoomID: room_id,
+			RoomID: pgtype.Text{
+				String: room_id,
+				Valid:  true,
+			},
 			Query: pgtype.Text{
 				String: q,
 				Valid:  true,

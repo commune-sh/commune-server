@@ -654,7 +654,7 @@ func (c *App) GetSpaceEvents(p *SpaceEventsParams) (*[]Event, error) {
 
 	items := []Event{}
 
-	if p.Last == "" {
+	if p.Last == "" && len(p.Topic) == 0 {
 		pinned, err := c.GetPinnedEvents(p.RoomID)
 		if err != nil {
 			log.Println("error getting pinned events: ", err)
