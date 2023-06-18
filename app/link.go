@@ -1,14 +1,18 @@
 package app
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/extensions"
+	"google.golang.org/api/option"
+	"google.golang.org/api/youtube/v3"
 )
 
 func (c *App) FetchLinkMetadata() http.HandlerFunc {
@@ -27,8 +31,20 @@ func (c *App) FetchLinkMetadata() http.HandlerFunc {
 			return
 		}
 
+		if strings.Contains(href, "yout") {
+			lmd, err := c.GetYoutubeMetadata(href)
+			if err == nil && lmd != nil {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"metadata": lmd,
+					},
+				})
+			}
+			return
+		}
+
 		metadata := c.Scrape(href)
-		log.Println(metadata)
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -40,11 +56,87 @@ func (c *App) FetchLinkMetadata() http.HandlerFunc {
 	}
 }
 
+func (c *App) GetYoutubeMetadata(href string) (*LinkMetaData, error) {
+
+	up, err := url.Parse(href)
+	if err != nil || up == nil || up.Host == "" {
+		log.Println(err)
+	}
+
+	isYoutube := up.Host == "www.youtube.com" || up.Host == "youtube.com"
+	isShortYoutube := up.Host == "youtu.be"
+
+	if isYoutube || isShortYoutube && len(c.Config.ThirdParty.YoutubeKey) > 0 {
+		log.Println("is youtube!")
+
+		m, err := url.ParseQuery(up.RawQuery)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		lmd := &LinkMetaData{}
+
+		if isYoutube {
+			if len(m) > 0 {
+				lmd.YoutubeID = m["v"][0]
+			}
+		} else if isShortYoutube {
+
+			if isShortYoutube {
+				lmd.YoutubeID = up.Path[1:]
+			}
+		}
+
+		ctx := context.Background()
+		ctx, _ = context.WithTimeout(ctx, 7*time.Second)
+		service, err := youtube.NewService(ctx, option.WithAPIKey(c.Config.ThirdParty.YoutubeKey))
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		videos := service.Videos.List([]string{"id", "snippet"})
+
+		videos = videos.Id(lmd.YoutubeID)
+
+		response, err := videos.Do()
+
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		if response != nil {
+
+			items := response.Items
+
+			log.Println(items)
+
+			if items != nil && len(items) >= 1 {
+				lmd.Title = items[0].Snippet.Title
+				lmd.Description = items[0].Snippet.Description
+				lmd.Image = items[0].Snippet.Thumbnails.Default.Url
+				lmd.Author = items[0].Snippet.ChannelTitle
+			}
+
+			if len(lmd.Description) > 500 {
+				lmd.Description = lmd.Description[:500]
+			}
+
+			return lmd, nil
+
+		}
+	}
+	return nil, err
+}
+
 type LinkMetaData struct {
 	Title       string `json:"title",omitempty`
 	Description string `json:"description",omitempty`
 	Image       string `json:"image",omitempty`
 	Author      string `json:"author",omitempty`
+	YoutubeID   string `json:"youtube_id",omitempty`
 }
 
 func (c *App) Scrape(link string) LinkMetaData {
@@ -58,11 +150,8 @@ func (c *App) Scrape(link string) LinkMetaData {
 		// Extracting metadata using goquery
 		doc := e.DOM
 
-		log.Println("doc: ", doc.Html)
-
 		// Get title
 		title := doc.Find("title").Text()
-		fmt.Println("Title:", title)
 		lmd.Title = title
 
 		// Get description
@@ -70,12 +159,10 @@ func (c *App) Scrape(link string) LinkMetaData {
 		if err {
 			log.Println(err)
 		}
-		fmt.Println("Description:", description)
 		lmd.Description = description
 
 		// Get author
 		author, _ := doc.Find("meta[name='author']").Attr("content")
-		fmt.Println("Author:", author)
 		lmd.Author = author
 
 		// Get image metadata
@@ -84,7 +171,6 @@ func (c *App) Scrape(link string) LinkMetaData {
 			image, _ := s.Attr("content")
 			images = append(images, image)
 		})
-		fmt.Println("Images:", strings.Join(images, ", "))
 		if images != nil && len(images) > 0 {
 
 			lmd.Image = images[0]
@@ -102,10 +188,6 @@ func (c *App) Scrape(link string) LinkMetaData {
 				ogMetadata[name] = content
 			}
 		})
-		fmt.Println("OpenGraph/Twitter Metadata:")
-		for key, value := range ogMetadata {
-			fmt.Printf("%s: %s\n", key, value)
-		}
 	})
 
 	// Set error handler

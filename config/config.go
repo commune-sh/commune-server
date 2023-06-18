@@ -72,10 +72,6 @@ type SMTP struct {
 	Password string `toml:"password"`
 }
 
-type Tenor struct {
-	Key string `toml:"key"`
-}
-
 type Storage struct {
 	BucketName      string `toml:"bucket_name"`
 	Region          string `toml:"region"`
@@ -85,21 +81,25 @@ type Storage struct {
 	Endpoint        string `toml:"endpoint"`
 }
 
+type ThirdParty struct {
+	YoutubeKey string `toml:"youtube_key"`
+	TenorKey   string `toml:"tenor_key"`
+}
+
 type Config struct {
-	Name       string   `toml:"name"`
-	Mode       string   `toml:"mode"`
-	App        App      `toml:"app"`
-	Matrix     Matrix   `toml:"matrix"`
-	DB         DB       `toml:"db"`
-	Redis      Redis    `toml:"redis"`
-	Cache      Cache    `toml:"cache"`
-	YoutubeKey string   `toml:"youtube_key"`
-	Auth       Auth     `toml:"auth"`
-	Privacy    Privacy  `toml:"privacy"`
-	SMTP       SMTP     `toml:"smtp"`
-	Tenor      Tenor    `toml:"tenor"`
-	Features   Features `toml:"features"`
-	Storage    Storage  `toml:"storage"`
+	Name       string     `toml:"name"`
+	Mode       string     `toml:"mode"`
+	App        App        `toml:"app"`
+	Matrix     Matrix     `toml:"matrix"`
+	DB         DB         `toml:"db"`
+	Redis      Redis      `toml:"redis"`
+	Cache      Cache      `toml:"cache"`
+	Auth       Auth       `toml:"auth"`
+	Privacy    Privacy    `toml:"privacy"`
+	SMTP       SMTP       `toml:"smtp"`
+	Features   Features   `toml:"features"`
+	Storage    Storage    `toml:"storage"`
+	ThirdParty ThirdParty `toml:"third_party"`
 }
 
 var conf Config

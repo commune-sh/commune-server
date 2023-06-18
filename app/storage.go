@@ -64,12 +64,14 @@ func (c *App) GetPresignedURL() http.HandlerFunc {
 		}
 		log.Println("returning ", key)
 
+		resp := map[string]any{
+			"url": presignResult.URL,
+			"key": key,
+		}
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
-			JSON: map[string]any{
-				"url": presignResult.URL,
-				"key": key,
-			},
+			JSON: resp,
 		})
 
 	}
