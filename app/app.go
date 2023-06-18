@@ -2,19 +2,16 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
-	"strings"
 	"syscall"
 	"time"
 
 	"shpong/config"
-	"shpong/static"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-chi/chi"
@@ -128,6 +125,7 @@ func Start(s *StartRequest) {
 	}
 
 	BuildEmailBanlist()
+	BuildReservedKeywordsList()
 
 	server := &http.Server{
 		ReadTimeout:       5 * time.Minute,
@@ -181,39 +179,4 @@ func Start(s *StartRequest) {
 	c.UpdateIndexEventsCache()
 
 	c.Activate()
-}
-
-var BannedEmails []string
-
-func BuildEmailBanlist() {
-
-	domains, err := static.Files.ReadFile("emails.json")
-	if err != nil {
-		panic(err)
-	}
-
-	json.Unmarshal(domains, &BannedEmails)
-}
-
-func IsEmailBanned(email string) bool {
-	// strip email domain from email
-	email = email[strings.LastIndex(email, "@")+1:]
-
-	for _, domain := range BannedEmails {
-		if domain == email {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *App) RefreshApp() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if c.Config.Mode != "production" {
-			log.Println("PRODUCTION MODE")
-			w.Write([]byte(RandomString(64)))
-			return
-		}
-		w.Write([]byte(RandomString(64)))
-	}
 }

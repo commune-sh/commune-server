@@ -2,12 +2,59 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"shpong/gomatrix"
+	"shpong/static"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var BannedEmails []string
+var ReservedKeywords []string
+
+func BuildEmailBanlist() {
+
+	domains, err := static.Files.ReadFile("emails.json")
+	if err != nil {
+		panic(err)
+	}
+
+	json.Unmarshal(domains, &BannedEmails)
+}
+
+func BuildReservedKeywordsList() {
+
+	reserved, err := static.Files.ReadFile("reserved.json")
+	if err != nil {
+		panic(err)
+	}
+
+	json.Unmarshal(reserved, &ReservedKeywords)
+}
+
+func IsEmailBanned(email string) bool {
+	// strip email domain from email
+	email = email[strings.LastIndex(email, "@")+1:]
+
+	for _, domain := range BannedEmails {
+		if domain == email {
+			return true
+		}
+	}
+	return false
+}
+
+func IsKeywordReserved(keyword string) bool {
+	for _, word := range ReservedKeywords {
+		if word == keyword {
+			return true
+		}
+	}
+	return false
+}
 
 func (c *App) Setup() {
 	log.Println("setting up app")

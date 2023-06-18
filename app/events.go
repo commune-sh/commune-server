@@ -483,82 +483,6 @@ func (c *App) EventReplies() http.HandlerFunc {
 	}
 }
 
-type SpaceStateParams struct {
-	Slug         string
-	MatrixUserID string
-}
-
-func (c *App) GetSpaceState(p *SpaceStateParams) (*SpaceState, error) {
-
-	alias := c.ConstructMatrixRoomID(p.Slug)
-
-	ssp := matrix_db.GetSpaceStateParams{
-		RoomAlias: alias,
-	}
-
-	if p.MatrixUserID != "" {
-		ssp.UserID = pgtype.Text{
-			String: p.MatrixUserID,
-			Valid:  true,
-		}
-	}
-
-	state, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), ssp)
-
-	if err != nil {
-		log.Println("error getting event: ", err)
-		return nil, err
-	}
-
-	//hideRoom := state.IsPublic.Bool != state.Joined
-	//log.Println("should we hide room? ", hideRoom)
-
-	sps := ProcessState(state)
-
-	return sps, nil
-}
-
-func (c *App) SpaceState() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		user := c.LoggedInUser(r)
-
-		space := chi.URLParam(r, "space")
-
-		space = strings.ToLower(space)
-
-		ssp := SpaceStateParams{
-			Slug: space,
-		}
-
-		if user != nil {
-			ssp.MatrixUserID = user.MatrixUserID
-		}
-
-		state, err := c.GetSpaceState(&ssp)
-
-		if err != nil {
-			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":  "space does not exist",
-					"exists": false,
-				},
-			})
-			return
-		}
-
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: map[string]any{
-				"state": state,
-			},
-		})
-
-	}
-}
-
 func (c *App) GetPinnedEvents(roomID string) ([]Event, error) {
 
 	events, err := c.MatrixDB.Queries.GetPinnedEvents(context.Background(), roomID)
@@ -894,39 +818,6 @@ func (c *App) SpaceRoomEvents() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"events": events,
-			},
-		})
-
-	}
-}
-
-func (c *App) GetDefaultSpaces() (*[]matrix_db.GetDefaultSpacesRow, error) {
-	spaces, err := c.MatrixDB.Queries.GetDefaultSpaces(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	return &spaces, nil
-}
-
-func (c *App) DefaultSpaces() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		spaces, err := c.GetDefaultSpaces()
-		if err != nil {
-			log.Println(err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusInternalServerError,
-				JSON: map[string]any{
-					"error": "error getting default spaces",
-				},
-			})
-			return
-		}
-
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: map[string]any{
-				"spaces": spaces,
 			},
 		})
 

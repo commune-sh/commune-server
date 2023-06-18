@@ -96,6 +96,17 @@ func (c *App) CreateSpace() http.HandlerFunc {
 
 		alias := c.ConstructMatrixRoomID(p.Username)
 
+		reserved := IsKeywordReserved(p.Username)
+		if reserved {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"exists": reserved,
+				},
+			})
+			return
+		}
+
 		exists, err := c.MatrixDB.Queries.DoesSpaceExist(context.Background(), alias)
 		if err != nil {
 			log.Println("error getting event: ", err)
@@ -450,4 +461,37 @@ func (c *App) NewStateEvent(p *NewStateEventParams) (string, error) {
 
 	return sse.EventID, nil
 
+}
+
+func (c *App) GetDefaultSpaces() (*[]matrix_db.GetDefaultSpacesRow, error) {
+	spaces, err := c.MatrixDB.Queries.GetDefaultSpaces(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return &spaces, nil
+}
+
+func (c *App) DefaultSpaces() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		spaces, err := c.GetDefaultSpaces()
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "error getting default spaces",
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"spaces": spaces,
+			},
+		})
+
+	}
 }
