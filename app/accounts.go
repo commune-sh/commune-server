@@ -50,8 +50,9 @@ func (c *App) CreateAccount() http.HandlerFunc {
 				RespondWithJSON(w, &JSONResponse{
 					Code: http.StatusOK,
 					JSON: map[string]any{
-						"created": false,
-						"error":   "email provider is not allowed",
+						"created":            false,
+						"provider_forbidden": true,
+						"error":              "email provider is not allowed",
 					},
 				})
 				return
@@ -71,12 +72,19 @@ func (c *App) CreateAccount() http.HandlerFunc {
 					Code: http.StatusOK,
 					JSON: map[string]any{
 						"created": false,
-						"error":   "email does not look valid",
+						"error":   "email provider does not exist",
 					},
 				})
 				return
 			}
 		}
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"created": false,
+			},
+		})
+		return
 
 		// check to see if username already exists
 		exists, _ := c.DB.Queries.DoesUsernameExist(context.Background(), p.Username)
