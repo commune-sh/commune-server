@@ -89,9 +89,6 @@ func (c *App) RedactPost() http.HandlerFunc {
 				_, err = c.MatrixDB.Exec(context.Background(), `REFRESH MATERIALIZED VIEW CONCURRENTLY reply_count`)
 				if err != nil {
 					log.Panicln(err)
-					log.Panicln(err)
-					log.Panicln(err)
-					log.Panicln(err)
 				}
 			}()
 		}

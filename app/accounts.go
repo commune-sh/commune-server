@@ -78,13 +78,6 @@ func (c *App) CreateAccount() http.HandlerFunc {
 				return
 			}
 		}
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: map[string]any{
-				"created": false,
-			},
-		})
-		return
 
 		// check to see if username already exists
 		exists, _ := c.DB.Queries.DoesUsernameExist(context.Background(), p.Username)
