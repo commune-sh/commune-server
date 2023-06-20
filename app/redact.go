@@ -43,6 +43,7 @@ func (c *App) RedactPost() http.HandlerFunc {
 			RoomID  string `json:"room_id"`
 			EventID string `json:"event_id"`
 			Reason  string `json:"reason"`
+			IsReply bool   `json:"is_reply"`
 		}{})
 
 		if err != nil {
@@ -81,6 +82,18 @@ func (c *App) RedactPost() http.HandlerFunc {
 				},
 			})
 			return
+		}
+
+		if p.IsReply {
+			go func() {
+				_, err = c.MatrixDB.Exec(context.Background(), `REFRESH MATERIALIZED VIEW CONCURRENTLY reply_count`)
+				if err != nil {
+					log.Panicln(err)
+					log.Panicln(err)
+					log.Panicln(err)
+					log.Panicln(err)
+				}
+			}()
 		}
 
 		RespondWithJSON(w, &JSONResponse{

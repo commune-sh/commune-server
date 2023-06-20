@@ -173,6 +173,10 @@ func Start(s *StartRequest) {
 
 	c.Setup()
 
+	if c.Config.Discovery.Enabled {
+		c.Handshake()
+	}
+
 	// go c.Cron.AddFunc("*/15 * * * *", c.RefreshCache)
 	// go c.Cron.Start()
 

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -188,7 +187,6 @@ func routes(c *App) chi.Router {
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(secureMiddleware.Handler)
-		r.Get("/about", c.StaticPage())
 		r.Get("/*", c.Index())
 		// r.Get("/*", c.Dispatch())
 	})
@@ -323,61 +321,4 @@ func (c *App) Error(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Templates.ExecuteTemplate(w, "error", pg)
-}
-
-func (c *App) RoomTooLarge(w http.ResponseWriter, r *http.Request) {
-	us := c.LoggedInUser(r)
-
-	type errorPage struct {
-		LoggedInUser interface{}
-		Nonce        string
-	}
-
-	nonce := secure.CSPNonce(r.Context())
-	pg := errorPage{
-		LoggedInUser: us,
-		Nonce:        nonce,
-	}
-
-	c.Templates.ExecuteTemplate(w, "room-too-large", pg)
-}
-
-func (c *App) StaticPage() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		/*
-				us := LoggedInUser(r)
-
-				url := strings.TrimLeft(r.URL.Path, "/")
-
-				type page struct {
-					LoggedInUser interface{}
-					Nonce        string
-				}
-				nonce := secure.CSPNonce(r.Context())
-
-				pg := page{
-					LoggedInUser: us,
-					Nonce:        nonce,
-				}
-				c.Templates.ExecuteTemplate(w, url, pg)
-
-			s := pgtype.UUID{}
-			s.Scan("cd7b1316-f5f9-4f1d-b7e4-a0ac7515f26d")
-
-			user, err := c.DB.Queries.GetUser(context.Background(), s)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "GetUser failed: %v\n", err)
-			}
-
-			fmt.Println(user)
-		*/
-
-		user, err := c.DB.Queries.GetUser(context.Background(), "testuser")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "GetUser failed: %v\n", err)
-		}
-		fmt.Println(user.Username, user.Email)
-
-		w.Write([]byte("lol"))
-	}
 }

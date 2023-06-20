@@ -86,6 +86,13 @@ type ThirdParty struct {
 	TenorKey   string `toml:"tenor_key"`
 }
 
+type Discovery struct {
+	Enabled bool   `toml:"enabled"`
+	Server  string `toml:"server"`
+	Key     string `toml:"key"`
+	Domain  string `toml:"domain"`
+}
+
 type Config struct {
 	Name       string     `toml:"name"`
 	Mode       string     `toml:"mode"`
@@ -100,6 +107,7 @@ type Config struct {
 	Features   Features   `toml:"features"`
 	Storage    Storage    `toml:"storage"`
 	ThirdParty ThirdParty `toml:"third_party"`
+	Discovery  Discovery  `toml:"discovery"`
 }
 
 var conf Config

@@ -105,6 +105,8 @@ func (c *App) CreateStateEvent() http.HandlerFunc {
 			return
 		}
 
+		log.Println(p)
+
 		user := c.LoggedInUser(r)
 
 		sse, err := c.NewStateEvent(&NewStateEventParams{
