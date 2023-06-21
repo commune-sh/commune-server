@@ -4,7 +4,7 @@ DROP TRIGGER room_state_mv_trigger on current_state_events;
 DROP FUNCTION room_state_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS room_state AS 
-    SELECT DISTINCT ON (rooms.room_id) rooms.room_id, ra.room_alias, COALESCE(rt.type, 'chat') as type, 
+    SELECT DISTINCT ON (rooms.room_id) rooms.room_id, ra.room_alias, substring(split_part(ra.room_alias, ':', 1) FROM 2) as alias, COALESCE(rt.type, 'chat') as type, 
     CASE WHEN st.type = 'profile' THEN true ELSE false END as is_profile, n.name, t.topic, av.avatar, h.header, pev.pinned_events,
     CASE WHEN rstr.age IS NULL AND rstr.verified IS NULL THEN NULL
     ELSE jsonb_strip_nulls(jsonb_build_object(

@@ -11,7 +11,7 @@ LEFT JOIN room_state rs ON rs.room_id = ms.room_id
 WHERE ms.user_id = $1
 AND ms.membership = 'join'
 AND (rs.is_profile is false OR (rs.is_profile and rooms.creator = $1))
-ORDER BY rs.is_profile DESC, spaces.space_alias ASC;
+ORDER BY rs.is_profile DESC, LOWER(spaces.space_alias) ASC;
 
 
 -- name: GetJoinedRooms :many

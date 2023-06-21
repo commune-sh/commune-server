@@ -27,7 +27,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			RespondWithBadRequestError(w)
 			return
 		}
-		p.Username = strings.ToLower(p.Username)
+		//p.Username = strings.ToLower(p.Username)
 
 		if !c.Config.Features.RegistrationEnabled {
 			RespondWithJSON(w, &JSONResponse{

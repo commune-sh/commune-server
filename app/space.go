@@ -94,12 +94,38 @@ func (c *App) CreateSpace() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		verified, err := c.DB.Queries.IsVerifed(context.Background(), user.MatrixUserID)
-		if !verified || err != nil {
+		if c.Config.Restrictions.RequireVerification {
+
+			verified, err := c.DB.Queries.IsVerifed(context.Background(), user.MatrixUserID)
+			if !verified || err != nil {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":     "You must verify your email to create a space.",
+						"forbidden": true,
+					},
+				})
+				return
+			}
+		}
+
+		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+		if err != nil {
+			log.Println(err)
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
-					"success":   false,
+					"error": "Could not create space.",
+				},
+			})
+			return
+		}
+
+		if len(spaces) >= c.Config.Restrictions.SpacesPerUser {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":     "You have reached the maximum number of spaces.",
 					"forbidden": true,
 				},
 			})
@@ -113,6 +139,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
+					"error":  "That space name is not available.",
 					"exists": reserved,
 				},
 			})
@@ -125,7 +152,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
-					"error": err,
+					"error": "There was an error creating your space.",
 				},
 			})
 			return
@@ -135,6 +162,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
+					"error":  "That space name is not available.",
 					"exists": exists,
 				},
 			})
@@ -151,7 +179,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
-					"error":   "could not create space",
+					"error":   "Could not create space.",
 					"message": err.Error(),
 				},
 			})
@@ -160,7 +188,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 		log.Println("what is d??????", d)
 
 		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), matrix_db.GetSpaceInfoParams{
-			RoomAlias: alias,
+			RoomAlias: strings.ToLower(alias),
 			Creator: pgtype.Text{
 				String: user.MatrixUserID,
 				Valid:  true,
@@ -172,7 +200,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
-					"error": "space created but could not get space details",
+					"error": "Space created but could not get details.",
 				},
 			})
 			return
@@ -255,7 +283,7 @@ func (c *App) NewSpace(p *NewSpaceParams) (string, error) {
 		}, gomatrix.Event{
 			Type: "m.restrict_events_to",
 			Content: map[string]interface{}{
-				"age":      1,
+				"age":      0,
 				"verified": true,
 			},
 		},
@@ -263,7 +291,7 @@ func (c *App) NewSpace(p *NewSpaceParams) (string, error) {
 	}
 
 	creq := &gomatrix.ReqCreateRoom{
-		RoomAliasName: strings.ToLower(p.Space.Username),
+		RoomAliasName: p.Space.Username,
 		Preset:        "public_chat",
 		Visibility:    "public",
 		CreationContent: map[string]interface{}{
@@ -450,7 +478,7 @@ func (c *App) NewSpaceRoom(p *NewSpaceRoomParams) (string, error) {
 		}, gomatrix.Event{
 			Type: "m.restrict_events_to",
 			Content: map[string]interface{}{
-				"age":      1,
+				"age":      0,
 				"verified": true,
 			},
 		},

@@ -93,21 +93,28 @@ type Discovery struct {
 	Domain  string `toml:"domain"`
 }
 
+type Restrictions struct {
+	RequireVerification bool `toml:"require_verification"`
+	SpacesPerUser       int  `toml:"spaces_per_user"`
+	TimeSinceLastSpace  int  `toml:"time_since_last_space"`
+}
+
 type Config struct {
-	Name       string     `toml:"name"`
-	Mode       string     `toml:"mode"`
-	App        App        `toml:"app"`
-	Matrix     Matrix     `toml:"matrix"`
-	DB         DB         `toml:"db"`
-	Redis      Redis      `toml:"redis"`
-	Cache      Cache      `toml:"cache"`
-	Auth       Auth       `toml:"auth"`
-	Privacy    Privacy    `toml:"privacy"`
-	SMTP       SMTP       `toml:"smtp"`
-	Features   Features   `toml:"features"`
-	Storage    Storage    `toml:"storage"`
-	ThirdParty ThirdParty `toml:"third_party"`
-	Discovery  Discovery  `toml:"discovery"`
+	Name         string       `toml:"name"`
+	Mode         string       `toml:"mode"`
+	App          App          `toml:"app"`
+	Matrix       Matrix       `toml:"matrix"`
+	DB           DB           `toml:"db"`
+	Redis        Redis        `toml:"redis"`
+	Cache        Cache        `toml:"cache"`
+	Auth         Auth         `toml:"auth"`
+	Privacy      Privacy      `toml:"privacy"`
+	SMTP         SMTP         `toml:"smtp"`
+	Features     Features     `toml:"features"`
+	Storage      Storage      `toml:"storage"`
+	ThirdParty   ThirdParty   `toml:"third_party"`
+	Discovery    Discovery    `toml:"discovery"`
+	Restrictions Restrictions `toml:"restrictions"`
 }
 
 var conf Config
