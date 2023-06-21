@@ -80,25 +80,6 @@ func routes(c *App) chi.Router {
 		r.Get("/", c.HealthCheck())
 	})
 
-	r.Route("/api", func(r chi.Router) {
-		r.Use(secureMiddleware.Handler)
-		r.Get("/", c.NotFound)
-		r.Route("/signup", func(r chi.Router) {
-			r.Use(secureMiddleware.Handler)
-			r.Post("/verify/code", c.SendCode())
-			r.Post("/verify", c.VerifyCode())
-			r.Post("/", c.Signup())
-		})
-		r.Route("/username", func(r chi.Router) {
-			r.Get("/", c.NotFound)
-			r.Post("/exists", c.UsernameAvailable())
-		})
-
-		r.Route("/user", func(r chi.Router) {
-			r.Post("/posts", c.UserPosts())
-		})
-	})
-
 	r.Route("/account", func(r chi.Router) {
 		r.Use(secureMiddleware.Handler)
 		r.Post("/login", c.ValidateLogin())

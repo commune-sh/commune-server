@@ -29,6 +29,12 @@ AND ms.room_id = $2
 AND ms.membership = 'join');
 
 
+-- name: IsAdmin :one
+SELECT CASE WHEN admin = 1 THEN TRUE ELSE FALSE END as admin
+FROM users
+WHERE name = $1;
+
+
 -- name: CreateUser :one
 INSERT INTO users (
   name, password_hash, creation_ts, shadow_banned, approved

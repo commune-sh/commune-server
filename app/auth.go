@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	db "shpong/db/gen"
 	matrix_db "shpong/db/matrix/gen"
 
 	"shpong/gomatrix"
@@ -39,23 +38,6 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 					"authenticated": false,
 					"exists":        false,
 					"error":         "username or email does not exist",
-				},
-			})
-			return
-		}
-
-		log.Println("password is ", creds.Password)
-
-		matches := CheckPasswordHash(p.Password, creds.Password)
-
-		log.Println("did password match? ", matches)
-
-		if !matches {
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"authenticated": false,
-					"error":         "username or password is incorrect",
 				},
 			})
 			return
@@ -130,6 +112,11 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			log.Println(err)
 		}
 
+		admin, err := c.MatrixDB.Queries.IsAdmin(context.Background(), pgtype.Text{String: resp.UserID, Valid: true})
+		if err != nil {
+			log.Println(err)
+		}
+
 		user := &User{
 			UserID:            idu,
 			Username:          p.Username,
@@ -143,6 +130,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			UserSpaceID:       userspace,
 			Age:               creds.CreatedAt.Time.Unix(),
 			Verified:          creds.Verified,
+			Admin:             admin,
 		}
 
 		err = c.StoreUserSession(user)
@@ -225,6 +213,12 @@ func (c *App) ValidateSession() http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 		}
+
+		admin, err := c.MatrixDB.Queries.IsAdmin(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+		if err != nil {
+			log.Println(err)
+		}
+		user.Admin = admin
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -463,79 +457,6 @@ func (c *App) OldVerifyEmail() http.HandlerFunc {
 			JSON: map[string]any{
 				"token": at.Token,
 			},
-		})
-	}
-}
-
-func (c *App) Signup() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		request := struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
-			Email    string `json:"email"`
-		}{}
-
-		p, err := ReadRequestJSON(r, w, request)
-
-		if err != nil {
-			RespondWithBadRequestError(w)
-			return
-		}
-
-		log.Println("recieved payload ", p)
-
-		user, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
-			Username: p.Username,
-			Password: p.Password,
-			Email:    p.Email,
-		})
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CreateUser failed: %v\n", err)
-		}
-
-		fmt.Println(user)
-
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: p,
-		})
-	}
-}
-
-func (c *App) UserPosts() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		type rb struct {
-			Username string `json:"username"`
-		}
-
-		p, err := ReadRequestJSON(r, w, &rb{})
-
-		if err != nil {
-			RespondWithBadRequestError(w)
-			return
-		}
-
-		log.Println("recieved payload ", p)
-
-		posts, err := c.DB.Queries.GetUserPosts(context.Background(), p.Username)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "GetUserPosts failed: %v\n", err)
-		}
-
-		fmt.Println(posts)
-		fmt.Println(posts)
-		fmt.Println(posts)
-
-		type Response struct {
-			Exists bool `json:"exists"`
-		}
-
-		ff := Response{Exists: true}
-
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: ff,
 		})
 	}
 }

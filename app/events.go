@@ -224,6 +224,9 @@ func (c *App) UserFeedEvents() http.HandlerFunc {
 			return
 		}
 
+		if len(*events) == 0 {
+		}
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{

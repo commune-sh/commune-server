@@ -80,25 +80,27 @@ func (c *App) CreateAccount() http.HandlerFunc {
 		}
 
 		// check to see if username already exists
-		exists, _ := c.DB.Queries.DoesUsernameExist(context.Background(), p.Username)
+		/*
+			exists, _ := c.DB.Queries.DoesUsernameExist(context.Background(), p.Username)
 
-		if exists {
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"created": false,
-					"error":   "username already exists",
-				},
-			})
-			return
-		}
+			if exists {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"created": false,
+						"error":   "username already exists",
+					},
+				})
+				return
+			}
+		*/
 
 		// check to see if matrix account already exists
 
 		mname := fmt.Sprintf(`@%s:%s`, p.Username, c.Config.Matrix.Homeserver)
-		exists, _ = c.MatrixDB.Queries.DoesMatrixUserExist(context.Background(), pgtype.Text{String: mname, Valid: true})
+		exists, err := c.MatrixDB.Queries.DoesMatrixUserExist(context.Background(), pgtype.Text{String: mname, Valid: true})
 
-		if exists {
+		if exists || err != nil {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
@@ -126,14 +128,11 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			return
 		}
 
-		// hash the password
-		hash, _ := HashPassword(p.Password)
-
 		// create user
 		userID, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
-			Email:    p.Email,
-			Username: p.Username,
-			Password: hash,
+			Email:        p.Email,
+			Username:     p.Username,
+			MatrixUserID: resp.Response.UserID,
 		})
 
 		// send error JSON

@@ -1,5 +1,5 @@
 -- name: GetCredentials :one
-SELECT id, password, email, verified, created_at FROM users
+SELECT id, email, verified, created_at FROM users
 WHERE (username = $1 OR email = $1) AND deleted = false LIMIT 1;
 
 -- name: GetUser :one
@@ -29,7 +29,7 @@ ORDER BY username;
 
 -- name: CreateUser :one
 INSERT INTO users (
-  username, password, email
+  matrix_user_id, username, email
 ) VALUES (
   $1, $2, $3
 )
