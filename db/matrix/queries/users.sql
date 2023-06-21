@@ -2,7 +2,7 @@
 SELECT exists(select 1 from users where name = $1);
 
 -- name: GetUserSpaces :many
-SELECT ms.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header,
+SELECT ms.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header, rs.is_profile::boolean as is_profile,
 CASE WHEN rooms.creator = $1 THEN true ELSE false END as is_owner
 FROM membership_state ms 
 JOIN spaces ON spaces.room_id = ms.room_id
@@ -10,8 +10,8 @@ JOIN rooms ON rooms.room_id = spaces.room_id
 LEFT JOIN room_state rs ON rs.room_id = ms.room_id
 WHERE ms.user_id = $1
 AND ms.membership = 'join'
-AND rs.is_profile is false
-ORDER BY spaces.space_alias ASC;
+AND (rs.is_profile is false OR (rs.is_profile and rooms.creator = $1))
+ORDER BY rs.is_profile DESC, spaces.space_alias ASC;
 
 
 -- name: GetJoinedRooms :many
