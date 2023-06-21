@@ -94,6 +94,18 @@ func (c *App) CreateSpace() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
+		verified, err := c.DB.Queries.IsVerifed(context.Background(), user.MatrixUserID)
+		if !verified || err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"success":   false,
+					"forbidden": true,
+				},
+			})
+			return
+		}
+
 		alias := c.ConstructMatrixRoomID(p.Username)
 
 		reserved := IsKeywordReserved(p.Username)
@@ -240,6 +252,12 @@ func (c *App) NewSpace(p *NewSpaceParams) (string, error) {
 			Content: map[string]interface{}{
 				"topic": p.Space.Topic,
 			},
+		}, gomatrix.Event{
+			Type: "m.restrict_events_to",
+			Content: map[string]interface{}{
+				"age":      1,
+				"verified": true,
+			},
 		},
 		pl,
 	}
@@ -328,11 +346,30 @@ func (c *App) CreateSpaceRoom() http.HandlerFunc {
 			return
 		}
 
+		state, err := c.MatrixDB.Queries.GetRoomState(context.Background(), pgtype.Text{
+			String: room,
+			Valid:  true,
+		})
+		if err != nil {
+			log.Println(err)
+		}
+
+		if state != nil {
+			log.Println("state: ", state)
+		}
+
+		var st RoomState
+		err = json.Unmarshal(state, &st)
+		if err != nil {
+			log.Println("Error unmarshalling state: ", err)
+		}
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"success": true,
 				"room_id": room,
+				"state":   st,
 			},
 		})
 
@@ -409,6 +446,12 @@ func (c *App) NewSpaceRoom(p *NewSpaceRoomParams) (string, error) {
 			Content: map[string]interface{}{
 				"via":       []string{c.Config.Matrix.PublicServer},
 				"canonical": true,
+			},
+		}, gomatrix.Event{
+			Type: "m.restrict_events_to",
+			Content: map[string]interface{}{
+				"age":      1,
+				"verified": true,
 			},
 		},
 		pl,

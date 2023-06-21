@@ -14,6 +14,10 @@ WHERE id = $1 LIMIT 1;
 SELECT * FROM users
 WHERE email = $1 LIMIT 1;
 
+-- name: IsVerifed :one
+SELECT verified FROM users
+WHERE matrix_user_id = $1 OR username = $1 LIMIT 1;
+
 -- name: DoesEmailExist :one
 SELECT exists(select 1 from users where email = $1 AND deleted = false);
 

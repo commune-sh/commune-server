@@ -348,6 +348,19 @@ type SpaceState struct {
 	Joined         bool   `json:"joined,omitempty"`
 }
 
+type RoomState struct {
+	Name         string `json:"name"`
+	Alias        string `json:"alias"`
+	RoomID       string `json:"room_id"`
+	Type         string `json:"type"`
+	Topic        string `json:"topic"`
+	Avatar       string `json:"avatar"`
+	Header       string `json:"header"`
+	Topics       any    `json:"topics"`
+	PinnedEvents any    `json:"pinned_events"`
+	Restrictions any    `json:"restrictions"`
+}
+
 type state struct {
 	Name         string `json:"name,omitempty"`
 	Type         string `json:"type,omitempty"`
@@ -357,6 +370,7 @@ type state struct {
 	Header       string `json:"header,omitempty"`
 	Topics       any    `json:"topics,omitempty"`
 	PinnedEvents any    `json:"pinned_events,omitempty"`
+	Restrictions any    `json:"restrictions,omitempty"`
 }
 
 func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {
