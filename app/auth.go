@@ -99,7 +99,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 		idu := encodeUUID(creds.ID.Bytes)
 
 		room_alias := fmt.Sprintf("#@%s:%s", p.Username, c.Config.Matrix.Homeserver)
-		creator := fmt.Sprintf("@%s:%s", p.Username, c.Config.Matrix.Homeserver)
+		creator := fmt.Sprintf("@%s:%s", p.Username, c.Config.Matrix.PublicServer)
 
 		userspace, err := c.MatrixDB.Queries.GetUserSpaceID(context.Background(), matrix_db.GetUserSpaceIDParams{
 			RoomAlias: room_alias,
