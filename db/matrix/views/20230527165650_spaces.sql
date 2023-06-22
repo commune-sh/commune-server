@@ -5,7 +5,7 @@ DROP FUNCTION spaces_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS spaces AS 
     SELECT rooms.room_id, ra.room_alias, substring(split_part(ra.room_alias, ':', 1) FROM 2) as space_alias, 
-    CASE WHEN (ejs.json::jsonb->'content'->>'default')::bool = true THEN true ELSE false END as default
+    CASE WHEN (ejs.json::jsonb->'content'->>'default')::bool = true THEN true ELSE false END as is_default
     FROM rooms
     JOIN room_aliases ra ON ra.room_id = rooms.room_id
     JOIN event_json ej ON ej.room_id = rooms.room_id AND ej.json::jsonb->>'type' = 'm.room.create' AND ej.json::jsonb->'content'->>'type' = 'm.space'

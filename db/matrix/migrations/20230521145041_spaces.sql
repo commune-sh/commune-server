@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS spaces (
     room_id text,
     room_alias text,
-    is_profile boolean,
+    is_default boolean,
     space_alias text
 );
 -- +goose StatementEnd
