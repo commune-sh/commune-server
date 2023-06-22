@@ -146,16 +146,19 @@ func (c *App) CreateSpace() http.HandlerFunc {
 
 		alias := c.ConstructMatrixRoomID(p.Username)
 
-		reserved := IsKeywordReserved(p.Username)
-		if reserved {
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":  "That space name is not available.",
-					"exists": reserved,
-				},
-			})
-			return
+		if c.Config.Restrictions.RejectReservedKeywords {
+
+			reserved := IsKeywordReserved(p.Username)
+			if reserved {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "That space name is not available.",
+						"exists": reserved,
+					},
+				})
+				return
+			}
 		}
 
 		exists, err := c.MatrixDB.Queries.DoesSpaceExist(context.Background(), alias)

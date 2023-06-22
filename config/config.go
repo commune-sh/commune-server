@@ -94,9 +94,10 @@ type Discovery struct {
 }
 
 type Restrictions struct {
-	RequireVerification bool `toml:"require_verification"`
-	SpacesPerUser       int  `toml:"spaces_per_user"`
-	TimeSinceLastSpace  int  `toml:"time_since_last_space"`
+	RequireVerification    bool `toml:"require_verification"`
+	SpacesPerUser          int  `toml:"spaces_per_user"`
+	TimeSinceLastSpace     int  `toml:"time_since_last_space"`
+	RejectReservedKeywords bool `toml:"reject_reserved_keywords"`
 }
 
 type Config struct {
