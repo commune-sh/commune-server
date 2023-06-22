@@ -579,3 +579,8 @@ func SplitEmail(email string) (string, string) {
 func encodeUUID(src [16]byte) string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", src[0:4], src[4:6], src[6:8], src[8:10], src[10:16])
 }
+
+func IsValidAlias(input string) bool {
+	reg := regexp.MustCompile("^[a-zA-Z0-9-]+$")
+	return reg.MatchString(input)
+}

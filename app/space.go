@@ -132,6 +132,18 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			return
 		}
 
+		valid := IsValidAlias(p.Username)
+		if !valid {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":     "That space name is not valid.",
+					"forbidden": true,
+				},
+			})
+			return
+		}
+
 		alias := c.ConstructMatrixRoomID(p.Username)
 
 		reserved := IsKeywordReserved(p.Username)

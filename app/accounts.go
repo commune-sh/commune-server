@@ -97,6 +97,18 @@ func (c *App) CreateAccount() http.HandlerFunc {
 
 		// check to see if matrix account already exists
 
+		valid := IsValidAlias(p.Username)
+		if !valid {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":     "That username is not valid.",
+					"forbidden": true,
+				},
+			})
+			return
+		}
+
 		mname := fmt.Sprintf(`@%s:%s`, p.Username, c.Config.Matrix.Homeserver)
 		exists, err := c.MatrixDB.Queries.DoesMatrixUserExist(context.Background(), pgtype.Text{String: mname, Valid: true})
 
