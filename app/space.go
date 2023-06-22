@@ -301,6 +301,11 @@ func (c *App) NewSpace(p *NewSpaceParams) (string, error) {
 				"age":      0,
 				"verified": true,
 			},
+		}, gomatrix.Event{
+			Type: "m.space.child.type",
+			Content: map[string]interface{}{
+				"type": "board",
+			},
 		},
 		pl,
 	}

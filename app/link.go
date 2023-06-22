@@ -121,7 +121,7 @@ func (c *App) GetYoutubeMetadata(href string) (*LinkMetaData, error) {
 			}
 
 			if len(lmd.Description) > 100 {
-				//lmd.Description = lmd.Description[:100]
+				lmd.Description = lmd.Description[:140]
 			}
 
 			return lmd, nil
