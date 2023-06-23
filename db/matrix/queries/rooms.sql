@@ -129,7 +129,7 @@ AND cse.room_id = $1;
 
 
 
--- name: GetUserPowerLevels :one
-SELECT room_id, users->>sqlc.narg('user_id') as level
+-- name: GetUserPowerLevels :many
+SELECT room_id, users->>sqlc.narg('user_id')::text as level
 FROM power_levels
 WHERE users->>sqlc.narg('user_id') is not null;
