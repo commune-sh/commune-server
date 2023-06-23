@@ -5,6 +5,9 @@ DROP FUNCTION room_state_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS room_state AS 
     SELECT DISTINCT ON (rooms.room_id) rooms.room_id, ra.room_alias, substring(split_part(ra.room_alias, ':', 1) FROM 2) as alias, COALESCE(st.type, 'chat') as type, 
+    CASE WHEN ind.do_not_index IS NULL THEN false 
+    WHEN ind.do_not_index = 'true' THEN true
+    ELSE false END as do_not_index,
     CASE WHEN st.type = 'profile' THEN true ELSE false END as is_profile, n.name, t.topic, av.avatar, h.header, pev.pinned_events,
     CASE WHEN rstr.age IS NULL AND rstr.verified IS NULL THEN NULL
     ELSE jsonb_strip_nulls(jsonb_build_object(
@@ -33,8 +36,11 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS room_state AS
     LEFT JOIN (
         SELECT ej.json::jsonb->'content'->>'age' as age, ej.json::jsonb->'content'->>'verified' as verified, cse.room_id FROM current_state_events as cse JOIN event_json as ej ON cse.event_id = ej.event_id WHERE cse.type='m.restrict_events_to'
     ) as rstr ON rstr.room_id = rooms.room_id
+    LEFT JOIN (
+        SELECT ej.json::jsonb->'content'->>'do_not_index' as do_not_index, cse.room_id FROM current_state_events as cse JOIN event_json as ej ON cse.event_id = ej.event_id WHERE cse.type='m.room.do_not_index'
+    ) as ind ON ind.room_id = rooms.room_id
     LEFT JOIN room_aliases ra ON ra.room_id = rooms.room_id
-    GROUP BY rooms.room_id, ra.room_alias, st.type, n.name, t.topic, av.avatar, h.header, pev.pinned_events, rstr.age, rstr.verified;
+    GROUP BY rooms.room_id, ra.room_alias, st.type, n.name, t.topic, av.avatar, h.header, pev.pinned_events, rstr.age, rstr.verified, ind.do_not_index;
 
 CREATE UNIQUE INDEX IF NOT EXISTS room_state_idx ON room_state (room_id);
 

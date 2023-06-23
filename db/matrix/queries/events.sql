@@ -211,6 +211,7 @@ SELECT ej.event_id,
     ed.json::jsonb->'content'->>'m.new_content' as edited,
     COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on
 FROM event_json ej
+JOIN room_state rs ON rs.room_id = ej.room_id
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN user_directory ud ON ud.user_id = events.sender
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
@@ -227,6 +228,7 @@ LEFT JOIN (
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
 WHERE events.type = 'm.room.message'
+AND rs.do_not_index IS FALSE
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND aliases.room_alias is not null
 AND events.origin_server_ts < $1
