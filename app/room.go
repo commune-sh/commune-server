@@ -48,7 +48,7 @@ func (c *App) JoinSpace() http.HandlerFunc {
 			return
 		}
 
-		log.Println(sri)
+		//log.Println(sri)
 
 		matrix, err := c.NewMatrixClient(user.MatrixUserID, user.MatrixAccessToken)
 		if err != nil {

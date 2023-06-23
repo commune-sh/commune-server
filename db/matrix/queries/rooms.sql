@@ -119,3 +119,17 @@ WHERE spaces.is_default = true
 ORDER BY spaces.space_alias ASC;
 
 
+
+-- name: GetRoomPowerLevels :one
+SELECT cast(ej.json::jsonb->>'content' as jsonb) as power_levels
+FROM current_state_events cse
+JOIN event_json ej ON ej.event_id = cse.event_id
+WHERE cse.type = 'm.room.power_levels'
+AND cse.room_id = $1;
+
+
+
+-- name: GetUserPowerLevels :one
+SELECT room_id, users->>sqlc.narg('user_id') as level
+FROM power_levels
+WHERE users->>sqlc.narg('user_id') is not null;
