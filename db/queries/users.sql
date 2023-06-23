@@ -33,11 +33,14 @@ ORDER BY username;
 
 -- name: CreateUser :one
 INSERT INTO users (
-  matrix_user_id, username, email
+  matrix_user_id, username
 ) VALUES (
-  $1, $2, $3
+  $1, $2
 )
 RETURNING id, created_at;
+
+-- name: VerifyEmail :exec
+UPDATE users SET email = $1, verified = true WHERE matrix_user_id = $2;
 
 -- name: DeactivateUser :exec
 UPDATE users SET deactivated_at = NOW() AND deactivated = true WHERE id = $1;

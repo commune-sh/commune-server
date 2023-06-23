@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"os"
 
+	db "shpong/db/gen"
 	matrix_db "shpong/db/matrix/gen"
 
 	"shpong/gomatrix"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/tidwall/buntdb"
 )
 
 func (c *App) ValidateLogin() http.HandlerFunc {
@@ -120,7 +120,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 		user := &User{
 			UserID:            idu,
 			Username:          p.Username,
-			Email:             creds.Email,
+			Email:             creds.Email.String,
 			DisplayName:       profile.Displayname.String,
 			AvatarURL:         profile.AvatarUrl.String,
 			AccessToken:       token,
@@ -323,10 +323,10 @@ func (c *App) SendCode() http.HandlerFunc {
 
 		code := GenerateMagicCode()
 
-		log.Println("magic code is ", code, p.Session)
+		log.Println("magic code is ", code, p)
 
 		//
-		//go c.SendSignupCode(p.Email, code)
+		go c.SendSignupCode(p.Email, code)
 		//
 
 		err = c.AddCodeToCache(p.Email, &CodeVerification{
@@ -373,69 +373,19 @@ func (c *App) VerifyCode() http.HandlerFunc {
 
 		valid, err := c.DoesEmailCodeExist(p)
 
-		if err != nil {
+		if err != nil || !valid {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
 					"valid": valid,
-					"error": "code could not be verified",
 				},
 			})
 			return
 		}
 
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: map[string]any{
-				"valid": valid,
-			},
-		})
-	}
-}
-
-func (c *App) OldVerifyEmail() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		type request struct {
-			Email string `json:"email"`
-		}
-
-		p, err := ReadRequestJSON(r, w, &request{})
-
-		if err != nil {
-			RespondWithBadRequestError(w)
-			return
-		}
-
-		log.Println("recieved payload ", p)
-
-		banned := IsEmailBanned(p.Email)
-		if banned {
-			log.Println("email is banned")
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error": "Email is banned",
-				},
-			})
-			return
-		}
-
-		//err := c.SendSignupVerificationEmail(p.Email)
-
-		err = c.Cache.VerificationCodes.View(func(tx *buntdb.Tx) error {
-			val, err := tx.Get("mykey")
-			if err != nil {
-				return err
-			}
-			fmt.Printf("value is %s\n", val)
-			return nil
-		})
-
-		type response struct {
-			Sent  bool   `json:"sent"`
-			Token string `json:"token"`
-		}
+		log.Println("valid????", valid)
+		log.Println("valid????", valid)
+		log.Println("valid????", valid)
 
 		at, err := ExtractAccessToken(r)
 
@@ -445,17 +395,64 @@ func (c *App) OldVerifyEmail() http.HandlerFunc {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusUnauthorized,
 				JSON: map[string]any{
-					"error": "unauthorized",
+					"valid": false,
 				},
 			})
+			return
+		}
 
+		user, err := c.GetTokenUser(at.Token)
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		user.Email = p.Email
+		user.Verified = true
+
+		err = c.DB.Queries.VerifyEmail(context.Background(), db.VerifyEmailParams{
+			Email: pgtype.Text{
+				String: p.Email,
+				Valid:  true,
+			},
+			MatrixUserID: user.MatrixUserID,
+		})
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "could not update email",
+				},
+			})
+			return
+		}
+
+		err = c.StoreUserSession(user)
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "could not store user session",
+				},
+			})
 			return
 		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"token": at.Token,
+				"valid": valid,
 			},
 		})
 	}

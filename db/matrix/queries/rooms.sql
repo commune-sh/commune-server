@@ -29,9 +29,11 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
     rooms.is_public,
 	jsonb_build_object('name', rs.name, 'alias', rs.alias ,'type', rs.type, 'is_profile', rs.is_profile, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header, 'restrictions', rs.restrictions, 'pinned_events', rs.pinned_events, 'topics', room_topics.topics) as state,
     COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'type', ch.type, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'pinned_events', ch.pinned_events, 'restrictions', ch.restrictions, 'alias', ch.child_room_alias, 'topics', ch.topics, 'pinned_events', ch.pinned_events) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
-    CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined
+    CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined,
+    CASE WHEN ev.sender = sqlc.narg('user_id') THEN true ELSE false END as is_owner
 FROM room_aliases ra 
 JOIN rooms on rooms.room_id = ra.room_id
+JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
 LEFT JOIN (
 	SELECT * FROM room_state
 ) as rs ON rs.room_id = ra.room_id
@@ -43,9 +45,8 @@ LEFT JOIN (
     LEFT JOIN room_topics rstm ON rstm.room_id = rst.room_id
 ) as ch ON ch.parent_room_id = ra.room_id
 LEFT JOIN room_topics ON room_topics.room_id = ra.room_id
-LEFT JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
-LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = $2
+LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = sqlc.narg('user_id')
 WHERE LOWER(ra.room_alias) = $1
 GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.alias, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, rs.restrictions, room_topics.topics, ms.membership;
 

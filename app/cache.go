@@ -60,6 +60,8 @@ func (c *App) DoesEmailCodeExist(t *CodeVerification) (bool, error) {
 
 	exists := false
 
+	log.Println("verifying code: ", t)
+
 	err := c.Cache.VerificationCodes.View(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(t.Email)
 		if err != nil {

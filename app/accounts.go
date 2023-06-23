@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	db "shpong/db/gen"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -40,59 +38,60 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			return
 		}
 
-		if c.Config.Auth.BlockPopularEmailProviders {
-
-			// let's ban the most common email providers to prevent spam
-			// from /static/emails.json
-
-			banned := IsEmailBanned(p.Email)
-			if banned {
-				RespondWithJSON(w, &JSONResponse{
-					Code: http.StatusOK,
-					JSON: map[string]any{
-						"created":            false,
-						"provider_forbidden": true,
-						"error":              "email provider is not allowed",
-					},
-				})
-				return
-			}
-		}
-
-		if c.Config.Auth.QueryMXRecords {
-
-			// let's look up MX records for the email domain
-			// if there are no MX records, then we can't send an email
-			// so we should reject the account creation
-
-			provider := strings.Split(p.Email, "@")[1]
-			records, err := net.LookupMX(provider)
-			if err != nil || len(records) == 0 {
-				RespondWithJSON(w, &JSONResponse{
-					Code: http.StatusOK,
-					JSON: map[string]any{
-						"created": false,
-						"error":   "email provider does not exist",
-					},
-				})
-				return
-			}
-		}
-
-		// check to see if username already exists
 		/*
-			exists, _ := c.DB.Queries.DoesUsernameExist(context.Background(), p.Username)
+			if c.Config.Auth.BlockPopularEmailProviders {
 
-			if exists {
-				RespondWithJSON(w, &JSONResponse{
-					Code: http.StatusOK,
-					JSON: map[string]any{
-						"created": false,
-						"error":   "username already exists",
-					},
-				})
-				return
+				// let's ban the most common email providers to prevent spam
+				// from /static/emails.json
+
+				banned := IsEmailBanned(p.Email)
+				if banned {
+					RespondWithJSON(w, &JSONResponse{
+						Code: http.StatusOK,
+						JSON: map[string]any{
+							"created":            false,
+							"provider_forbidden": true,
+							"error":              "email provider is not allowed",
+						},
+					})
+					return
+				}
 			}
+
+			if c.Config.Auth.QueryMXRecords {
+
+				// let's look up MX records for the email domain
+				// if there are no MX records, then we can't send an email
+				// so we should reject the account creation
+
+				provider := strings.Split(p.Email, "@")[1]
+				records, err := net.LookupMX(provider)
+				if err != nil || len(records) == 0 {
+					RespondWithJSON(w, &JSONResponse{
+						Code: http.StatusOK,
+						JSON: map[string]any{
+							"created": false,
+							"error":   "email provider does not exist",
+						},
+					})
+					return
+				}
+			}
+
+			// check to see if username already exists
+			/*
+				exists, _ := c.DB.Queries.DoesUsernameExist(context.Background(), p.Username)
+
+				if exists {
+					RespondWithJSON(w, &JSONResponse{
+						Code: http.StatusOK,
+						JSON: map[string]any{
+							"created": false,
+							"error":   "username already exists",
+						},
+					})
+					return
+				}
 		*/
 
 		// check to see if matrix account already exists
@@ -142,7 +141,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 
 		// create user
 		userID, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
-			Email:        p.Email,
+			//Email:        p.Email,
 			Username:     p.Username,
 			MatrixUserID: resp.Response.UserID,
 		})
@@ -165,9 +164,9 @@ func (c *App) CreateAccount() http.HandlerFunc {
 		token := RandomString(32)
 
 		user := &User{
-			UserID:            idu,
-			Username:          p.Username,
-			Email:             p.Email,
+			UserID:   idu,
+			Username: p.Username,
+			//Email:             p.Email,
 			AccessToken:       token,
 			MatrixAccessToken: resp.Response.AccessToken,
 			MatrixUserID:      resp.Response.UserID,

@@ -688,6 +688,9 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 			})
 			return
 		}
+		sps := ProcessState(state)
+
+		log.Println("public, owner, joined", sps.IsPublic, sps.IsOwner, sps.Joined)
 
 		// get events for this space
 		events, err := c.GetSpaceEvents(&SpaceEventsParams{

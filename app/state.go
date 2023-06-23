@@ -77,6 +77,8 @@ func (c *App) SpaceState() http.HandlerFunc {
 			return
 		}
 
+		log.Println("public, owner, joined", state.IsPublic, state.IsOwner, state.Joined)
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{

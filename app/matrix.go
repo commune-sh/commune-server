@@ -345,6 +345,8 @@ type SpaceState struct {
 	Children       any    `json:"children,omitempty"`
 	Topics         any    `json:"topics,omitempty"`
 	Joined         bool   `json:"joined,omitempty"`
+	IsPublic       bool   `json:"is_public,omitempty"`
+	IsOwner        bool   `json:"is_owner,omitempty"`
 }
 
 type RoomState struct {
@@ -358,24 +360,12 @@ type RoomState struct {
 	Topics       any    `json:"topics"`
 	PinnedEvents any    `json:"pinned_events"`
 	Restrictions any    `json:"restrictions"`
-}
-
-type state struct {
-	Name         string `json:"name,omitempty"`
-	Type         string `json:"type,omitempty"`
-	Alias        string `json:"alias"`
 	IsProfile    bool   `json:"is_profile,omitempty"`
-	Topic        string `json:"topic,omitempty"`
-	Avatar       string `json:"avatar,omitempty"`
-	Header       string `json:"header,omitempty"`
-	Topics       any    `json:"topics,omitempty"`
-	PinnedEvents any    `json:"pinned_events,omitempty"`
-	Restrictions any    `json:"restrictions,omitempty"`
 }
 
 func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {
 
-	var st state
+	var st RoomState
 	err := json.Unmarshal(m.State, &st)
 	if err != nil {
 		log.Println("Error unmarshalling state: ", err)
@@ -389,6 +379,8 @@ func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {
 		Space:          st,
 		Children:       m.Children,
 		Joined:         m.Joined,
+		IsPublic:       m.IsPublic.Bool,
+		IsOwner:        m.IsOwner,
 	}
 
 	return s
