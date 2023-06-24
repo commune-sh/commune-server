@@ -43,6 +43,16 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			return
 		}
 
+		username := p.Username
+
+		if &creds.Email.String != nil {
+			username = creds.Username
+		}
+
+		log.Println("username is", username)
+		log.Println("username is", username)
+		log.Println("username is", username)
+
 		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
 		matrix, err := gomatrix.NewClient(serverName, "", "")
@@ -60,7 +70,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 
 		rl := &gomatrix.ReqLogin{
 			Type:     "m.login.password",
-			User:     p.Username,
+			User:     username,
 			Password: p.Password,
 		}
 
@@ -81,7 +91,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			log.Println("resp is ", resp)
 		}
 
-		profile, err := c.MatrixDB.Queries.GetProfile(context.Background(), p.Username)
+		profile, err := c.MatrixDB.Queries.GetProfile(context.Background(), username)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "CreateUser failed: %v\n", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -98,8 +108,8 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 
 		idu := encodeUUID(creds.ID.Bytes)
 
-		room_alias := fmt.Sprintf("#@%s:%s", p.Username, c.Config.Matrix.PublicServer)
-		creator := fmt.Sprintf("@%s:%s", p.Username, c.Config.Matrix.PublicServer)
+		room_alias := fmt.Sprintf("#@%s:%s", username, c.Config.Matrix.PublicServer)
+		creator := fmt.Sprintf("@%s:%s", username, c.Config.Matrix.PublicServer)
 
 		userspace, err := c.MatrixDB.Queries.GetUserSpaceID(context.Background(), matrix_db.GetUserSpaceIDParams{
 			RoomAlias: room_alias,
@@ -119,7 +129,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 
 		user := &User{
 			UserID:            idu,
-			Username:          p.Username,
+			Username:          username,
 			Email:             creds.Email.String,
 			DisplayName:       profile.Displayname.String,
 			AvatarURL:         profile.AvatarUrl.String,

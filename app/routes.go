@@ -89,6 +89,8 @@ func routes(c *App) chi.Router {
 			r.Use(c.RequireAuthentication)
 			r.Post("/verify/code", c.SendCode())
 			r.Post("/verify", c.VerifyCode())
+			r.Post("/display_name", c.UpdateDisplayName())
+			r.Post("/avatar", c.UpdateAvatar())
 		})
 		r.Post("/", c.CreateAccount())
 		r.Route("/username", func(r chi.Router) {
