@@ -27,8 +27,33 @@ LEFT JOIN rooms ON room_aliases.room_id = rooms.room_id;
 -- name: GetSpaceState :one
 SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner, 
     rooms.is_public, spaces.is_default,
-	jsonb_build_object('name', rs.name, 'alias', rs.alias ,'type', rs.type, 'is_profile', rs.is_profile, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header, 'restrictions', rs.restrictions, 'do_not_index', rs.do_not_index, 'pinned_events', rs.pinned_events, 'topics', room_topics.topics) as state,
-    COALESCE(array_agg(json_build_object('room_id', ch.room_id, 'name', ch.name, 'type', ch.type, 'topic', ch.topic, 'avatar', ch.avatar, 'header', ch.header, 'pinned_events', ch.pinned_events, 'restrictions', ch.restrictions, 'do_not_index', ch.do_not_index, 'alias', ch.child_room_alias, 'topics', ch.topics, 'pinned_events', ch.pinned_events) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
+	jsonb_build_object(
+        'name', rs.name, 
+        'alias', rs.alias,
+        'type', rs.type, 
+        'is_profile', rs.is_profile, 
+        'topic', rs.topic, 
+        'avatar', rs.avatar, 
+        'header', rs.header, 
+        'restrictions', rs.restrictions, 
+        'do_not_index', rs.do_not_index, 
+        'pinned_events', rs.pinned_events, 
+        'topics', room_topics.topics) as state,
+    COALESCE(array_agg(json_build_object(
+        'room_id', ch.room_id, 
+        'name', ch.name, 
+        'type', ch.type, 
+        'topic', ch.topic, 
+        'avatar', ch.avatar, 
+        'header', ch.header, 
+        'pinned_events', ch.pinned_events, 
+        'restrictions', ch.restrictions, 
+        'do_not_index', ch.do_not_index, 
+        'alias', ch.child_room_alias, 
+        'topics', ch.topics, 
+        'pinned_events', ch.pinned_events,
+        'joined', ch.joined
+        ) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
     CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined,
     CASE WHEN ev.sender = sqlc.narg('user_id') THEN true ELSE false END as is_owner
 FROM room_aliases ra 
@@ -39,17 +64,21 @@ LEFT JOIN (
 	SELECT * FROM room_state
 ) as rs ON rs.room_id = ra.room_id
 LEFT JOIN (
-    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, rst.restrictions, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.do_not_index
+    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, rst.restrictions, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.do_not_index,
+    CASE WHEN mst.membership = 'join' THEN true ELSE false END as joined
 	FROM room_state rst
 	JOIN space_rooms sc ON sc.child_room_id = rst.room_id
 	JOIN events ON events.room_id = rst.room_id AND events.type = 'm.room.create'
     LEFT JOIN room_topics rstm ON rstm.room_id = rst.room_id
+    LEFT JOIN membership_state mst ON mst.room_id = rst.room_id AND mst.user_id = sqlc.narg('user_id')
 ) as ch ON ch.parent_room_id = ra.room_id
 LEFT JOIN room_topics ON room_topics.room_id = ra.room_id
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = sqlc.narg('user_id')
 WHERE LOWER(ra.room_alias) = $1
 GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.alias, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, rs.restrictions, rs.do_not_index, room_topics.topics, ms.membership, spaces.is_default;
+
+
 
 -- name: GetRoomState :one
 WITH rs AS (

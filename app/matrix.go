@@ -344,7 +344,7 @@ type SpaceState struct {
 	Space          any    `json:"space"`
 	Children       any    `json:"children,omitempty"`
 	Topics         any    `json:"topics,omitempty"`
-	Joined         bool   `json:"joined,omitempty"`
+	Joined         bool   `json:"joined"`
 	IsPublic       bool   `json:"is_public"`
 	IsOwner        bool   `json:"is_owner,omitempty"`
 	IsDefault      bool   `json:"is_default"`
