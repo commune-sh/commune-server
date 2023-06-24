@@ -82,12 +82,14 @@ GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public
 
 -- name: GetRoomState :one
 WITH rs AS (
-    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.restrictions
+    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.restrictions,
+    CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined
 	FROM room_state rst
 	JOIN space_rooms sc ON sc.child_room_id = rst.room_id
 	JOIN events ON events.room_id = rst.room_id AND events.type = 'm.room.create'
     LEFT JOIN room_topics rstm ON rstm.room_id = rst.room_id
-) SELECT json_build_object('room_id', rs.room_id, 'name', rs.name, 'type', rs.type, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header, 'pinned_events', rs.pinned_events, 'alias', rs.child_room_alias, 'topics', rs.topics, 'pinned_events', rs.pinned_events, 'restrictions', rs.restrictions) as state 
+    LEFT JOIN membership_state ms ON ms.room_id = rst.room_id AND ms.user_id = sqlc.narg('user_id')
+) SELECT json_build_object('room_id', rs.room_id, 'name', rs.name, 'type', rs.type, 'topic', rs.topic, 'avatar', rs.avatar, 'header', rs.header, 'pinned_events', rs.pinned_events, 'alias', rs.child_room_alias, 'topics', rs.topics, 'pinned_events', rs.pinned_events, 'restrictions', rs.restrictions, 'joined', rs.joined) as state 
 FROM rs
 WHERE rs.room_id = sqlc.narg('room_id') ::text;
 

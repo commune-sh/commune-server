@@ -363,6 +363,7 @@ type RoomState struct {
 	Restrictions any    `json:"restrictions"`
 	IsProfile    bool   `json:"is_profile"`
 	DoNotIndex   bool   `json:"do_not_index"`
+	Joined       bool   `json:"joined"`
 }
 
 func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {

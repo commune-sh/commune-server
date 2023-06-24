@@ -394,9 +394,15 @@ func (c *App) CreateSpaceRoom() http.HandlerFunc {
 			return
 		}
 
-		state, err := c.MatrixDB.Queries.GetRoomState(context.Background(), pgtype.Text{
-			String: room,
-			Valid:  true,
+		state, err := c.MatrixDB.Queries.GetRoomState(context.Background(), matrix_db.GetRoomStateParams{
+			RoomID: pgtype.Text{
+				String: room,
+				Valid:  true,
+			},
+			UserID: pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			},
 		})
 		if err != nil {
 			log.Println(err)
@@ -581,92 +587,6 @@ func (c *App) DefaultSpaces() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"spaces": spaces,
-			},
-		})
-
-	}
-}
-
-func (c *App) RemoveSpaceRoom() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		p, err := ReadRequestJSON(r, w, &CreateSpaceRoomRequest{})
-
-		if err != nil {
-			log.Println(err)
-			RespondWithBadRequestError(w)
-			return
-		}
-
-		user := c.LoggedInUser(r)
-
-		room, err := c.NewSpaceRoom(&NewSpaceRoomParams{
-			SpaceRoomID:       p.RoomID,
-			Name:              p.Name,
-			MatrixUserID:      user.MatrixUserID,
-			MatrixAccessToken: user.MatrixAccessToken,
-		})
-
-		if err != nil || room == "" {
-			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":   "room could not be created",
-					"success": false,
-				},
-			})
-			return
-		}
-
-		sse, err := c.NewStateEvent(&NewStateEventParams{
-			RoomID:            p.RoomID,
-			EventType:         "m.space.child",
-			StateKey:          room,
-			MatrixUserID:      user.MatrixUserID,
-			MatrixAccessToken: user.MatrixAccessToken,
-			Content: map[string]interface{}{
-				"via":       []string{c.Config.Matrix.PublicServer},
-				"suggested": false,
-			},
-		})
-
-		if err != nil || sse == "" {
-			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":   "room created but space relationship could not be created",
-					"success": false,
-				},
-			})
-			return
-		}
-
-		state, err := c.MatrixDB.Queries.GetRoomState(context.Background(), pgtype.Text{
-			String: room,
-			Valid:  true,
-		})
-		if err != nil {
-			log.Println(err)
-		}
-
-		if state != nil {
-			log.Println("state: ", state)
-		}
-
-		var st RoomState
-		err = json.Unmarshal(state, &st)
-		if err != nil {
-			log.Println("Error unmarshalling state: ", err)
-		}
-
-		RespondWithJSON(w, &JSONResponse{
-			Code: http.StatusOK,
-			JSON: map[string]any{
-				"success": true,
-				"room_id": room,
-				"state":   st,
 			},
 		})
 
