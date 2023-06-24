@@ -120,8 +120,8 @@ FROM space_rooms
 LEFT JOIN membership_state 
 ON membership_state.room_id = child_room_id
 AND membership_state.user_id = $3
-WHERE parent_room_alias = $1
-AND child_room_alias = $2;
+WHERE LOWER(parent_room_alias) = $1
+AND LOWER(child_room_alias) = $2;
 
 
 
