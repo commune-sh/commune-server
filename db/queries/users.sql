@@ -1,5 +1,5 @@
 -- name: GetCredentials :one
-SELECT id, username, email, verified, created_at FROM users
+SELECT id, matrix_user_id, username, email, verified, created_at FROM users
 WHERE (username = $1 OR email = $1) AND deleted = false LIMIT 1;
 
 -- name: GetUser :one

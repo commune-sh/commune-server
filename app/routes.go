@@ -85,6 +85,11 @@ func routes(c *App) chi.Router {
 		r.Post("/login", c.ValidateLogin())
 		r.Post("/session", c.ValidateSession())
 		r.Post("/token", c.ValidateToken())
+		r.Route("/password", func(r chi.Router) {
+			r.Post("/", c.SendRecoveryCode())
+			r.Post("/verify", c.VerifyRecoveryCode())
+			r.Post("/reset", c.UpdatePassword())
+		})
 		r.Route("/", func(r chi.Router) {
 			r.Use(c.RequireAuthentication)
 			r.Post("/verify/code", c.SendCode())

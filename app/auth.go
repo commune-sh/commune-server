@@ -358,10 +358,10 @@ func (c *App) SendCode() http.HandlerFunc {
 		log.Println("magic code is ", code, p)
 
 		//
-		go c.SendSignupCode(p.Email, code)
+		go c.SendVerificationCode(p.Email, code)
 		//
 
-		err = c.AddCodeToCache(p.Email, &CodeVerification{
+		err = c.AddCodeToCache(p.Session, &CodeVerification{
 			Code:    code,
 			Session: p.Session,
 			Email:   p.Email,
@@ -388,9 +388,10 @@ func (c *App) SendCode() http.HandlerFunc {
 }
 
 type CodeVerification struct {
-	Email   string `json:"email"`
-	Session string `json:"session"`
-	Code    string `json:"code"`
+	Email    string `json:"email"`
+	Session  string `json:"session"`
+	Code     string `json:"code"`
+	Password string `json:"password"`
 }
 
 func (c *App) VerifyCode() http.HandlerFunc {
@@ -414,10 +415,6 @@ func (c *App) VerifyCode() http.HandlerFunc {
 			})
 			return
 		}
-
-		log.Println("valid????", valid)
-		log.Println("valid????", valid)
-		log.Println("valid????", valid)
 
 		at, err := ExtractAccessToken(r)
 
@@ -485,6 +482,210 @@ func (c *App) VerifyCode() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"valid": valid,
+			},
+		})
+	}
+}
+
+func (c *App) SendRecoveryCode() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		type request struct {
+			Email   string `json:"email"`
+			Session string `json:"session"`
+		}
+
+		p, err := ReadRequestJSON(r, w, &request{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		log.Println("recieved payload ", p)
+
+		exists, err := c.DB.Queries.DoesEmailExist(context.Background(), pgtype.Text{
+			String: p.Email,
+			Valid:  true,
+		})
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println("does email exist?", exists)
+		log.Println("does email exist?", exists)
+		log.Println("does email exist?", exists)
+
+		if exists {
+
+			code := GenerateMagicCode()
+
+			log.Println("magic code is ", code, p)
+
+			//
+			go c.SendVerificationCode(p.Email, code)
+			//
+
+			err = c.AddCodeToCache(p.Session, &CodeVerification{
+				Code:    code,
+				Session: p.Session,
+				Email:   p.Email,
+			})
+
+			if err != nil {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error": "code could not be sent",
+						"sent":  false,
+					},
+				})
+				return
+			}
+
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"sent": true,
+			},
+		})
+	}
+}
+
+func (c *App) VerifyRecoveryCode() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		p, err := ReadRequestJSON(r, w, &CodeVerification{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		valid, err := c.DoesEmailCodeExist(p)
+
+		if err != nil || !valid {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": valid,
+				},
+			})
+			return
+		}
+
+		if valid {
+
+			code := GenerateMagicCode()
+
+			log.Println("new magic code is ", code, p)
+
+			err = c.AddCodeToCache(p.Session, &CodeVerification{
+				Code:    code,
+				Session: p.Session,
+				Email:   p.Email,
+			})
+
+			if err != nil {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error": "code could not be sent",
+						"sent":  false,
+					},
+				})
+				return
+			}
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": valid,
+					"code":  code,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"valid": valid,
+			},
+		})
+	}
+}
+
+func (c *App) UpdatePassword() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		p, err := ReadRequestJSON(r, w, &CodeVerification{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		valid, err := c.DoesEmailCodeExist(p)
+
+		if err != nil || !valid {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": valid,
+				},
+			})
+			return
+		}
+
+		if valid && p.Password != "" {
+
+			hash, _ := HashPassword(p.Password)
+
+			creds, err := c.DB.Queries.GetCredentials(context.Background(), p.Email)
+			if err != nil || &creds == nil || creds.MatrixUserID == "" {
+				log.Println(err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"success": false,
+					},
+				})
+				return
+			}
+
+			log.Println("what is matrix user id??", creds.MatrixUserID)
+			log.Println("what is matrix user id??", creds.MatrixUserID)
+			log.Println("what is matrix user id??", creds.MatrixUserID)
+
+			err = c.MatrixDB.Queries.UpdatePassword(context.Background(), matrix_db.UpdatePasswordParams{
+				PasswordHash: pgtype.Text{
+					String: hash,
+					Valid:  true,
+				},
+				Name: pgtype.Text{
+					String: creds.MatrixUserID,
+					Valid:  true,
+				},
+			})
+
+			if err != nil {
+				log.Println(err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"success": false,
+					},
+				})
+				return
+			}
+
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"success": true,
 			},
 		})
 	}

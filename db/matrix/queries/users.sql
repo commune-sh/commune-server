@@ -92,3 +92,6 @@ SELECT evs.event_id, evs.room_id
     AND evs.sender = $2
     AND er.relates_to_id = $1
 ) ve ON ve.room_id = event.room_id;
+
+-- name: UpdatePassword :exec
+UPDATE users SET password_hash = $2 WHERE name = $1;

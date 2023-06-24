@@ -48,6 +48,7 @@ func (c *App) AddCodeToCache(key string, t any) error {
 		log.Println(err)
 		return err
 	}
+
 	err = c.Cache.VerificationCodes.Update(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(key, string(serialized), &buntdb.SetOptions{Expires: true, TTL: time.Minute * 60})
 		return err
@@ -63,7 +64,7 @@ func (c *App) DoesEmailCodeExist(t *CodeVerification) (bool, error) {
 	log.Println("verifying code: ", t)
 
 	err := c.Cache.VerificationCodes.View(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(t.Email)
+		val, err := tx.Get(t.Session)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -75,6 +76,8 @@ func (c *App) DoesEmailCodeExist(t *CodeVerification) (bool, error) {
 			log.Println(err)
 			return err
 		}
+
+		log.Println("found in cache: ", d)
 
 		if d.Session == t.Session && d.Code == t.Code && d.Email == t.Email {
 			exists = true

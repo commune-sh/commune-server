@@ -7,7 +7,7 @@ import (
 	"net/smtp"
 )
 
-func (c *App) SendSignupCode(email string, code string) error {
+func (c *App) SendVerificationCode(email string, code string) error {
 
 	password := c.Config.SMTP.Password
 
