@@ -49,10 +49,6 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			username = creds.Username
 		}
 
-		log.Println("username is", username)
-		log.Println("username is", username)
-		log.Println("username is", username)
-
 		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
 		matrix, err := gomatrix.NewClient(serverName, "", "")

@@ -584,3 +584,15 @@ func IsValidAlias(input string) bool {
 	reg := regexp.MustCompile("^[a-zA-Z0-9-]+$")
 	return reg.MatchString(input)
 }
+
+func (c *App) IsSenderAgeValid(user *User) bool {
+
+	creationTime := time.Unix(user.Age, 0)
+	currentTime := time.Now()
+
+	duration := currentTime.Sub(creationTime)
+
+	days := int(duration.Hours() / 24)
+
+	return days >= c.Config.Restrictions.SenderAge
+}

@@ -29,6 +29,7 @@ func (c *App) UpdateDisplayName() http.HandlerFunc {
 		})
 	}
 }
+
 func (c *App) UpdateAvatar() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

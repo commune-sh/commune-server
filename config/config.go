@@ -98,6 +98,7 @@ type Restrictions struct {
 	SpacesPerUser          int  `toml:"spaces_per_user"`
 	TimeSinceLastSpace     int  `toml:"time_since_last_space"`
 	RejectReservedKeywords bool `toml:"reject_reserved_keywords"`
+	SenderAge              int  `toml:"sender_age"`
 }
 
 type Config struct {

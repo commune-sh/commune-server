@@ -109,6 +109,28 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			}
 		}
 
+		if c.Config.Restrictions.SenderAge > 0 {
+			valid := c.IsSenderAgeValid(user)
+			if !valid {
+
+				day := "day"
+				if c.Config.Restrictions.SenderAge > 1 {
+					day = "days"
+				}
+
+				msg := fmt.Sprintf("Your account needs to be at least %d %s old to create a space.", c.Config.Restrictions.SenderAge, day)
+
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":     msg,
+						"forbidden": true,
+					},
+				})
+				return
+			}
+		}
+
 		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
 		if err != nil {
 			log.Println(err)
