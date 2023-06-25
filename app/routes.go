@@ -160,10 +160,12 @@ func routes(c *App) chi.Router {
 			r.Get("/", c.RoomJoined())
 		})
 		r.Post("/join", c.JoinRoom())
+		r.Post("/leave", c.LeaveRoom())
 	})
 	r.Route("/space", func(r chi.Router) {
 		r.Use(c.RequireAuthentication)
 		r.Post("/{space}/join", c.JoinSpace())
+		r.Post("/{space}/leave", c.LeaveSpace())
 		r.Post("/create", c.CreateSpace())
 		r.Post("/room/create", c.CreateSpaceRoom())
 	})

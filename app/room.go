@@ -127,6 +127,92 @@ func (c *App) JoinSpace() http.HandlerFunc {
 	}
 }
 
+func (c *App) LeaveSpace() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		space := chi.URLParam(r, "space")
+
+		log.Println("what is space", space)
+
+		if space == "" {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "that space doesn't exist",
+				},
+			})
+			return
+		}
+
+		alias := c.ConstructMatrixRoomID(space)
+
+		user := c.LoggedInUser(r)
+
+		// get space room_id and all it's children's room_ids
+		sri, err := c.MatrixDB.Queries.GetSpaceJoinedRoomIDs(context.Background(), matrix_db.GetSpaceJoinedRoomIDsParams{
+			RoomAlias: alias,
+			UserID: pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			},
+		})
+
+		if err != nil {
+			log.Println("error getting space room ids: ", err)
+		}
+
+		log.Println(sri)
+
+		matrix, err := c.NewMatrixClient(user.MatrixUserID, user.MatrixAccessToken)
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "internal server error",
+				},
+			})
+			return
+		}
+
+		_, err = matrix.LeaveRoom(sri.RoomID)
+
+		if err != nil {
+			log.Println("could not leave space room", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error":   "inter server error",
+					"message": err,
+				},
+			})
+			return
+		}
+
+		if len(sri.Rooms) > 0 {
+			go func() {
+
+				for _, room_id := range sri.Rooms {
+
+					_, err = matrix.LeaveRoom(room_id)
+
+					if err != nil {
+						log.Println("could not leave child room", err)
+					}
+
+				}
+			}()
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"left": true,
+			},
+		})
+
+	}
+}
+
 func (c *App) JoinRoom() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -180,6 +266,65 @@ func (c *App) JoinRoom() http.HandlerFunc {
 			JSON: map[string]any{
 				"joined":  true,
 				"room_id": re.RoomID,
+			},
+		})
+
+	}
+}
+
+func (c *App) LeaveRoom() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		query := r.URL.Query()
+		room_id := query.Get("id")
+
+		log.Println("what is room id", room_id)
+
+		if room_id == "" {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "internal server error",
+				},
+			})
+			return
+		}
+
+		user := c.LoggedInUser(r)
+
+		matrix, err := c.NewMatrixClient(user.MatrixUserID, user.MatrixAccessToken)
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "internal server error",
+				},
+			})
+			return
+		}
+
+		//re, err := matrix.JoinRoom(room_id, "", nil)
+		re, err := matrix.LeaveRoom(room_id)
+
+		if err != nil {
+			log.Println("could not leave room", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "inter server error",
+				},
+			})
+			return
+		}
+
+		if re != nil {
+			log.Println(re)
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"left": true,
 			},
 		})
 
