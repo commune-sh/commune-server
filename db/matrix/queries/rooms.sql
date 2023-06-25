@@ -80,6 +80,8 @@ GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public
 
 
 
+
+
 -- name: GetRoomState :one
 WITH rs AS (
     	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.restrictions,
@@ -164,3 +166,29 @@ AND cse.room_id = $1;
 SELECT room_id, users->>sqlc.narg('user_id')::text as level
 FROM power_levels
 WHERE users->>sqlc.narg('user_id') is not null;
+
+
+-- name: GetSpacePowerLevels :one
+SELECT 
+jsonb_build_object(
+    'space', pl.users,
+    'children', array_agg(
+        jsonb_build_object(
+            'room_id', ch.room_id,
+            'users', ch.users
+        )
+    )
+) as power_levels
+FROM room_aliases ra 
+JOIN power_levels pl ON ra.room_id = pl.room_id
+LEFT JOIN (
+    SELECT rst.room_id, sc.parent_room_id,  prl.users
+	FROM room_state rst
+	JOIN space_rooms sc ON sc.child_room_id = rst.room_id
+    JOIN power_levels prl ON rst.room_id = prl.room_id
+    GROUP BY rst.room_id, sc.parent_room_id, prl.users
+) as ch ON ch.parent_room_id = ra.room_id
+WHERE LOWER(ra.room_alias) = $1
+GROUP BY ra.room_id, pl.users, ch.users;
+
+

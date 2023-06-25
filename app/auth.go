@@ -150,19 +150,19 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			log.Println(err)
 		}
 		/*
-			rooms, err := c.MatrixDB.Queries.GetJoinedRooms(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+				rooms, err := c.MatrixDB.Queries.GetJoinedRooms(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+				if err != nil {
+					log.Println(err)
+				}
+
+			pl, err := c.MatrixDB.Queries.GetUserPowerLevels(context.Background(), pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			})
 			if err != nil {
-				log.Println(err)
+				log.Panicln(err)
 			}
 		*/
-
-		pl, err := c.MatrixDB.Queries.GetUserPowerLevels(context.Background(), pgtype.Text{
-			String: user.MatrixUserID,
-			Valid:  true,
-		})
-		if err != nil {
-			log.Panicln(err)
-		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -172,7 +172,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 				"credentials":   user,
 				"spaces":        spaces,
 				//"rooms":         rooms,
-				"power_levels": pl,
+				//"power_levels": pl,
 			},
 		})
 
@@ -230,26 +230,26 @@ func (c *App) ValidateSession() http.HandlerFunc {
 			log.Println(err)
 		}
 
-		/*
-			rooms, err := c.MatrixDB.Queries.GetJoinedRooms(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
-			if err != nil {
-				log.Println(err)
-			}
-		*/
-
 		admin, err := c.MatrixDB.Queries.IsAdmin(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
 		if err != nil {
 			log.Println(err)
 		}
 		user.Admin = admin
 
-		pl, err := c.MatrixDB.Queries.GetUserPowerLevels(context.Background(), pgtype.Text{
-			String: user.MatrixUserID,
-			Valid:  true,
-		})
-		if err != nil {
-			log.Panicln(err)
-		}
+		/*
+				rooms, err := c.MatrixDB.Queries.GetJoinedRooms(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+				if err != nil {
+					log.Println(err)
+				}
+
+			pl, err := c.MatrixDB.Queries.GetUserPowerLevels(context.Background(), pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			})
+			if err != nil {
+				log.Panicln(err)
+			}
+		*/
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -258,7 +258,7 @@ func (c *App) ValidateSession() http.HandlerFunc {
 				"credentials": user,
 				"spaces":      spaces,
 				//"rooms":        rooms,
-				"power_levels": pl,
+				//"power_levels": pl,
 			},
 		})
 
@@ -653,10 +653,6 @@ func (c *App) UpdatePassword() http.HandlerFunc {
 				})
 				return
 			}
-
-			log.Println("what is matrix user id??", creds.MatrixUserID)
-			log.Println("what is matrix user id??", creds.MatrixUserID)
-			log.Println("what is matrix user id??", creds.MatrixUserID)
 
 			err = c.MatrixDB.Queries.UpdatePassword(context.Background(), matrix_db.UpdatePasswordParams{
 				PasswordHash: pgtype.Text{

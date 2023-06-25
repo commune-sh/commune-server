@@ -173,6 +173,10 @@ func routes(c *App) chi.Router {
 		//r.Get("/post/{slug}", c.SpaceEvent())
 		r.Get("/events", c.SpaceEvents())
 		r.Get("/state", c.SpaceState())
+		r.Route("/power_levels", func(r chi.Router) {
+			r.Use(c.RequireAuthentication)
+			r.Get("/", c.GetPowerLevels())
+		})
 		r.Get("/{room}/events", c.SpaceRoomEvents())
 		r.Get("/{room}/messages", c.SpaceRoomMessages())
 		//r.Get("/{room}/post/{slug}", c.SpaceEvent())

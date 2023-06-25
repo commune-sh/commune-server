@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
@@ -77,7 +78,7 @@ func (c *App) SpaceState() http.HandlerFunc {
 			return
 		}
 
-		log.Println("public, owner, joined", state.IsPublic, state.IsOwner, state.Joined)
+		//log.Println("public, owner, joined", state.IsPublic, state.IsOwner, state.Joined)
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -137,6 +138,43 @@ func (c *App) CreateStateEvent() http.HandlerFunc {
 			JSON: map[string]any{
 				"success":  true,
 				"event_id": sse,
+			},
+		})
+
+	}
+}
+
+func (c *App) GetPowerLevels() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		//user := c.LoggedInUser(r)
+
+		space := chi.URLParam(r, "space")
+
+		space = strings.ToLower(space)
+
+		alias := c.ConstructMatrixRoomID(space)
+
+		pl, err := c.MatrixDB.Queries.GetSpacePowerLevels(context.Background(), alias)
+
+		if err != nil {
+			log.Println("error getting event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "no power levels",
+					"exists": false,
+				},
+			})
+			return
+		}
+		var result map[string]interface{}
+		err = json.Unmarshal(pl, &result)
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"power_levels": result,
 			},
 		})
 
