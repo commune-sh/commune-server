@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -81,5 +82,14 @@ func (c *App) HealthCheck() http.HandlerFunc {
 			},
 		})
 
+	}
+}
+
+func (c *App) RobotsTXT() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintln(w, "User-agent: *")
+		fmt.Fprintln(w, "Disallow: /")
 	}
 }

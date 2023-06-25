@@ -164,6 +164,15 @@ WHERE spaces.is_default = true
 ORDER BY spaces.space_alias ASC;
 
 
+-- name: GetAllSpaces :many
+SELECT spaces.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header
+FROM spaces 
+JOIN rooms ON rooms.room_id = spaces.room_id
+LEFT JOIN room_state rs ON rs.room_id = spaces.room_id
+WHERE rooms.is_public = true
+ORDER BY spaces.space_alias ASC;
+
+
 
 -- name: GetRoomPowerLevels :one
 SELECT cast(ej.json::jsonb->>'content' as jsonb) as power_levels

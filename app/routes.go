@@ -76,6 +76,10 @@ func routes(c *App) chi.Router {
 	r := chi.NewRouter()
 	r.Use(c.GetAuthorizationToken)
 
+	r.Route("/robots.txt", func(r chi.Router) {
+		r.Get("/", c.RobotsTXT())
+	})
+
 	r.Route("/health_check", func(r chi.Router) {
 		r.Get("/", c.HealthCheck())
 	})
