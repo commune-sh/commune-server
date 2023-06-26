@@ -31,6 +31,7 @@ type Matrix struct {
 	PublicServer     string `toml:"public_server"`
 	Port             int    `toml:"port"`
 	Password         string `toml:"password"`
+	ConfigFile       string `toml:"config_file"`
 }
 
 type DB struct {

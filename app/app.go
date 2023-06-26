@@ -73,6 +73,7 @@ type StartRequest struct {
 }
 
 var CONFIG_FILE string
+var MATRIX_CONFIG map[string]interface{}
 var PRODUCTION_MODE bool
 var AssetFiles map[string]string
 

@@ -12,6 +12,7 @@ import (
 	"shpong/gomatrix"
 
 	"github.com/Jeffail/gabs/v2"
+	"gopkg.in/yaml.v2"
 )
 
 type MatrixAccountResponse struct {
@@ -173,6 +174,22 @@ func (c *App) NewMatrixClient(userID, accessToken string) (*gomatrix.Client, err
 }
 
 func QueryMatrixServerHealth(c config.Matrix) {
+
+	mcf, err := ioutil.ReadFile(c.ConfigFile)
+
+	if err != nil {
+		panic(err)
+	}
+
+	// Create a map to store the unmarshaled data
+	data := make(map[string]interface{})
+
+	// Unmarshal the YAML into the map
+	err = yaml.Unmarshal(mcf, &data)
+	if err != nil {
+		panic(err)
+	}
+	MATRIX_CONFIG = data
 
 	a := fmt.Sprintf(`http://%s:%d/_matrix/client/versions`, c.Homeserver, c.Port)
 
