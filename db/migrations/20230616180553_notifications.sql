@@ -3,6 +3,7 @@
 CREATE TABLE notifications (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     matrix_user_id text REFERENCES users(matrix_user_id) NOT NULL,
+    from_matrix_user_id text REFERENCES users(matrix_user_id) NOT NULL,
     type text NOT NULL,
     content jsonb NOT NULL,
     created_at timestamptz DEFAULT now(),
