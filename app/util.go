@@ -585,14 +585,14 @@ func IsValidAlias(input string) bool {
 	return reg.MatchString(input)
 }
 
-func (c *App) IsSenderAgeValid(user *User) bool {
+func (c *App) IsSenderAgeValid(user *User, age int32) bool {
 
 	creationTime := time.Unix(user.Age, 0)
 	currentTime := time.Now()
 
 	duration := currentTime.Sub(creationTime)
 
-	days := int(duration.Hours() / 24)
+	days := int32(duration.Hours() / 24)
 
-	return days >= c.Config.Restrictions.SenderAge
+	return days >= age
 }

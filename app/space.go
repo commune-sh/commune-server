@@ -110,7 +110,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 		}
 
 		if c.Config.Restrictions.SenderAge > 0 {
-			valid := c.IsSenderAgeValid(user)
+			valid := c.IsSenderAgeValid(user, c.Config.Restrictions.SenderAge)
 			if !valid {
 
 				day := "day"

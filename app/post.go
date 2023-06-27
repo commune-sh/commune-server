@@ -94,11 +94,21 @@ func (c *App) CreatePost() http.HandlerFunc {
 			return
 		}
 
+		user := c.LoggedInUser(r)
+
+		if p.RoomID != "" {
+			age, err := c.MatrixDB.Queries.GetRoomSenderAgeLimit(context.Background(), p.RoomID)
+			if err != nil {
+				log.Println(err)
+			}
+			log.Println("room age limit is ", age)
+			valid := c.IsSenderAgeValid(user, age)
+			log.Println("is sender's age valid?", valid)
+		}
+
 		if p.ReplyingTo != "" {
 			log.Println("replying to event: ", p.ReplyingTo)
 		}
-
-		user := c.LoggedInUser(r)
 
 		event, err := c.NewPost(&NewPostParams{
 			Body:              p,

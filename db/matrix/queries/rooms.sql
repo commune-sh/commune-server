@@ -52,9 +52,11 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
         'alias', ch.child_room_alias, 
         'topics', ch.topics, 
         'pinned_events', ch.pinned_events,
-        'joined', ch.joined
+        'joined', ch.joined,
+        'banned', ch.banned
         ) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
     CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined,
+    CASE WHEN ms.membership = 'ban' THEN true ELSE false END as banned,
     CASE WHEN ev.sender = sqlc.narg('user_id') THEN true ELSE false END as is_owner
 FROM room_aliases ra 
 JOIN rooms on rooms.room_id = ra.room_id
@@ -65,7 +67,8 @@ LEFT JOIN (
 ) as rs ON rs.room_id = ra.room_id
 LEFT JOIN (
     	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, rst.restrictions, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.do_not_index,
-    CASE WHEN mst.membership = 'join' THEN true ELSE false END as joined
+    CASE WHEN mst.membership = 'join' THEN true ELSE false END as joined,
+    CASE WHEN mst.membership = 'ban' THEN true ELSE false END as banned
 	FROM room_state rst
 	JOIN space_rooms sc ON sc.child_room_id = rst.room_id
 	JOIN events ON events.room_id = rst.room_id AND events.type = 'm.room.create'
@@ -212,4 +215,11 @@ LEFT JOIN (
 WHERE LOWER(ra.room_alias) = $1
 GROUP BY ra.room_id, pl.users, ch.users;
 
+
+-- name: GetRoomSenderAgeLimit :one
+SELECT cast(ej.json::jsonb->'content'->>'age' as int) as age
+FROM event_json ej
+JOIN current_state_events cse ON cse.event_id = ej.event_id
+WHERE cse.room_id = $1
+AND cse.type = 'm.restrict_events_to';
 

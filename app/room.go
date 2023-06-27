@@ -65,10 +65,9 @@ func (c *App) JoinSpace() http.HandlerFunc {
 		if err != nil {
 			log.Println("could not join space", err)
 			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusInternalServerError,
+				Code: http.StatusOK,
 				JSON: map[string]any{
-					"error":   "inter server error",
-					"message": err,
+					"error": "Could not join at this time.",
 				},
 			})
 			return
@@ -249,9 +248,9 @@ func (c *App) JoinRoom() http.HandlerFunc {
 		if err != nil {
 			log.Println("could not join room", err)
 			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusInternalServerError,
+				Code: http.StatusOK,
 				JSON: map[string]any{
-					"error": "inter server error",
+					"error": "Could not join at this time.",
 				},
 			})
 			return

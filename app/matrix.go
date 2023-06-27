@@ -362,6 +362,7 @@ type SpaceState struct {
 	Children       any    `json:"children,omitempty"`
 	Topics         any    `json:"topics,omitempty"`
 	Joined         bool   `json:"joined"`
+	Banned         bool   `json:"banned,omitempty"`
 	IsPublic       bool   `json:"is_public"`
 	IsOwner        bool   `json:"is_owner,omitempty"`
 	IsDefault      bool   `json:"is_default"`
@@ -399,6 +400,7 @@ func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {
 		Space:          st,
 		Children:       m.Children,
 		Joined:         m.Joined,
+		Banned:         m.Banned,
 		IsPublic:       m.IsPublic.Bool,
 		IsOwner:        m.IsOwner,
 		IsDefault:      m.IsDefault.Bool,
