@@ -72,13 +72,15 @@ func (c *App) NewPost(p *NewPostParams) (*Event, error) {
 		Reactions:   item.Reactions,
 	})
 
-	if p.Body.IsReply && p.Body.InThread != "" {
-		go c.UpdateEventRepliesCache(p.Body.InThread, p.Body.RoomID)
-	} else {
-		go c.UpdateSpaceEventsCache(p.Body.RoomID)
-	}
+	/*
+		if p.Body.IsReply && p.Body.InThread != "" {
+			go c.UpdateEventRepliesCache(p.Body.InThread, p.Body.RoomID)
+		} else {
+			go c.UpdateSpaceEventsCache(p.Body.RoomID)
+		}
 
-	go c.UpdateIndexEventsCache()
+		go c.UpdateIndexEventsCache()
+	*/
 
 	return &s, nil
 }
@@ -106,10 +108,6 @@ func (c *App) CreatePost() http.HandlerFunc {
 			log.Println("is sender's age valid?", valid)
 		}
 
-		if p.ReplyingTo != "" {
-			log.Println("replying to event: ", p.ReplyingTo)
-		}
-
 		event, err := c.NewPost(&NewPostParams{
 			Body:              p,
 			MatrixUserID:      user.MatrixUserID,
@@ -127,6 +125,19 @@ func (c *App) CreatePost() http.HandlerFunc {
 			})
 			return
 		}
+
+		go func() {
+			if p.IsReply && p.InThread != "" && p.ReplyingTo != "" {
+				err := c.NewNotification(&NotificationParams{
+					ThreadEventID:  p.InThread,
+					ReplyToEventID: p.ReplyingTo,
+					User:           user,
+				})
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}()
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,

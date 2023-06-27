@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE notifications (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id uuid REFERENCES users(id) NOT NULL,
+    matrix_user_id text REFERENCES users(matrix_user_id) NOT NULL,
     type text NOT NULL,
     content jsonb NOT NULL,
     created_at timestamptz DEFAULT now(),
@@ -10,7 +10,7 @@ CREATE TABLE notifications (
     read boolean DEFAULT false NOT NULL
 );
 
-CREATE INDEX notifications_index on notifications(user_id);
+CREATE INDEX notifications_index on notifications(matrix_user_id);
 -- +goose StatementEnd
 
 -- +goose Down
