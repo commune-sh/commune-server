@@ -20,6 +20,8 @@ END;
 $$;
 
 CREATE TRIGGER pinned_events_mv_trigger 
-AFTER INSERT OR UPDATE OR DELETE
+AFTER INSERT OR UPDATE
 ON current_state_events
+FOR EACH ROW
+WHEN (NEW.type = 'm.room.pinned_events')
 EXECUTE FUNCTION pinned_events_mv_refresh();

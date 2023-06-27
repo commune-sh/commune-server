@@ -10,7 +10,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS search AS
     to_tsvector('english', ej.json::jsonb->'content'->>'body') AS body_vec
     FROM event_json ej
     JOIN events ON events.event_id = ej.event_id
-    WHERE events.type = 'm.room.message';
+    WHERE events.type = 'space.board.post';
 
 CREATE UNIQUE INDEX IF NOT EXISTS search_idx ON search (event_id);
 CREATE INDEX search_vec_idx
@@ -29,5 +29,5 @@ CREATE TRIGGER search_mv_trigger
 AFTER INSERT 
 ON events
 FOR EACH ROW
-WHEN (NEW.type = 'm.room.message')
+WHEN (NEW.type = 'space.board.post')
 EXECUTE FUNCTION search_mv_refresh();

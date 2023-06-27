@@ -26,7 +26,7 @@ LEFT JOIN (
 	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
-WHERE events.type = 'm.room.message'
+WHERE events.type = 'space.board.post'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND redactions.redacts is null
 AND (search.title_vec @@ websearch_to_tsquery('english', sqlc.narg('query'))

@@ -23,6 +23,8 @@ END;
 $$;
 
 CREATE TRIGGER spaces_mv_trigger 
-AFTER INSERT OR UPDATE OR DELETE
+AFTER INSERT 
 ON current_state_events
+FOR EACH ROW
+WHEN (NEW.type = 'm.room.create' OR NEW.type = 'm.space.default')
 EXECUTE FUNCTION spaces_mv_refresh();

@@ -266,7 +266,7 @@ type Event struct {
 	Sender         sender   `json:"sender"`
 	EventID        string   `json:"event_id"`
 	StateKey       any      `json:"state_key,omitempty"`
-	RoomAlias      any      `json:"room_alias,omitempty"`
+	RoomAlias      string   `json:"room_alias,omitempty"`
 	RoomID         any      `json:"room_id"`
 	OriginServerTs float64  `json:"origin_server_ts"`
 	Unsigned       any      `json:"unsigned"`

@@ -20,6 +20,8 @@ END;
 $$;
 
 CREATE TRIGGER room_topics_mv_trigger 
-AFTER INSERT OR UPDATE OR DELETE
+AFTER INSERT OR UPDATE
 ON current_state_events
+FOR EACH ROW
+WHEN (NEW.type = 'm.room.topics')
 EXECUTE FUNCTION room_topics_mv_refresh();

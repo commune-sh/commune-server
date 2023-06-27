@@ -3,6 +3,7 @@ SELECT event_json.event_id, event_json.json FROM event_json
 LEFT JOIN events on events.event_id = event_json.event_id
 LEFT JOIN aliases ON aliases.room_id = event_json.room_id
 WHERE events.sender = $1 
+AND events.type = 'space.board.post'
 AND events.slug = $2
 AND aliases.room_alias = $3 LIMIT 1;
 
@@ -12,7 +13,7 @@ LEFT JOIN events on events.event_id = event_json.event_id
 LEFT JOIN aliases ON aliases.room_id = event_json.room_id
 WHERE events.sender = $1 
 AND aliases.room_alias = $2
-AND events.type = 'm.room.message'
+AND events.type = 'space.board.post'
 ORDER BY events.origin_server_ts DESC LIMIT 100;
 
 
@@ -51,7 +52,7 @@ LEFT JOIN (
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
 WHERE ej.room_id = $1
-AND events.type = 'm.room.message'
+AND events.type = 'space.board.post'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
 AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
@@ -107,6 +108,7 @@ LEFT JOIN (
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
 WHERE RIGHT(events.event_id, 11) = $1
+AND events.type = 'space.board.post'
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
@@ -179,7 +181,7 @@ LEFT JOIN (
 	WHERE er.relation_type = 'm.annotation' AND er.aggregation_key = 'downvote' 
 	AND evts.sender = sqlc.narg('sender')::text
 ) downvoted ON downvoted.relates_to_id = ej.event_id
-WHERE events.type = 'm.room.message'
+WHERE events.type = 'space.board.post'
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
@@ -227,7 +229,7 @@ LEFT JOIN (
 	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
-WHERE events.type = 'm.room.message'
+WHERE events.type = 'space.board.post'
 AND rs.do_not_index IS FALSE
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND aliases.room_alias is not null
@@ -277,7 +279,7 @@ JOIN membership_state ms
     ON ms.room_id = ej.room_id 
     AND ms.user_id = $1
     AND ms.membership = 'join'
-WHERE events.type = 'm.room.message'
+WHERE events.type = 'space.board.post'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND aliases.room_alias is not null
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)

@@ -21,6 +21,7 @@ type NewPostBody struct {
 	IsReply    bool   `json:"is_reply"`
 	InThread   string `json:"in_thread"`
 	ReplyingTo string `json:"replying_to"`
+	ReactingTo string `json:"reacting_to"`
 	Type       string `json:"type"`
 	Editing    bool   `json:"editing"`
 }
@@ -127,11 +128,24 @@ func (c *App) CreatePost() http.HandlerFunc {
 		}
 
 		go func() {
-			if p.IsReply && p.InThread != "" && p.ReplyingTo != "" {
-				err := c.NewNotification(&NotificationParams{
+			isReply := p.IsReply && p.InThread != "" && p.ReplyingTo != ""
+			isReaction := p.Type == "m.reaction" && p.ReactingTo != ""
+			if isReply {
+				err := c.NewReplyNotification(&NotificationParams{
 					ThreadEventID:  p.InThread,
 					ReplyToEventID: p.ReplyingTo,
 					User:           user,
+					ReplyEvent:     event,
+				})
+				if err != nil {
+					log.Println(err)
+				}
+			}
+			if isReaction {
+				err := c.NewReactionNotification(&NotificationParams{
+					ReplyToEventID: p.ReactingTo,
+					User:           user,
+					ReplyEvent:     event,
 				})
 				if err != nil {
 					log.Println(err)

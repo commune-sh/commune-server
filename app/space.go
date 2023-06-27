@@ -130,6 +130,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 				return
 			}
 		}
+		log.Println(1)
 
 		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
 		if err != nil {
@@ -142,6 +143,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
+		log.Println(2)
 
 		if len(spaces) >= c.Config.Restrictions.SpacesPerUser {
 			RespondWithJSON(w, &JSONResponse{
@@ -153,6 +155,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
+		log.Println(3)
 
 		valid := IsValidAlias(p.Username)
 		if !valid {
@@ -165,6 +168,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
+		log.Println(4)
 
 		alias := c.ConstructMatrixRoomID(p.Username)
 
@@ -182,6 +186,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 				return
 			}
 		}
+		log.Println(5)
 
 		exists, err := c.MatrixDB.Queries.DoesSpaceExist(context.Background(), alias)
 		if err != nil {
@@ -195,6 +200,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			return
 		}
 
+		log.Println(6)
 		if exists {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
@@ -211,6 +217,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			MatrixUserID:      user.MatrixUserID,
 			MatrixAccessToken: user.MatrixAccessToken,
 		})
+		log.Println(8)
 		if err != nil {
 			log.Println("error creating space: ", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -222,6 +229,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
+		log.Println(9)
 		log.Println("what is d??????", d)
 
 		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), matrix_db.GetSpaceInfoParams{
@@ -232,6 +240,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			},
 		})
 
+		log.Println(10)
 		if err != nil {
 			log.Println("error getting space info: ", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -242,6 +251,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
+		log.Println(11)
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -342,6 +352,7 @@ func (c *App) NewSpace(p *NewSpaceParams) (string, error) {
 		InitialState: initState,
 	}
 
+	log.Println("creating actual room...")
 	crr, err := matrix.CreateRoom(creq)
 
 	if err != nil || crr == nil {

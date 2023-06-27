@@ -34,6 +34,8 @@ END;
 $$;
 
 CREATE TRIGGER space_rooms_mv_trigger 
-AFTER INSERT OR UPDATE OR DELETE
+AFTER INSERT
 ON current_state_events
+FOR EACH ROW
+WHEN (NEW.type = 'm.space.child')
 EXECUTE FUNCTION space_rooms_mv_refresh();

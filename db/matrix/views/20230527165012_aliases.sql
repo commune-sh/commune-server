@@ -40,6 +40,8 @@ END;
 $$;
 
 CREATE TRIGGER aliases_mv_trigger 
-AFTER INSERT OR UPDATE OR DELETE
+AFTER INSERT
 ON current_state_events
+FOR EACH ROW
+WHEN (NEW.type = 'm.room.create' OR NEW.type = 'm.space.parent' OR NEW.type = 'm.space.child')
 EXECUTE FUNCTION aliases_mv_refresh();
