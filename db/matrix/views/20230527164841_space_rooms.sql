@@ -5,7 +5,7 @@ DROP FUNCTION space_rooms_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS space_rooms AS 
     WITH sc AS (
-        SELECT ra.room_alias as parent_room_alias, ra.room_id as parent_room_id, cse.state_key as child_room_id, trim(BOTH '-' FROM regexp_replace(lower(unaccent(trim(sc.alias))), '[^a-z0-9\\_-]+', '-', 'gi')) as child_room_alias, events.origin_server_ts
+        SELECT ra.room_alias as parent_room_alias, ra.room_id as parent_room_id, cse.state_key as child_room_id, trim(BOTH '-' FROM regexp_replace(unaccent(trim(sc.alias)), '[^a-z0-9\\_-]+', '-', 'gi')) as child_room_alias, events.origin_server_ts
         FROM room_aliases ra
         LEFT JOIN current_state_events as cse ON cse.room_id = ra.room_id AND cse.type ='m.space.child'
         LEFT JOIN event_json ev ON ev.event_id = cse.event_id
