@@ -3,7 +3,6 @@ SELECT event_json.event_id, event_json.json FROM event_json
 LEFT JOIN events on events.event_id = event_json.event_id
 LEFT JOIN aliases ON aliases.room_id = event_json.room_id
 WHERE events.sender = $1 
-AND events.type = 'space.board.post'
 AND events.slug = $2
 AND aliases.room_alias = $3 LIMIT 1;
 
@@ -53,7 +52,8 @@ LEFT JOIN (
 ) ed ON ed.relates_to_id = ej.event_id
 WHERE ej.room_id = $1
 AND events.type = 'space.board.post'
-AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
+AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id 
+AND relation_type != 'm.reference')
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
 AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
 AND redactions.redacts is null
@@ -108,7 +108,6 @@ LEFT JOIN (
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
 WHERE RIGHT(events.event_id, 11) = $1
-AND events.type = 'space.board.post'
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
@@ -181,7 +180,7 @@ LEFT JOIN (
 	WHERE er.relation_type = 'm.annotation' AND er.aggregation_key = 'downvote' 
 	AND evts.sender = sqlc.narg('sender')::text
 ) downvoted ON downvoted.relates_to_id = ej.event_id
-WHERE events.type = 'space.board.post'
+WHERE events.type = 'space.board.post.reply'
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
