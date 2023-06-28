@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	db "shpong/db/gen"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -25,7 +26,8 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			RespondWithBadRequestError(w)
 			return
 		}
-		//p.Username = strings.ToLower(p.Username)
+
+		p.Username = strings.ToLower(p.Username)
 
 		if !c.Config.Features.RegistrationEnabled {
 			RespondWithJSON(w, &JSONResponse{
@@ -133,7 +135,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 				Code: http.StatusOK,
 				JSON: map[string]any{
 					"created": false,
-					"error":   "could not create account",
+					"error":   "That username is invalid. Try another username.",
 				},
 			})
 			return
