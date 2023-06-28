@@ -49,8 +49,10 @@ func (c *App) DomainAPIEndpoint() http.HandlerFunc {
 		}
 
 		type Response struct {
-			URL string `json:"url"`
+			URL      string `json:"url"`
+			MediaURL string `json:"media_url"`
 		}
+
 		var response Response
 		err = json.Unmarshal(body, &response)
 		if err != nil {
@@ -67,7 +69,8 @@ func (c *App) DomainAPIEndpoint() http.HandlerFunc {
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"url": response.URL,
+				"url":       response.URL,
+				"media_url": response.MediaURL,
 			},
 		})
 	}
