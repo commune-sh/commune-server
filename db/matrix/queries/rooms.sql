@@ -168,12 +168,14 @@ ORDER BY spaces.space_alias ASC;
 
 
 -- name: GetAllSpaces :many
-SELECT spaces.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header
+SELECT spaces.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header, rm.members, spaces.is_default
 FROM spaces 
 JOIN rooms ON rooms.room_id = spaces.room_id
+JOIN room_members rm ON rm.room_id = spaces.room_id
 LEFT JOIN room_state rs ON rs.room_id = spaces.room_id
 WHERE rooms.is_public = true
-ORDER BY spaces.space_alias ASC;
+AND rs.is_profile = false
+ORDER BY rm.members DESC;
 
 
 

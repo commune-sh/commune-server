@@ -628,3 +628,36 @@ func (c *App) DefaultSpaces() http.HandlerFunc {
 
 	}
 }
+
+func (c *App) GetAllSpaces() (*[]matrix_db.GetAllSpacesRow, error) {
+	spaces, err := c.MatrixDB.Queries.GetAllSpaces(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return &spaces, nil
+}
+
+func (c *App) AllSpaces() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		spaces, err := c.GetAllSpaces()
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "error getting default spaces",
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"spaces": spaces,
+			},
+		})
+
+	}
+}

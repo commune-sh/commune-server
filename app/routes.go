@@ -106,6 +106,9 @@ func routes(c *App) chi.Router {
 			r.Get("/{username}", c.UsernameAvailable())
 		})
 	})
+	r.Route("/discover", func(r chi.Router) {
+		r.Get("/", c.AllSpaces())
+	})
 
 	r.Route("/feed", func(r chi.Router) {
 		r.Use(c.RequireAuthentication)
