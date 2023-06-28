@@ -221,6 +221,23 @@ func (c *App) ValidateSession() http.HandlerFunc {
 			return
 		}
 
+		/*
+			profile, err := c.MatrixDB.Queries.GetProfile(context.Background(), user.Username)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "CreateUser failed: %v\n", err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"authenticated": false,
+						"error":         "internal server error",
+					},
+				})
+				return
+			}
+			user.DisplayName = profile.Displayname.String
+			user.AvatarURL = profile.AvatarUrl.String
+		*/
+
 		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
 		if err != nil {
 			log.Println(err)

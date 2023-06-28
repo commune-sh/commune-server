@@ -34,6 +34,18 @@ SELECT CASE WHEN admin = 1 THEN TRUE ELSE FALSE END as admin
 FROM users
 WHERE name = $1;
 
+-- name: UpdateProfilesAvatar :exec
+UPDATE profiles SET avatar_url = $2 WHERE full_user_id = $1;
+
+-- name: UpdateUserDirectoryAvatar :exec
+UPDATE user_directory SET avatar_url = $2 WHERE user_id = $1;
+
+-- name: UpdateProfilesDisplayName :exec
+UPDATE profiles SET displayname = $2 WHERE full_user_id = $1;
+
+-- name: UpdateUserDirectoryDisplayName :exec
+UPDATE user_directory SET display_name = $2 WHERE user_id = $1;
+
 
 -- name: CreateUser :one
 INSERT INTO users (

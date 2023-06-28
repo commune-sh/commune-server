@@ -3,7 +3,8 @@
 CREATE TABLE IF NOT EXISTS profiles (
     user_id text NOT NULL,
     displayname text,
-    avatar_url text
+    avatar_url text,
+    full_user_id text
 );
 -- +goose StatementEnd
 
