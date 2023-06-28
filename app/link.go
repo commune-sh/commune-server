@@ -116,7 +116,12 @@ func (c *App) GetYoutubeMetadata(href string) (*LinkMetaData, error) {
 			if items != nil && len(items) >= 1 {
 				lmd.Title = items[0].Snippet.Title
 				lmd.Description = items[0].Snippet.Description
-				lmd.Image = items[0].Snippet.Thumbnails.Default.Url
+
+				img := items[0].Snippet.Thumbnails.Default.Url
+				if strings.Contains(img, "http") {
+					lmd.Image = items[0].Snippet.Thumbnails.Default.Url
+				}
+
 				lmd.Author = items[0].Snippet.ChannelTitle
 			}
 
