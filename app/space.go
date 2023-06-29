@@ -304,6 +304,7 @@ func (c *App) NewSpace(p *NewSpaceParams) (string, error) {
 			"state_default": 10,
 			"users": map[string]interface{}{
 				p.MatrixUserID: 100,
+				//c.DefaultMatrixAccount: 100,
 			},
 			"users_default": 10,
 		},
@@ -504,6 +505,7 @@ func (c *App) NewSpaceRoom(p *NewSpaceRoomParams) (string, error) {
 			"state_default": 10,
 			"users": map[string]interface{}{
 				p.MatrixUserID: 100,
+				//c.DefaultMatrixAccount: 100,
 			},
 			"users_default": 10,
 		},
