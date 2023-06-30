@@ -31,7 +31,8 @@ func (c *App) FetchLinkMetadata() http.HandlerFunc {
 			return
 		}
 
-		if strings.Contains(href, "yout") {
+		if strings.Contains(href, "youtube.com") ||
+			strings.Contains(href, "youtu.be") {
 			lmd, err := c.GetYoutubeMetadata(href)
 			if err == nil && lmd != nil {
 				RespondWithJSON(w, &JSONResponse{
