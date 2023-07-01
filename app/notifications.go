@@ -3,8 +3,65 @@ package app
 import (
 	"context"
 	"log"
+	"net/http"
 	db "shpong/db/gen"
 )
+
+func (c *App) GetNotifications() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := c.LoggedInUser(r)
+
+		items, err := c.DB.Queries.GetUserNotifications(context.Background(), user.MatrixUserID)
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error":   "Could not get notifications",
+					"success": false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"notifications": items,
+			},
+		})
+
+	}
+}
+
+func (c *App) MarkRead() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := c.LoggedInUser(r)
+
+		err := c.DB.Queries.MarkAsRead(context.Background(), user.MatrixUserID)
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error":   "Could not get notifications",
+					"success": false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"success": true,
+			},
+		})
+
+	}
+}
 
 type NotificationParams struct {
 	ThreadEventID  string

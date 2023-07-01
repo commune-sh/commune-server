@@ -1,3 +1,14 @@
+-- name: GetUserNotifications :many
+SELECT * from 
+notifications 
+WHERE for_matrix_user_id = $1 
+ORDER BY created_at DESC
+LIMIT 30;
+
+-- name: MarkAsRead :exec
+UPDATE notifications SET read_at = now(), read = true
+WHERE for_matrix_user_id = $1;
+
 -- name: CreateNotification :one
 INSERT INTO notifications (
     for_matrix_user_id, 

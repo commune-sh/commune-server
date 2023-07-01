@@ -101,6 +101,11 @@ func routes(c *App) chi.Router {
 			r.Post("/display_name", c.UpdateDisplayName())
 			r.Post("/avatar", c.UpdateAvatar())
 		})
+		r.Route("/notifications", func(r chi.Router) {
+			r.Use(c.RequireAuthentication)
+			r.Get("/", c.GetNotifications())
+			r.Put("/read", c.MarkRead())
+		})
 		r.Post("/", c.CreateAccount())
 		r.Route("/username", func(r chi.Router) {
 			r.Get("/{username}", c.UsernameAvailable())
