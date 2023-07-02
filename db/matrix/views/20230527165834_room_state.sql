@@ -63,6 +63,6 @@ WHEN (NEW.type = 'm.room.create'
     OR NEW.type = 'm.room.header'
     OR NEW.type = 'm.space.type'
     OR NEW.type = 'm.room.do_not_index'
-    OR NEW.type = 'm.room.restrict_events_to'
+    OR NEW.type = 'm.restrict_events_to'
     OR NEW.type = 'm.room.pinned_events')
 EXECUTE FUNCTION room_state_mv_refresh();
