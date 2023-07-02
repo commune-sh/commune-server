@@ -663,6 +663,24 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 
 		alias = strings.ToLower(alias)
 
+		isUser := strings.HasPrefix(space, "@")
+		username := strings.TrimPrefix(space, "@")
+
+		if isUser {
+
+			deleted, err := c.DB.Queries.IsDeleted(context.Background(), username)
+			if err != nil || deleted {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "space does not exist",
+						"exists": false,
+					},
+				})
+				return
+			}
+		}
+
 		ssp := matrix_db.GetSpaceStateParams{
 			RoomAlias: alias,
 		}

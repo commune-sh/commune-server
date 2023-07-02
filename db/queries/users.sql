@@ -18,6 +18,10 @@ WHERE email = $1 LIMIT 1;
 SELECT verified FROM users
 WHERE matrix_user_id = $1 OR username = $1 LIMIT 1;
 
+-- name: IsDeleted :one
+SELECT deleted FROM users
+WHERE matrix_user_id = $1 OR username = $1 LIMIT 1;
+
 -- name: DoesEmailExist :one
 SELECT exists(select 1 from users where email = $1 AND deleted = false);
 
@@ -49,4 +53,4 @@ UPDATE users SET deactivated_at = NOW() AND deactivated = true WHERE id = $1;
 UPDATE users SET reactivated_at = NOW() AND deactivated = false WHERE id = $1;
 
 -- name: DeleteUser :exec
-UPDATE users SET deleted_at = NOW() AND deleted = true WHERE id = $1;
+UPDATE users SET deleted_at = NOW(), deleted = true WHERE matrix_user_id = $1;

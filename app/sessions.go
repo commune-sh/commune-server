@@ -59,6 +59,83 @@ func (c *App) StoreUserSession(u *User) error {
 		return err
 	}
 
+	list := []string{u.AccessToken}
+
+	{
+		tokens, err := c.SessionsStore.Get(u.MatrixUserID).Result()
+
+		if err != nil {
+
+			serialized, err := json.Marshal(list)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			err = c.SessionsStore.Set(u.MatrixUserID, serialized, 0).Err()
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+		} else {
+
+			var us []string
+			err = json.Unmarshal([]byte(tokens), &us)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			us = append(us, u.AccessToken)
+
+			serialized, err := json.Marshal(us)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			err = c.SessionsStore.Set(u.MatrixUserID, serialized, 0).Err()
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+		}
+
+	}
+
+	return nil
+}
+
+func (c *App) PurgeUserSession(u string) error {
+
+	tokens, err := c.SessionsStore.Get(u).Result()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	var us []string
+	err = json.Unmarshal([]byte(tokens), &us)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	for _, token := range us {
+		err = c.SessionsStore.Del(token).Err()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+
+	err = c.SessionsStore.Del(u).Err()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
 	return nil
 }
 

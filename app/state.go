@@ -56,6 +56,24 @@ func (c *App) SpaceState() http.HandlerFunc {
 
 		space = strings.ToLower(space)
 
+		isUser := strings.HasPrefix(space, "@")
+		username := strings.TrimPrefix(space, "@")
+
+		if isUser {
+
+			deleted, err := c.DB.Queries.IsDeleted(context.Background(), username)
+			if err != nil || deleted {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "space does not exist",
+						"exists": false,
+					},
+				})
+				return
+			}
+		}
+
 		ssp := SpaceStateParams{
 			Slug: space,
 		}
@@ -67,7 +85,6 @@ func (c *App) SpaceState() http.HandlerFunc {
 		state, err := c.GetSpaceState(&ssp)
 
 		if err != nil {
-			log.Println("error getting event: ", err)
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{

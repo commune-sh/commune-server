@@ -84,6 +84,11 @@ func routes(c *App) chi.Router {
 		r.Get("/", c.HealthCheck())
 	})
 
+	r.Route("/admin", func(r chi.Router) {
+		r.Use(c.RequireAuthentication)
+		r.Put("/user/suspend", c.SuspendUser())
+	})
+
 	r.Route("/account", func(r chi.Router) {
 		r.Use(secureMiddleware.Handler)
 		r.Post("/login", c.ValidateLogin())
