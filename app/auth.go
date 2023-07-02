@@ -699,3 +699,43 @@ func (c *App) UpdatePassword() http.HandlerFunc {
 		})
 	}
 }
+
+func (c *App) Logout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		at, err := ExtractAccessToken(r)
+
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusUnauthorized,
+				JSON: map[string]any{
+					"success": false,
+				},
+			})
+			return
+		}
+
+		err = c.PurgeSession(at.Token)
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusUnauthorized,
+				JSON: map[string]any{
+					"success": false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"success": true,
+			},
+		})
+
+	}
+}

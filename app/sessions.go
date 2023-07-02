@@ -107,7 +107,7 @@ func (c *App) StoreUserSession(u *User) error {
 	return nil
 }
 
-func (c *App) PurgeUserSession(u string) error {
+func (c *App) PurgeUserSessions(u string) error {
 
 	tokens, err := c.SessionsStore.Get(u).Result()
 	if err != nil {
@@ -131,6 +131,17 @@ func (c *App) PurgeUserSession(u string) error {
 	}
 
 	err = c.SessionsStore.Del(u).Err()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func (c *App) PurgeSession(u string) error {
+
+	err := c.SessionsStore.Del(u).Err()
 	if err != nil {
 		log.Println(err)
 		return err

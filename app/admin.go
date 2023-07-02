@@ -41,7 +41,7 @@ func (c *App) SuspendUser() http.HandlerFunc {
 			return
 		}
 
-		err = c.PurgeUserSession(id)
+		err = c.PurgeUserSessions(id)
 		if err != nil {
 			log.Println("error deleting user", err)
 			RespondWithJSON(w, &JSONResponse{
