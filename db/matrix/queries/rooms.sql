@@ -38,6 +38,9 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
         'restrictions', rs.restrictions, 
         'do_not_index', rs.do_not_index, 
         'pinned_events', rs.pinned_events, 
+        'settings', json_build_object(
+            'room_order', rs.settings->'room_order'
+        ),
         'topics', room_topics.topics) as state,
     COALESCE(array_agg(json_build_object(
         'room_id', ch.room_id, 
@@ -52,9 +55,12 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
         'alias', ch.child_room_alias, 
         'topics', ch.topics, 
         'pinned_events', ch.pinned_events,
+        'settings', json_build_object(
+            'room_order', ch.settings->'room_order'
+        ),
         'joined', ch.joined,
         'banned', ch.banned
-        ) ORDER BY ch.origin_server_ts) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
+        ) ORDER BY LOWER(ch.child_room_alias)) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
     CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined,
     CASE WHEN ms.membership = 'ban' THEN true ELSE false END as banned,
     CASE WHEN ev.sender = sqlc.narg('user_id') THEN true ELSE false END as is_owner
@@ -66,7 +72,7 @@ LEFT JOIN (
 	SELECT * FROM room_state
 ) as rs ON rs.room_id = ra.room_id
 LEFT JOIN (
-    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, rst.restrictions, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.do_not_index,
+    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, rst.restrictions, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.do_not_index, rst.settings,
     CASE WHEN mst.membership = 'join' THEN true ELSE false END as joined,
     CASE WHEN mst.membership = 'ban' THEN true ELSE false END as banned
 	FROM room_state rst
@@ -79,7 +85,7 @@ LEFT JOIN room_topics ON room_topics.room_id = ra.room_id
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = sqlc.narg('user_id')
 WHERE LOWER(ra.room_alias) = $1
-GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.alias, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, rs.restrictions, rs.do_not_index, room_topics.topics, ms.membership, spaces.is_default;
+GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.alias, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, rs.restrictions, rs.do_not_index, rs.settings, room_topics.topics, ms.membership, spaces.is_default;
 
 
 

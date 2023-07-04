@@ -191,6 +191,13 @@ func QueryMatrixServerHealth(c config.Matrix) {
 	}
 	MATRIX_CONFIG = data
 
+	val, ok := data["federation_domain_whitelist"]
+	if ok {
+		log.Println("key exists", val)
+	} else {
+		log.Println("key does not exist")
+	}
+
 	a := fmt.Sprintf(`http://%s:%d/_matrix/client/versions`, c.Homeserver, c.Port)
 
 	resp, err := http.Get(a)
@@ -378,6 +385,7 @@ type RoomState struct {
 	Header       string `json:"header"`
 	Topics       any    `json:"topics"`
 	PinnedEvents any    `json:"pinned_events"`
+	Settings     any    `json:"settings"`
 	Restrictions any    `json:"restrictions"`
 	IsProfile    bool   `json:"is_profile"`
 	DoNotIndex   bool   `json:"do_not_index"`

@@ -37,7 +37,8 @@ SELECT ej.event_id,
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
-LEFT JOIN user_directory ud ON ud.user_id = events.sender
+LEFT JOIN membership_state ud ON ud.user_id = events.sender
+    AND ud.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
@@ -93,7 +94,8 @@ SELECT ej.event_id,
     COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
-LEFT JOIN user_directory ud ON ud.user_id = events.sender
+LEFT JOIN membership_state ud ON ud.user_id = events.sender
+    AND ud.room_id = ej.room_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
@@ -152,7 +154,8 @@ SELECT DISTINCT ON (ej.event_id) ej.event_id,
 FROM event_json ej
 JOIN recursive_events rev ON rev.event_id = ej.event_id
 LEFT JOIN events on events.event_id = ej.event_id
-LEFT JOIN user_directory ud ON ud.user_id = events.sender
+LEFT JOIN membership_state ud ON ud.user_id = events.sender
+    AND ud.room_id = ej.room_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN event_votes votes ON votes.relates_to_id = ej.event_id
@@ -214,7 +217,8 @@ SELECT ej.event_id,
 FROM event_json ej
 JOIN room_state rs ON rs.room_id = ej.room_id
 LEFT JOIN events on events.event_id = ej.event_id
-LEFT JOIN user_directory ud ON ud.user_id = events.sender
+LEFT JOIN membership_state ud ON ud.user_id = events.sender
+    AND ud.room_id = ej.room_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
@@ -260,7 +264,8 @@ SELECT ej.event_id,
     COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
-LEFT JOIN user_directory ud ON ud.user_id = events.sender
+LEFT JOIN membership_state ud ON ud.user_id = events.sender
+    AND ud.room_id = ej.room_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id

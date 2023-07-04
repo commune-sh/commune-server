@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
 	matrix_db "shpong/db/matrix/gen"
+	"shpong/gomatrix"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -26,6 +28,38 @@ func (c *App) UpdateDisplayName() http.HandlerFunc {
 
 		log.Println("recieved payload ", p)
 		user := c.LoggedInUser(r)
+
+		go func() {
+			log.Println("updating matrix profile")
+			serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+			matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
+			if err != nil {
+				log.Println(err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":   "Could not update avatar at this time.",
+						"updated": false,
+					},
+				})
+				return
+			}
+
+			err = matrix.SetDisplayName(p.DisplayName)
+			if err != nil {
+				log.Println(err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":   "Could not update avatar at this time.",
+						"updated": false,
+					},
+				})
+				return
+			}
+			log.Println("updated...")
+		}()
 
 		err = c.MatrixDB.Queries.UpdateUserDirectoryDisplayName(context.Background(), matrix_db.UpdateUserDirectoryDisplayNameParams{
 			UserID: user.MatrixUserID,
@@ -86,7 +120,8 @@ func (c *App) UpdateAvatar() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		/*
+		go func() {
+			log.Println("updating matrix profile")
 			serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
 			matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
@@ -114,7 +149,8 @@ func (c *App) UpdateAvatar() http.HandlerFunc {
 				})
 				return
 			}
-		*/
+			log.Println("updated...")
+		}()
 
 		err = c.MatrixDB.Queries.UpdateUserDirectoryAvatar(context.Background(), matrix_db.UpdateUserDirectoryAvatarParams{
 			UserID: user.MatrixUserID,

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS room_state (
     header text,
     pinned_events text,
     restrictions text,
+    settings text,
     do_not_index bool
 );
 -- +goose StatementEnd
