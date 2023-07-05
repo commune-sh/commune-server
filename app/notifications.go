@@ -2,17 +2,115 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	db "shpong/db/gen"
+	matrix_db "shpong/db/matrix/gen"
+	"sync"
+
+	"github.com/gorilla/websocket"
 )
+
+type Notification struct {
+	MatrixUserID string `json:"matrix_user_id"`
+	JSON         []byte `json:"json"`
+}
+
+type NotificationClient struct {
+	Conn  *websocket.Conn
+	Token string
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+var connectedClients = make(map[string]*websocket.Conn)
+var clientsMutex sync.Mutex
+
+func (c *App) SyncNotifications() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		query := r.URL.Query()
+		token := query.Get("token")
+
+		log.Println("token is ", token)
+
+		user, err := c.GetTokenUser(token)
+		if err != nil || user == nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println("Failed to upgrade connection to WebSocket:", err)
+			return
+		}
+		defer conn.Close()
+
+		clientsMutex.Lock()
+		connectedClients[user.MatrixUserID] = conn
+		clientsMutex.Unlock()
+
+		for {
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("Failed to read message:", err)
+				break
+			}
+
+			fmt.Printf("Received message from client: %s\n", message)
+
+			err = conn.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				log.Println("Failed to write message:", err)
+				break
+			}
+		}
+
+		clientsMutex.Lock()
+		delete(connectedClients, token)
+		clientsMutex.Unlock()
+
+	}
+}
+
+func (c *App) sendNotification(mid string, json []byte) {
+	clientsMutex.Lock()
+	conn, found := connectedClients[mid]
+	clientsMutex.Unlock()
+
+	if found {
+		err := conn.WriteMessage(websocket.TextMessage, json)
+		if err != nil {
+			log.Println("Failed to send notification to client:", err)
+			conn.Close()
+			clientsMutex.Lock()
+			delete(connectedClients, mid)
+			clientsMutex.Unlock()
+		}
+	} else {
+		log.Println("No client with the provided token:", mid)
+	}
+}
 
 func (c *App) GetNotifications() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		user := c.LoggedInUser(r)
 
-		items, err := c.DB.Queries.GetUserNotifications(context.Background(), user.MatrixUserID)
+		items, err := c.MatrixDB.Queries.GetUserNotifications(context.Background(), user.MatrixUserID)
 		if err != nil {
 			log.Println(err)
 			RespondWithJSON(w, &JSONResponse{
@@ -40,7 +138,7 @@ func (c *App) MarkRead() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		err := c.DB.Queries.MarkAsRead(context.Background(), user.MatrixUserID)
+		err := c.MatrixDB.Queries.MarkAsRead(context.Background(), user.MatrixUserID)
 		if err != nil {
 			log.Println(err)
 			RespondWithJSON(w, &JSONResponse{
@@ -99,7 +197,7 @@ func (c *App) NewReplyNotification(n *NotificationParams) error {
 		notificationType = "reply.reply"
 	}
 
-	np := db.CreateNotificationParams{
+	np := matrix_db.CreateNotificationParams{
 		FromMatrixUserID: n.User.MatrixUserID,
 		ForMatrixUserID:  replyingToEvent.Sender.ID,
 		RelatesToEventID: replyingToEvent.EventID,
@@ -122,12 +220,19 @@ func (c *App) NewReplyNotification(n *NotificationParams) error {
 		}
 	}
 
-	_, err = c.DB.Queries.CreateNotification(context.Background(), np)
+	notification, err := c.MatrixDB.Queries.CreateNotification(context.Background(), np)
 
 	if err != nil {
 		log.Println("notification could not be created")
 		return err
 	}
+
+	serialized, err := json.Marshal(notification)
+	if err != nil {
+		log.Println(err)
+	}
+
+	c.sendNotification(replyingToEvent.Sender.ID, serialized)
 
 	return nil
 }
@@ -157,7 +262,7 @@ func (c *App) NewReactionNotification(n *NotificationParams) error {
 
 	notificationType := "reaction"
 
-	np := db.CreateNotificationParams{
+	np := matrix_db.CreateNotificationParams{
 		FromMatrixUserID: n.User.MatrixUserID,
 		ForMatrixUserID:  replyingToEvent.Sender.ID,
 		RelatesToEventID: replyingToEvent.EventID,
@@ -182,7 +287,7 @@ func (c *App) NewReactionNotification(n *NotificationParams) error {
 
 	}
 
-	_, err = c.DB.Queries.CreateNotification(context.Background(), np)
+	_, err = c.MatrixDB.Queries.CreateNotification(context.Background(), np)
 
 	if err != nil {
 		log.Println("notification could not be created")

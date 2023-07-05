@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	db "shpong/db/gen"
 	matrix_db "shpong/db/matrix/gen"
 
 	"shpong/gomatrix"
@@ -29,7 +28,10 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 
 		log.Println("recieved payload ", p)
 
-		creds, err := c.DB.Queries.GetCredentials(context.Background(), p.Username)
+		creds, err := c.MatrixDB.Queries.GetCredentials(context.Background(), pgtype.Text{
+			String: p.Username,
+			Valid:  true,
+		})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "GetCredentials failed: %v\n", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -102,7 +104,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 
 		token := RandomString(32)
 
-		idu := encodeUUID(creds.ID.Bytes)
+		//idu := encodeUUID(creds.ID.Bytes)
 
 		room_alias := fmt.Sprintf("#@%s:%s", username, c.Config.Matrix.PublicServer)
 		creator := fmt.Sprintf("@%s:%s", username, c.Config.Matrix.PublicServer)
@@ -124,7 +126,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 		}
 
 		user := &User{
-			UserID:            idu,
+			//UserID:            idu,
 			Username:          username,
 			Email:             creds.Email.String,
 			DisplayName:       profile.Displayname.String,
@@ -134,7 +136,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			MatrixUserID:      resp.UserID,
 			MatrixDeviceID:    resp.DeviceID,
 			UserSpaceID:       userspace,
-			Age:               creds.CreatedAt.Time.Unix(),
+			Age:               creds.CreatedAt.Int64,
 			Verified:          creds.Verified,
 			Admin:             admin,
 		}
@@ -459,12 +461,15 @@ func (c *App) VerifyCode() http.HandlerFunc {
 		user.Email = p.Email
 		user.Verified = true
 
-		err = c.DB.Queries.VerifyEmail(context.Background(), db.VerifyEmailParams{
+		err = c.MatrixDB.Queries.VerifyEmail(context.Background(), matrix_db.VerifyEmailParams{
 			Email: pgtype.Text{
 				String: p.Email,
 				Valid:  true,
 			},
-			MatrixUserID: user.MatrixUserID,
+			MatrixUserID: pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			},
 		})
 		if err != nil {
 			log.Println(err)
@@ -517,7 +522,7 @@ func (c *App) SendRecoveryCode() http.HandlerFunc {
 
 		log.Println("recieved payload ", p)
 
-		exists, err := c.DB.Queries.DoesEmailExist(context.Background(), pgtype.Text{
+		exists, err := c.MatrixDB.Queries.DoesEmailExist(context.Background(), pgtype.Text{
 			String: p.Email,
 			Valid:  true,
 		})
@@ -655,8 +660,11 @@ func (c *App) UpdatePassword() http.HandlerFunc {
 
 			hash, _ := HashPassword(p.Password)
 
-			creds, err := c.DB.Queries.GetCredentials(context.Background(), p.Email)
-			if err != nil || &creds == nil || creds.MatrixUserID == "" {
+			creds, err := c.MatrixDB.Queries.GetCredentials(context.Background(), pgtype.Text{
+				String: p.Email,
+				Valid:  true,
+			})
+			if err != nil || &creds == nil || creds.MatrixUserID.String == "" {
 				log.Println(err)
 				RespondWithJSON(w, &JSONResponse{
 					Code: http.StatusOK,
@@ -673,7 +681,7 @@ func (c *App) UpdatePassword() http.HandlerFunc {
 					Valid:  true,
 				},
 				Name: pgtype.Text{
-					String: creds.MatrixUserID,
+					String: creds.MatrixUserID.String,
 					Valid:  true,
 				},
 			})

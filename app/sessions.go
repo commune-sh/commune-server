@@ -16,12 +16,12 @@ type User struct {
 	MatrixAccessToken string `json:"matrix_access_token"`
 	MatrixUserID      string `json:"matrix_user_id"`
 	MatrixDeviceID    string `json:"matrix_device_id"`
-	UserID            string `json:"user_id"`
-	UserSpaceID       string `json:"user_space_id"`
-	Email             string `json:"email"`
-	Age               int64  `json:"age"`
-	Admin             bool   `json:"admin"`
-	Verified          bool   `json:"verified"`
+	//UserID            string `json:"user_id"`
+	UserSpaceID string `json:"user_space_id"`
+	Email       string `json:"email"`
+	Age         int64  `json:"age"`
+	Admin       bool   `json:"admin"`
+	Verified    bool   `json:"verified"`
 }
 
 func NewSession(sec string) *sessions.CookieStore {

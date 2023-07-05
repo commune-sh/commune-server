@@ -61,7 +61,10 @@ func (c *App) SpaceState() http.HandlerFunc {
 
 		if isUser {
 
-			deleted, err := c.DB.Queries.IsDeleted(context.Background(), username)
+			deleted, err := c.MatrixDB.Queries.IsDeactivated(context.Background(), pgtype.Text{
+				String: username,
+				Valid:  true,
+			})
 			if err != nil || deleted {
 				RespondWithJSON(w, &JSONResponse{
 					Code: http.StatusOK,

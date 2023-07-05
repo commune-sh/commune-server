@@ -13,12 +13,9 @@ CREATE TABLE notifications (
     read_at timestamptz,
     read boolean DEFAULT false NOT NULL
 );
-
-CREATE INDEX notifications_index on notifications(for_matrix_user_id);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP INDEX notifications_index;
 DROP TABLE notifications;
 -- +goose StatementEnd

@@ -99,7 +99,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 
 		if c.Config.Restrictions.RequireVerification {
 
-			verified, err := c.DB.Queries.IsVerifed(context.Background(), user.MatrixUserID)
+			verified, err := c.MatrixDB.Queries.IsVerifed(context.Background(), user.MatrixUserID)
 			if !verified || err != nil {
 				RespondWithJSON(w, &JSONResponse{
 					Code: http.StatusOK,

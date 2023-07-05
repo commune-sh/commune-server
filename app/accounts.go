@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	db "shpong/db/gen"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -41,59 +41,62 @@ func (c *App) CreateAccount() http.HandlerFunc {
 		}
 
 		/*
-			if c.Config.Auth.BlockPopularEmailProviders {
+				if c.Config.Auth.BlockPopularEmailProviders {
 
-				// let's ban the most common email providers to prevent spam
-				// from /static/emails.json
+					// let's ban the most common email providers to prevent spam
+					// from /static/emails.json
 
-				banned := IsEmailBanned(p.Email)
-				if banned {
-					RespondWithJSON(w, &JSONResponse{
-						Code: http.StatusOK,
-						JSON: map[string]any{
-							"created":            false,
-							"provider_forbidden": true,
-							"error":              "email provider is not allowed",
-						},
-					})
-					return
+					banned := IsEmailBanned(p.Email)
+					if banned {
+						RespondWithJSON(w, &JSONResponse{
+							Code: http.StatusOK,
+							JSON: map[string]any{
+								"created":            false,
+								"provider_forbidden": true,
+								"error":              "email provider is not allowed",
+							},
+						})
+						return
+					}
 				}
-			}
 
-			if c.Config.Auth.QueryMXRecords {
+				if c.Config.Auth.QueryMXRecords {
 
-				// let's look up MX records for the email domain
-				// if there are no MX records, then we can't send an email
-				// so we should reject the account creation
+					// let's look up MX records for the email domain
+					// if there are no MX records, then we can't send an email
+					// so we should reject the account creation
 
-				provider := strings.Split(p.Email, "@")[1]
-				records, err := net.LookupMX(provider)
-				if err != nil || len(records) == 0 {
-					RespondWithJSON(w, &JSONResponse{
-						Code: http.StatusOK,
-						JSON: map[string]any{
-							"created": false,
-							"error":   "email provider does not exist",
-						},
-					})
-					return
+					provider := strings.Split(p.Email, "@")[1]
+					records, err := net.LookupMX(provider)
+					if err != nil || len(records) == 0 {
+						RespondWithJSON(w, &JSONResponse{
+							Code: http.StatusOK,
+							JSON: map[string]any{
+								"created": false,
+								"error":   "email provider does not exist",
+							},
+						})
+						return
+					}
 				}
-			}
 
-			// check to see if username already exists
-			/*
-				exists, _ := c.DB.Queries.DoesUsernameExist(context.Background(), p.Username)
+				// check to see if username already exists
+				/*
+					exists, _ := c.MatrixDB.Queries.DoesUsernameExist(context.Background(), pgtype.Text{
+				String: username,
+				Valid:  true,
+			})
 
-				if exists {
-					RespondWithJSON(w, &JSONResponse{
-						Code: http.StatusOK,
-						JSON: map[string]any{
-							"created": false,
-							"error":   "username already exists",
-						},
-					})
-					return
-				}
+					if exists {
+						RespondWithJSON(w, &JSONResponse{
+							Code: http.StatusOK,
+							JSON: map[string]any{
+								"created": false,
+								"error":   "username already exists",
+							},
+						})
+						return
+					}
 		*/
 
 		// check to see if matrix account already exists
@@ -141,32 +144,19 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			return
 		}
 
-		// create user
-		userID, err := c.DB.Queries.CreateUser(context.Background(), db.CreateUserParams{
-			//Email:        p.Email,
-			Username:     p.Username,
-			MatrixUserID: resp.Response.UserID,
-		})
-
-		// send error JSON
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "CreateUser failed: %v\n", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"created": false,
-					"error":   "could not create account",
-				},
-			})
-			return
-		}
-
-		idu := encodeUUID(userID.ID.Bytes)
-
 		token := RandomString(32)
 
+		cr := time.Now().Unix()
+
+		created, err := c.MatrixDB.Queries.GetUserCreatedAt(context.Background(), pgtype.Text{String: resp.Response.UserID, Valid: true})
+		if err != nil {
+			log.Println(err)
+		} else {
+			cr = created.Int64
+		}
+
 		user := &User{
-			UserID:   idu,
+			//UserID:   idu,
 			Username: p.Username,
 			//Email:             p.Email,
 			AccessToken:       token,
@@ -174,7 +164,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			MatrixUserID:      resp.Response.UserID,
 			MatrixDeviceID:    resp.Response.DeviceID,
 			UserSpaceID:       resp.UserSpaceID,
-			Age:               userID.CreatedAt.Time.Unix(),
+			Age:               cr,
 		}
 
 		err = c.StoreUserSession(user)
@@ -207,7 +197,10 @@ func (c *App) UsernameAvailable() http.HandlerFunc {
 
 		username := chi.URLParam(r, "username")
 
-		exists, err := c.DB.Queries.DoesUsernameExist(context.Background(), username)
+		exists, err := c.MatrixDB.Queries.DoesUsernameExist(context.Background(), pgtype.Text{
+			String: username,
+			Valid:  true,
+		})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "DoesUsernameExist failed: %v\n", err)
 			RespondWithJSON(w, &JSONResponse{

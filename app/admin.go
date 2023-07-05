@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"net/http"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (c *App) SuspendUser() http.HandlerFunc {
@@ -28,7 +30,10 @@ func (c *App) SuspendUser() http.HandlerFunc {
 			return
 		}
 
-		err := c.DB.Queries.DeleteUser(context.Background(), id)
+		err := c.MatrixDB.Queries.DeactivateUser(context.Background(), pgtype.Text{
+			String: id,
+			Valid:  true,
+		})
 		if err != nil {
 			log.Println("error deleting user", err)
 			RespondWithJSON(w, &JSONResponse{
