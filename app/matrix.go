@@ -274,7 +274,7 @@ type Event struct {
 	EventID        string   `json:"event_id"`
 	StateKey       any      `json:"state_key,omitempty"`
 	RoomAlias      string   `json:"room_alias,omitempty"`
-	RoomID         any      `json:"room_id"`
+	RoomID         string   `json:"room_id"`
 	OriginServerTs float64  `json:"origin_server_ts"`
 	Unsigned       any      `json:"unsigned"`
 	Slug           string   `json:"slug,omitempty"`

@@ -36,7 +36,7 @@ runMigrations:
 resetMigrations:
 	-cd db/migrations;goose postgres "postgres://shpong:@localhost:5432/shpong?sslmode=disable" reset;
 sqlc:
-	-cd db;sqlc generate --experimental;
+	#-cd db;sqlc generate --experimental;
 	-cd db/matrix;sqlc generate --experimental;
 flushRedis: SHELL := /bin/bash
 flushRedis:

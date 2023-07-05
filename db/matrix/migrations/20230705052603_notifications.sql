@@ -1,8 +1,10 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE notifications (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     for_matrix_user_id text REFERENCES users(name) NOT NULL,
     from_matrix_user_id text REFERENCES users(name) NOT NULL,
+    room_id text NOT NULL DEFAULT '',
     relates_to_event_id text NOT NULL DEFAULT '',
     event_id text NOT NULL DEFAULT '',
     thread_event_id TEXT NOT NULL DEFAULT '',

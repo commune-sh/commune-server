@@ -206,6 +206,7 @@ func (c *App) NewReplyNotification(n *NotificationParams) error {
 		Type:             notificationType,
 		Body:             "",
 		RoomAlias:        replyingToEvent.RoomAlias,
+		RoomID:           replyingToEvent.RoomID,
 	}
 
 	js, ok := n.ReplyEvent.Content.(map[string]interface{})
@@ -270,6 +271,7 @@ func (c *App) NewReactionNotification(n *NotificationParams) error {
 		Type:             notificationType,
 		Body:             "",
 		RoomAlias:        replyingToEvent.RoomAlias,
+		RoomID:           replyingToEvent.RoomID,
 	}
 
 	js, ok := n.ReplyEvent.Content.(map[string]interface{})
