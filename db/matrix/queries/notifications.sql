@@ -22,18 +22,24 @@ UPDATE notifications SET read_at = now(), read = true
 WHERE for_matrix_user_id = $1;
 
 -- name: CreateNotification :one
-INSERT INTO notifications (
-    for_matrix_user_id, 
-    from_matrix_user_id, 
-    room_id, 
-    relates_to_event_id,
-    thread_event_id,
-    event_id,
-    type, 
-    body,
-    room_alias
-) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9
+WITH INS AS (
+    INSERT INTO notifications (
+        for_matrix_user_id, 
+        from_matrix_user_id, 
+        room_id, 
+        relates_to_event_id,
+        thread_event_id,
+        event_id,
+        type, 
+        body,
+        room_alias
+    ) VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9
+    )
+    RETURNING *
 )
-RETURNING *;
-
+SELECT INS.*,
+    ms.display_name,
+    ms.avatar_url
+FROM INS
+LEFT JOIN membership_state ms ON ms.user_id = INS.from_matrix_user_id;
