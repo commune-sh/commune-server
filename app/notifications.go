@@ -287,12 +287,19 @@ func (c *App) NewReactionNotification(n *NotificationParams) error {
 
 	}
 
-	_, err = c.MatrixDB.Queries.CreateNotification(context.Background(), np)
+	notification, err := c.MatrixDB.Queries.CreateNotification(context.Background(), np)
 
 	if err != nil {
 		log.Println("notification could not be created")
 		return err
 	}
+
+	serialized, err := json.Marshal(notification)
+	if err != nil {
+		log.Println(err)
+	}
+
+	c.sendNotification(replyingToEvent.Sender.ID, serialized)
 
 	return nil
 }
