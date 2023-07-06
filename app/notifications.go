@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
@@ -69,8 +68,6 @@ func (c *App) SyncNotifications() http.HandlerFunc {
 				log.Println("Failed to read message:", err)
 				break
 			}
-
-			fmt.Printf("Received message from client: %s\n", message)
 
 			err = conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {

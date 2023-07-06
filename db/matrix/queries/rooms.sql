@@ -26,7 +26,7 @@ LEFT JOIN rooms ON room_aliases.room_id = rooms.room_id;
 
 -- name: GetSpaceState :one
 SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner, 
-    rooms.is_public, spaces.is_default,
+    rooms.is_public, spaces.is_default, mes.display_name, mes.avatar_url,
 	jsonb_build_object(
         'name', rs.name, 
         'alias', rs.alias,
@@ -67,6 +67,7 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
 FROM room_aliases ra 
 JOIN rooms on rooms.room_id = ra.room_id
 JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
+JOIN membership_state mes ON mes.room_id = ev.room_id AND mes.user_id = ev.sender
 JOIN spaces ON spaces.room_id = ra.room_id
 LEFT JOIN (
 	SELECT * FROM room_state
@@ -85,7 +86,7 @@ LEFT JOIN room_topics ON room_topics.room_id = ra.room_id
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = sqlc.narg('user_id')
 WHERE LOWER(ra.room_alias) = $1
-GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.alias, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, rs.restrictions, rs.do_not_index, rs.settings, room_topics.topics, ms.membership, spaces.is_default;
+GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.alias, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, rs.restrictions, rs.do_not_index, rs.settings, room_topics.topics, ms.membership, spaces.is_default, mes.display_name, mes.avatar_url;
 
 
 

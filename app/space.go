@@ -545,6 +545,11 @@ func (c *App) NewSpaceRoom(p *NewSpaceRoomParams) (string, error) {
 				"age":      0,
 				"verified": true,
 			},
+		}, gomatrix.Event{
+			Type: "m.space.type",
+			Content: map[string]interface{}{
+				"type": "board",
+			},
 		},
 		pl,
 	}

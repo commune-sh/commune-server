@@ -360,11 +360,17 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 
 }
 
+type Owner struct {
+	UserID      string `json:"user_id"`
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
+}
+
 type SpaceState struct {
 	RoomID         string `json:"room_id"`
 	Members        int64  `json:"members"`
 	OriginServerTS int64  `json:"origin_server_ts"`
-	Owner          string `json:"owner"`
+	Owner          Owner  `json:"owner"`
 	Space          any    `json:"space"`
 	Children       any    `json:"children,omitempty"`
 	Topics         any    `json:"topics,omitempty"`
@@ -404,7 +410,7 @@ func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {
 		RoomID:         m.RoomID,
 		Members:        m.Members.Int64,
 		OriginServerTS: m.OriginServerTS.Int64,
-		Owner:          m.Owner.String,
+		Owner:          Owner{UserID: m.Owner.String, DisplayName: m.DisplayName.String, AvatarURL: m.AvatarUrl.String},
 		Space:          st,
 		Children:       m.Children,
 		Joined:         m.Joined,
