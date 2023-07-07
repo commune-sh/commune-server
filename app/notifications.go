@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
@@ -299,6 +300,42 @@ func (c *App) NewReactionNotification(n *NotificationParams) error {
 	}
 
 	c.sendNotification(replyingToEvent.Sender.ID, serialized)
+
+	return nil
+}
+
+type JoinNotificationParams struct {
+	User   *User
+	Space  string
+	RoomID string
+}
+
+func (c *App) NewJoinNotification(n *JoinNotificationParams) error {
+
+	mid := fmt.Sprintf("%s:%s", n.Space, c.Config.Matrix.PublicServer)
+
+	np := matrix_db.CreateNotificationParams{
+		FromMatrixUserID: n.User.MatrixUserID,
+		ForMatrixUserID:  mid,
+		Type:             "space.follow",
+		Body:             "",
+		RoomAlias:        n.Space,
+		RoomID:           n.RoomID,
+	}
+
+	notification, err := c.MatrixDB.Queries.CreateNotification(context.Background(), np)
+
+	if err != nil {
+		log.Println("notification could not be created")
+		return err
+	}
+
+	serialized, err := json.Marshal(notification)
+	if err != nil {
+		log.Println(err)
+	}
+
+	c.sendNotification(mid, serialized)
 
 	return nil
 }

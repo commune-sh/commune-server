@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 
 	matrix_db "shpong/db/matrix/gen"
 
@@ -97,23 +98,19 @@ func (c *App) JoinSpace() http.HandlerFunc {
 			return
 		}
 
-		//join all space child rooms
-		/*
+		if strings.HasPrefix(space, "@") {
+
 			go func() {
-				for _, room_id := range sri.Rooms {
-
-					re, err := matrix.JoinRoom(room_id, "", nil)
-
-					if err != nil {
-						log.Println("could not join room", err)
-					}
-
-					if re != nil {
-						log.Println(re)
-					}
+				err := c.NewJoinNotification(&JoinNotificationParams{
+					User:   user,
+					Space:  space,
+					RoomID: sri.RoomID,
+				})
+				if err != nil {
+					log.Println(err)
 				}
 			}()
-		*/
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
