@@ -216,6 +216,7 @@ SELECT ej.event_id,
     COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on
 FROM event_json ej
 JOIN room_state rs ON rs.room_id = ej.room_id
+AND (rs.is_profile = sqlc.narg('social')::boolean OR sqlc.narg('social') IS NULL)
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN membership_state ud ON ud.user_id = events.sender
     AND ud.room_id = ej.room_id
@@ -238,7 +239,6 @@ AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND aliases.room_alias is not null
 AND events.origin_server_ts < $1
 AND redactions.redacts is null
-AND (rs.is_profile = sqlc.narg('social')::boolean OR sqlc.narg('social') IS NULL)
 GROUP BY
     ej.event_id, 
     ed.json,
@@ -265,6 +265,7 @@ SELECT ej.event_id,
     COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on
 FROM event_json ej
 JOIN room_state rs ON rs.room_id = ej.room_id
+AND (rs.is_profile = sqlc.narg('social')::boolean OR sqlc.narg('social') IS NULL)
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN membership_state ud ON ud.user_id = events.sender
     AND ud.room_id = ej.room_id
@@ -286,7 +287,6 @@ JOIN membership_state ms
     AND ms.user_id = $1
     AND ms.membership = 'join'
 WHERE events.type = 'space.board.post'
-AND (rs.is_profile = sqlc.narg('social')::boolean OR sqlc.narg('social') IS NULL)
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND aliases.room_alias is not null
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)

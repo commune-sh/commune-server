@@ -199,6 +199,7 @@ func (c *App) GetUserFeedEvents(p *FeedEventsParams) (*[]Event, error) {
 			Valid: true,
 		}
 	}
+	log.Println("getting user feed events", p.Filter, fe.Social.Bool, fe.Social.Valid)
 
 	events, err := c.MatrixDB.Queries.GetUserFeedEvents(context.Background(), fe)
 
@@ -243,6 +244,9 @@ func (c *App) UserFeedEvents() http.HandlerFunc {
 		query := r.URL.Query()
 		last := query.Get("last")
 		filter := query.Get("filter")
+		log.Println(last, filter)
+		log.Println(last, filter)
+		log.Println(last, filter)
 
 		events, err := c.GetUserFeedEvents(&FeedEventsParams{
 			Last:         last,
