@@ -228,9 +228,11 @@ func (c *App) UpdateIndexEventsCache() error {
 
 	log.Println("updating cache for index")
 
-	ge := pgtype.Int8{
-		Int64: time.Now().UnixMilli(),
-		Valid: true,
+	ge := matrix_db.GetEventsParams{
+		OriginServerTS: pgtype.Int8{
+			Int64: time.Now().UnixMilli(),
+			Valid: true,
+		},
 	}
 
 	events, err := c.MatrixDB.Queries.GetEvents(context.Background(), ge)

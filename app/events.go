@@ -16,20 +16,37 @@ import (
 )
 
 type IndexEventsParams struct {
-	Last string `json:"last"`
+	Last   string `json:"last"`
+	Filter string `json:"filter"`
 }
 
 func (c *App) GetIndexEvents(p *IndexEventsParams) (*[]Event, error) {
 
-	ge := pgtype.Int8{
-		Int64: time.Now().UnixMilli(),
-		Valid: true,
+	gep := matrix_db.GetEventsParams{
+		OriginServerTS: pgtype.Int8{
+			Int64: time.Now().UnixMilli(),
+			Valid: true,
+		},
 	}
 
 	if p.Last != "" {
 		i, _ := strconv.ParseInt(p.Last, 10, 64)
 		log.Println(i)
-		ge.Int64 = i
+		gep.OriginServerTS.Int64 = i
+	}
+
+	if p.Filter == "social" {
+		gep.Social = pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		}
+	}
+
+	if p.Filter == "spaces" {
+		gep.Social = pgtype.Bool{
+			Bool:  false,
+			Valid: true,
+		}
 	}
 
 	if c.Config.Cache.IndexEvents && p.Last == "" {
@@ -53,7 +70,7 @@ func (c *App) GetIndexEvents(p *IndexEventsParams) (*[]Event, error) {
 		}
 	}
 
-	events, err := c.MatrixDB.Queries.GetEvents(context.Background(), ge)
+	events, err := c.MatrixDB.Queries.GetEvents(context.Background(), gep)
 
 	if err != nil {
 		return nil, err
@@ -115,12 +132,15 @@ func (c *App) AllEvents() http.HandlerFunc {
 
 		query := r.URL.Query()
 		last := query.Get("last")
+		filter := query.Get("filter")
 
 		// get events for this space
 
 		events, err := c.GetIndexEvents(&IndexEventsParams{
-			Last: last,
+			Last:   last,
+			Filter: filter,
 		})
+
 		if err != nil {
 			log.Println("error getting events: ", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -144,6 +164,7 @@ func (c *App) AllEvents() http.HandlerFunc {
 
 type FeedEventsParams struct {
 	Last         string
+	Filter       string
 	MatrixUserID string
 }
 
@@ -161,6 +182,20 @@ func (c *App) GetUserFeedEvents(p *FeedEventsParams) (*[]Event, error) {
 		log.Println(i)
 		fe.OriginServerTS = pgtype.Int8{
 			Int64: i,
+			Valid: true,
+		}
+	}
+
+	if p.Filter == "social" {
+		fe.Social = pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		}
+	}
+
+	if p.Filter == "spaces" {
+		fe.Social = pgtype.Bool{
+			Bool:  false,
 			Valid: true,
 		}
 	}
@@ -207,9 +242,11 @@ func (c *App) UserFeedEvents() http.HandlerFunc {
 
 		query := r.URL.Query()
 		last := query.Get("last")
+		filter := query.Get("filter")
 
 		events, err := c.GetUserFeedEvents(&FeedEventsParams{
 			Last:         last,
+			Filter:       filter,
 			MatrixUserID: user.MatrixUserID,
 		})
 
