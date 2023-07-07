@@ -97,7 +97,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		if c.Config.Restrictions.RequireVerification {
+		if c.Config.Restrictions.RequireVerification && !user.Admin {
 
 			verified, err := c.MatrixDB.Queries.IsVerifed(context.Background(), user.MatrixUserID)
 			if !verified || err != nil {
@@ -112,7 +112,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			}
 		}
 
-		if c.Config.Restrictions.SenderAge > 0 {
+		if c.Config.Restrictions.SenderAge > 0 && !user.Admin {
 			valid := c.IsSenderAgeValid(user, c.Config.Restrictions.SenderAge)
 			if !valid {
 
@@ -133,7 +133,6 @@ func (c *App) CreateSpace() http.HandlerFunc {
 				return
 			}
 		}
-		log.Println(1)
 
 		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
 		if err != nil {
@@ -146,9 +145,8 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
-		log.Println(2)
 
-		if len(spaces) >= c.Config.Restrictions.SpacesPerUser {
+		if len(spaces) >= c.Config.Restrictions.SpacesPerUser && !user.Admin {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
@@ -158,7 +156,6 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
-		log.Println(3)
 
 		valid := IsValidAlias(p.Username)
 		if !valid {
@@ -171,7 +168,6 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
-		log.Println(4)
 
 		alias := c.ConstructMatrixRoomID(p.Username)
 
@@ -189,7 +185,6 @@ func (c *App) CreateSpace() http.HandlerFunc {
 				return
 			}
 		}
-		log.Println(5)
 
 		exists, err := c.MatrixDB.Queries.DoesSpaceExist(context.Background(), alias)
 		if err != nil {
@@ -203,7 +198,6 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			return
 		}
 
-		log.Println(6)
 		if exists {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
@@ -215,12 +209,12 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			return
 		}
 
-		d, err := c.NewSpace(&NewSpaceParams{
+		_, err = c.NewSpace(&NewSpaceParams{
 			Space:             p,
 			MatrixUserID:      user.MatrixUserID,
 			MatrixAccessToken: user.MatrixAccessToken,
 		})
-		log.Println(8)
+
 		if err != nil {
 			log.Println("error creating space: ", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -232,8 +226,6 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
-		log.Println(9)
-		log.Println("what is d??????", d)
 
 		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), matrix_db.GetSpaceInfoParams{
 			RoomAlias: strings.ToLower(alias),
@@ -243,7 +235,6 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			},
 		})
 
-		log.Println(10)
 		if err != nil {
 			log.Println("error getting space info: ", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -254,7 +245,6 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			})
 			return
 		}
-		log.Println(11)
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
