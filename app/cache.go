@@ -13,6 +13,7 @@ import (
 type Cache struct {
 	VerificationCodes *buntdb.DB
 	Events            *redis.Client
+	System            *redis.Client
 }
 
 func NewCache(conf *config.Config) (*Cache, error) {
@@ -23,6 +24,12 @@ func NewCache(conf *config.Config) (*Cache, error) {
 		DB:       conf.Redis.PostsDB,
 	})
 
+	sdb := redis.NewClient(&redis.Options{
+		Addr:     conf.Redis.Address,
+		Password: conf.Redis.Password,
+		DB:       conf.Redis.SystemDB,
+	})
+
 	db, err := buntdb.Open(":memory:")
 	if err != nil {
 		panic(err)
@@ -31,6 +38,7 @@ func NewCache(conf *config.Config) (*Cache, error) {
 	c := &Cache{
 		VerificationCodes: db,
 		Events:            pdb,
+		System:            sdb,
 	}
 
 	err = db.Update(func(tx *buntdb.Tx) error {

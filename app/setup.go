@@ -124,7 +124,7 @@ func (c *App) SetupDefaultMatrixAccount() (bool, error) {
 		Username: username,
 		Password: password,
 		Admin:    false,
-	}, nonce, c.Config.Auth.SharedSecret)
+	}, nonce, c.Config.Authentication.SharedSecret)
 	if err != nil {
 		log.Println(err)
 		return false, err

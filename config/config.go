@@ -43,7 +43,8 @@ type Redis struct {
 	Address    string `toml:"address"`
 	Password   string `toml:"password"`
 	SessionsDB int    `toml:"sessions_db"`
-	PostsDB    int    `toml:"posts_DB"`
+	PostsDB    int    `toml:"posts_db"`
+	SystemDB   int    `toml:"system_db"`
 }
 
 type Cache struct {
@@ -52,7 +53,7 @@ type Cache struct {
 	EventReplies bool `toml:"event_replies"`
 }
 
-type Auth struct {
+type Authentication struct {
 	VerifyEmail                bool   `toml:"verify_email"`
 	DisableRegistration        bool   `toml:"disable_registration"`
 	SharedSecret               string `toml:"shared_secret"`
@@ -95,29 +96,31 @@ type Discovery struct {
 }
 
 type Restrictions struct {
-	RequireVerification    bool  `toml:"require_verification"`
-	SpacesPerUser          int   `toml:"spaces_per_user"`
-	TimeSinceLastSpace     int   `toml:"time_since_last_space"`
-	RejectReservedKeywords bool  `toml:"reject_reserved_keywords"`
-	SenderAge              int32 `toml:"sender_age"`
+	Space struct {
+		RequireVerification    bool  `toml:"require_verification"`
+		SpacesPerUser          int   `toml:"spaces_per_user"`
+		TimeSinceLastSpace     int   `toml:"time_since_last_space"`
+		RejectReservedKeywords bool  `toml:"reject_reserved_keywords"`
+		SenderAge              int32 `toml:"sender_age"`
+	} `toml:"space"`
 }
 
 type Config struct {
-	Name         string       `toml:"name"`
-	Mode         string       `toml:"mode"`
-	App          App          `toml:"app"`
-	Matrix       Matrix       `toml:"matrix"`
-	DB           DB           `toml:"db"`
-	Redis        Redis        `toml:"redis"`
-	Cache        Cache        `toml:"cache"`
-	Auth         Auth         `toml:"auth"`
-	Privacy      Privacy      `toml:"privacy"`
-	SMTP         SMTP         `toml:"smtp"`
-	Features     Features     `toml:"features"`
-	Storage      Storage      `toml:"storage"`
-	ThirdParty   ThirdParty   `toml:"third_party"`
-	Discovery    Discovery    `toml:"discovery"`
-	Restrictions Restrictions `toml:"restrictions"`
+	Name           string         `toml:"name"`
+	Mode           string         `toml:"mode"`
+	App            App            `toml:"app"`
+	Matrix         Matrix         `toml:"matrix"`
+	DB             DB             `toml:"db"`
+	Redis          Redis          `toml:"redis"`
+	Cache          Cache          `toml:"cache"`
+	Authentication Authentication `toml:"authentication"`
+	Privacy        Privacy        `toml:"privacy"`
+	SMTP           SMTP           `toml:"smtp"`
+	Features       Features       `toml:"features"`
+	Storage        Storage        `toml:"storage"`
+	ThirdParty     ThirdParty     `toml:"third_party"`
+	Discovery      Discovery      `toml:"discovery"`
+	Restrictions   Restrictions   `toml:"restrictions"`
 }
 
 var conf Config

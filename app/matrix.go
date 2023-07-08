@@ -44,7 +44,7 @@ func (c *App) CreateMatrixUserAccount(username, password string) (*MatrixAccount
 		Username: username,
 		Password: password,
 		Admin:    false,
-	}, nonce, c.Config.Auth.SharedSecret)
+	}, nonce, c.Config.Authentication.SharedSecret)
 	if err != nil {
 		log.Println(err)
 		return nil, err

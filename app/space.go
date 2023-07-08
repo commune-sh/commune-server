@@ -97,7 +97,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		if c.Config.Restrictions.RequireVerification && !user.Admin {
+		if c.Config.Restrictions.Space.RequireVerification && !user.Admin {
 
 			verified, err := c.MatrixDB.Queries.IsVerifed(context.Background(), user.MatrixUserID)
 			if !verified || err != nil {
@@ -112,16 +112,16 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			}
 		}
 
-		if c.Config.Restrictions.SenderAge > 0 && !user.Admin {
-			valid := c.IsSenderAgeValid(user, c.Config.Restrictions.SenderAge)
+		if c.Config.Restrictions.Space.SenderAge > 0 && !user.Admin {
+			valid := c.IsSenderAgeValid(user, c.Config.Restrictions.Space.SenderAge)
 			if !valid {
 
 				day := "day"
-				if c.Config.Restrictions.SenderAge > 1 {
+				if c.Config.Restrictions.Space.SenderAge > 1 {
 					day = "days"
 				}
 
-				msg := fmt.Sprintf("Your account needs to be at least %d %s old to create a space.", c.Config.Restrictions.SenderAge, day)
+				msg := fmt.Sprintf("Your account needs to be at least %d %s old to create a space.", c.Config.Restrictions.Space.SenderAge, day)
 
 				RespondWithJSON(w, &JSONResponse{
 					Code: http.StatusOK,
@@ -146,7 +146,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			return
 		}
 
-		if len(spaces) >= c.Config.Restrictions.SpacesPerUser && !user.Admin {
+		if len(spaces) >= c.Config.Restrictions.Space.SpacesPerUser && !user.Admin {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
@@ -171,7 +171,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 
 		alias := c.ConstructMatrixRoomID(p.Username)
 
-		if c.Config.Restrictions.RejectReservedKeywords {
+		if c.Config.Restrictions.Space.RejectReservedKeywords {
 
 			reserved := IsKeywordReserved(p.Username)
 			if reserved {

@@ -87,6 +87,8 @@ func routes(c *App) chi.Router {
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(c.RequireAuthentication)
 		r.Put("/user/suspend", c.SuspendUser())
+		r.Put("/event/pin", c.PinEventToIndex())
+		r.Put("/event/unpin", c.UnpinIndexEvent())
 	})
 
 	r.Route("/account", func(r chi.Router) {

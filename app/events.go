@@ -78,6 +78,24 @@ func (c *App) GetIndexEvents(p *IndexEventsParams) (*[]Event, error) {
 
 	items := []Event{}
 
+	if p.Last == "" {
+		pinned, err := c.Cache.System.Get("pinned").Result()
+		if err == nil && pinned != "" {
+
+			item, err := c.GetEvent(&GetEventParams{
+				Slug: pinned,
+			})
+			if err != nil {
+				log.Println(err)
+			}
+
+			if item != nil {
+				item.Pinned = true
+				items = append(items, *item)
+			}
+		}
+	}
+
 	for _, item := range events {
 
 		json, err := gabs.ParseJSON([]byte(item.JSON.String))
@@ -99,7 +117,18 @@ func (c *App) GetIndexEvents(p *IndexEventsParams) (*[]Event, error) {
 			EditedOn:    item.EditedOn,
 		})
 
-		items = append(items, s)
+		exists := false
+
+		for _, event := range items {
+			if s.EventID == event.EventID {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			items = append(items, s)
+		}
 	}
 
 	if c.Config.Cache.IndexEvents && p.Last == "" {

@@ -68,3 +68,93 @@ func (c *App) SuspendUser() http.HandlerFunc {
 
 	}
 }
+
+func (c *App) PinEventToIndex() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		query := r.URL.Query()
+		slug := query.Get("slug")
+
+		log.Println("pinnind event on index", slug)
+
+		user := c.LoggedInUser(r)
+
+		if !user.Admin {
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":     "Not authorized.",
+					"suspended": false,
+				},
+			})
+			return
+		}
+
+		err := c.Cache.System.Set("pinned", slug, 0).Err()
+		if err != nil {
+			log.Println("error getting event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "Event not found.",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"pinned": true,
+			},
+		})
+
+	}
+}
+
+func (c *App) UnpinIndexEvent() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		query := r.URL.Query()
+		slug := query.Get("slug")
+
+		log.Println("pinnind event on index", slug)
+
+		user := c.LoggedInUser(r)
+
+		if !user.Admin {
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":     "Not authorized.",
+					"suspended": false,
+				},
+			})
+			return
+		}
+
+		err := c.Cache.System.Del("pinned").Err()
+		if err != nil {
+			log.Println("error unpinning event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "Could not unpin.",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"unpinned": true,
+			},
+		})
+
+	}
+}
