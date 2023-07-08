@@ -596,3 +596,19 @@ func (c *App) IsSenderAgeValid(user *User, age int32) bool {
 
 	return days >= age
 }
+
+func removeElement(arr []string, element string) []string {
+	index := -1
+	for i, value := range arr {
+		if value == element {
+			index = i
+			break
+		}
+	}
+	if index != -1 {
+		result := append([]string{}, arr[:index]...)
+		result = append(result, arr[index+1:]...)
+		return result
+	}
+	return arr
+}

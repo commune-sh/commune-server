@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -91,17 +92,70 @@ func (c *App) PinEventToIndex() http.HandlerFunc {
 			return
 		}
 
-		err := c.Cache.System.Set("pinned", slug, 0).Err()
+		pinned, err := c.Cache.System.Get("pinned").Result()
 		if err != nil {
-			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":  "Event not found.",
-					"exists": false,
-				},
-			})
-			return
+			list := []string{slug}
+			serialized, err := json.Marshal(list)
+			if err != nil {
+				log.Println(err)
+			}
+
+			err = c.Cache.System.Set("pinned", serialized, 0).Err()
+			if err != nil {
+				log.Println("error getting event: ", err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "Event could not be pinned.",
+						"exists": false,
+					},
+				})
+				return
+			}
+
+		} else {
+
+			var us []string
+			err = json.Unmarshal([]byte(pinned), &us)
+			if err != nil {
+				log.Println(err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "Event could not be pinned.",
+						"exists": false,
+					},
+				})
+				return
+			}
+
+			us = append(us, slug)
+
+			serialized, err := json.Marshal(us)
+			if err != nil {
+				log.Println(err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "Event could not be pinned.",
+						"exists": false,
+					},
+				})
+				return
+			}
+
+			err = c.Cache.System.Set("pinned", serialized, 0).Err()
+			if err != nil {
+				log.Println("error getting event: ", err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "Event could not be pinned.",
+						"exists": false,
+					},
+				})
+				return
+			}
 		}
 
 		RespondWithJSON(w, &JSONResponse{
@@ -120,7 +174,7 @@ func (c *App) UnpinIndexEvent() http.HandlerFunc {
 		query := r.URL.Query()
 		slug := query.Get("slug")
 
-		log.Println("pinnind event on index", slug)
+		log.Println("unpinning event on index", slug)
 
 		user := c.LoggedInUser(r)
 
@@ -136,7 +190,7 @@ func (c *App) UnpinIndexEvent() http.HandlerFunc {
 			return
 		}
 
-		err := c.Cache.System.Del("pinned").Err()
+		pinned, err := c.Cache.System.Get("pinned").Result()
 		if err != nil {
 			log.Println("error unpinning event: ", err)
 			RespondWithJSON(w, &JSONResponse{
@@ -147,6 +201,54 @@ func (c *App) UnpinIndexEvent() http.HandlerFunc {
 				},
 			})
 			return
+		}
+		var us []string
+		err = json.Unmarshal([]byte(pinned), &us)
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "Could not unpin.",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		if len(us) == 1 {
+			err := c.Cache.System.Del("pinned").Err()
+			if err != nil {
+				log.Println("error unpinning event: ", err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "Could not unpin.",
+						"exists": false,
+					},
+				})
+				return
+			}
+		}
+		if len(us) > 1 {
+			n := removeElement(us, slug)
+			serialized, err := json.Marshal(n)
+			if err != nil {
+				log.Println(err)
+			}
+
+			err = c.Cache.System.Set("pinned", serialized, 0).Err()
+			if err != nil {
+				log.Println("error getting event: ", err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "Event could not be pinned.",
+						"exists": false,
+					},
+				})
+				return
+			}
 		}
 
 		RespondWithJSON(w, &JSONResponse{

@@ -80,18 +80,31 @@ func (c *App) GetIndexEvents(p *IndexEventsParams) (*[]Event, error) {
 
 	if p.Last == "" {
 		pinned, err := c.Cache.System.Get("pinned").Result()
+
 		if err == nil && pinned != "" {
 
-			item, err := c.GetEvent(&GetEventParams{
-				Slug: pinned,
-			})
-			if err != nil {
-				log.Println(err)
-			}
+			var us []string
+			err = json.Unmarshal([]byte(pinned), &us)
 
-			if item != nil {
-				item.Pinned = true
-				items = append(items, *item)
+			if err == nil {
+
+				for _, pi := range us {
+
+					item, err := c.GetEvent(&GetEventParams{
+						Slug: pi,
+					})
+
+					if err != nil {
+						log.Println(err)
+					}
+
+					if item != nil {
+						item.Pinned = true
+						items = append(items, *item)
+					}
+
+				}
+
 			}
 		}
 	}
