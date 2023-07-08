@@ -23,6 +23,7 @@ type Features struct {
 	SpaceRooms           bool `toml:"space_rooms" json:"space_rooms"`
 	RegistrationEnabled  bool `toml:"registration_enabled" json:"registration_enabled"`
 	SpaceCreationEnabled bool `toml:"space_creation_enabled" json:"space_creation_enabled"`
+	RequireEmail         bool `toml:"require_email" json:"require_email"`
 }
 
 type Matrix struct {

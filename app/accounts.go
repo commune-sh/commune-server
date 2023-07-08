@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	matrix_db "shpong/db/matrix/gen"
 	"strings"
 	"time"
 
@@ -20,11 +22,35 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			Username string `json:"username"`
 			Password string `json:"password"`
 			Email    string `json:"email"`
+			Session  string `json:"session"`
+			Code     string `json:"code"`
 		}{})
 
 		if err != nil {
 			RespondWithBadRequestError(w)
 			return
+		}
+
+		isValid := false
+
+		if c.Config.Features.RequireEmail {
+			valid, err := c.DoesEmailCodeExist(&CodeVerification{
+				Email:   p.Email,
+				Code:    p.Code,
+				Session: p.Session,
+			})
+
+			if err != nil || !valid {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"valid": valid,
+					},
+				})
+				return
+			}
+			isValid = valid
+
 		}
 
 		p.Username = strings.ToLower(p.Username)
@@ -144,6 +170,30 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			return
 		}
 
+		if c.Config.Features.RequireEmail && isValid {
+			err = c.MatrixDB.Queries.VerifyEmail(context.Background(), matrix_db.VerifyEmailParams{
+				Email: pgtype.Text{
+					String: p.Email,
+					Valid:  true,
+				},
+				MatrixUserID: pgtype.Text{
+					String: resp.Response.UserID,
+					Valid:  true,
+				},
+			})
+			if err != nil {
+				log.Println(err)
+
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error": "could not create account",
+					},
+				})
+				return
+			}
+		}
+
 		token := RandomString(32)
 
 		cr := time.Now().Unix()
@@ -157,14 +207,18 @@ func (c *App) CreateAccount() http.HandlerFunc {
 
 		user := &User{
 			//UserID:   idu,
-			Username: p.Username,
-			//Email:             p.Email,
+			Username:          p.Username,
+			Email:             p.Email,
 			AccessToken:       token,
 			MatrixAccessToken: resp.Response.AccessToken,
 			MatrixUserID:      resp.Response.UserID,
 			MatrixDeviceID:    resp.Response.DeviceID,
 			UserSpaceID:       resp.UserSpaceID,
 			Age:               cr,
+		}
+
+		if c.Config.Features.RequireEmail && isValid {
+			user.Verified = true
 		}
 
 		err = c.StoreUserSession(user)
@@ -238,6 +292,67 @@ func (c *App) UsernameAvailable() http.HandlerFunc {
 
 		type Response struct {
 			Exists bool `json:"exists"`
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"available": !exists,
+			},
+		})
+	}
+}
+
+func (c *App) ValidateEmail() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		email := chi.URLParam(r, "email")
+
+		if c.Config.Authentication.BlockPopularEmailProviders {
+
+			banned := IsEmailBanned(email)
+			if banned {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"available":          false,
+						"provider_forbidden": true,
+						"error":              "email provider is not allowed",
+					},
+				})
+				return
+			}
+		}
+
+		if c.Config.Authentication.QueryMXRecords {
+
+			provider := strings.Split(email, "@")[1]
+			records, err := net.LookupMX(provider)
+			if err != nil || len(records) == 0 {
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"available": false,
+						"error":     "email provider does not exist",
+					},
+				})
+				return
+			}
+		}
+
+		exists, err := c.MatrixDB.Queries.DoesEmailExist(context.Background(), pgtype.Text{
+			String: email,
+			Valid:  true,
+		})
+
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "could not check if email exists",
+				},
+			})
+			return
 		}
 
 		RespondWithJSON(w, &JSONResponse{

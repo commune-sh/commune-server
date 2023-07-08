@@ -353,20 +353,42 @@ func (c *App) SendCode() http.HandlerFunc {
 
 		log.Println("recieved payload ", p)
 
-		// check to see if this email domain is allowed
-		/*
+		//check if email exists
+		exists, err := c.MatrixDB.Queries.DoesEmailExist(context.Background(), pgtype.Text{
+			String: p.Email,
+			Valid:  true,
+		})
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println("does email exist?", exists)
+
+		if exists {
+			//don't send code to existing emails, silently ignore
+			log.Println("ignore email")
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"sent": true,
+				},
+			})
+			return
+		}
+
+		if c.Config.Authentication.BlockPopularEmailProviders {
 			banned := IsEmailBanned(p.Email)
 			if banned {
 				log.Println("This email is forbidden.")
 				RespondWithJSON(w, &JSONResponse{
 					Code: http.StatusOK,
 					JSON: map[string]any{
-						"error": "Email is banned",
+						"provider_forbidden": true,
+						"error":              "email provider is not allowed",
 					},
 				})
 				return
 			}
-		*/
+		}
 
 		code := GenerateMagicCode()
 
@@ -491,6 +513,37 @@ func (c *App) VerifyCode() http.HandlerFunc {
 				Code: http.StatusOK,
 				JSON: map[string]any{
 					"error": "could not store user session",
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"valid": valid,
+			},
+		})
+	}
+}
+
+func (c *App) VerifyEmail() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		p, err := ReadRequestJSON(r, w, &CodeVerification{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		valid, err := c.DoesEmailCodeExist(p)
+
+		if err != nil || !valid {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": valid,
 				},
 			})
 			return

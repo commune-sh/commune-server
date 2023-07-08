@@ -103,11 +103,14 @@ func routes(c *App) chi.Router {
 			r.Post("/reset", c.UpdatePassword())
 		})
 		r.Route("/", func(r chi.Router) {
-			r.Use(c.RequireAuthentication)
 			r.Post("/verify/code", c.SendCode())
 			r.Post("/verify", c.VerifyCode())
-			r.Post("/display_name", c.UpdateDisplayName())
-			r.Post("/avatar", c.UpdateAvatar())
+			r.Post("/verify/email", c.VerifyEmail())
+			r.Route("/", func(r chi.Router) {
+				r.Use(c.RequireAuthentication)
+				r.Post("/display_name", c.UpdateDisplayName())
+				r.Post("/avatar", c.UpdateAvatar())
+			})
 		})
 		r.Route("/notifications", func(r chi.Router) {
 			r.Get("/sync", c.SyncNotifications())
@@ -121,6 +124,9 @@ func routes(c *App) chi.Router {
 		r.Post("/", c.CreateAccount())
 		r.Route("/username", func(r chi.Router) {
 			r.Get("/{username}", c.UsernameAvailable())
+		})
+		r.Route("/email", func(r chi.Router) {
+			r.Get("/{email}", c.ValidateEmail())
 		})
 	})
 	r.Route("/discover", func(r chi.Router) {
