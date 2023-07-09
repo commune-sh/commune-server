@@ -185,12 +185,16 @@ func routes(c *App) chi.Router {
 	})
 
 	r.Route("/room", func(r chi.Router) {
-		r.Use(c.RequireAuthentication)
-		r.Route("/joined", func(r chi.Router) {
-			r.Get("/", c.RoomJoined())
+		r.Get("/{room}/messages", c.RoomMessages())
+		r.Get("/{room}/sync", c.SyncMessages())
+		r.Route("/", func(r chi.Router) {
+			r.Use(c.RequireAuthentication)
+			r.Route("/joined", func(r chi.Router) {
+				r.Get("/", c.RoomJoined())
+			})
+			r.Post("/join", c.JoinRoom())
+			r.Post("/leave", c.LeaveRoom())
 		})
-		r.Post("/join", c.JoinRoom())
-		r.Post("/leave", c.LeaveRoom())
 	})
 	r.Route("/space", func(r chi.Router) {
 		r.Use(c.RequireAuthentication)
@@ -210,7 +214,6 @@ func routes(c *App) chi.Router {
 			r.Get("/", c.GetPowerLevels())
 		})
 		r.Get("/{room}/events", c.SpaceRoomEvents())
-		r.Get("/{room}/messages", c.SpaceRoomMessages())
 		//r.Get("/{room}/post/{slug}", c.SpaceEvent())
 	})
 

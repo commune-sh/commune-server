@@ -176,5 +176,7 @@ func Start(s *StartRequest) {
 
 	c.UpdateIndexEventsCache()
 
+	go c.StartNotifyListener()
+
 	c.Activate()
 }

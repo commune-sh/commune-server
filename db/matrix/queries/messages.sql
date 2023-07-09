@@ -12,7 +12,8 @@ SELECT ej.event_id,
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
-LEFT JOIN user_directory ud ON ud.user_id = events.sender
+LEFT JOIN membership_state ud ON ud.user_id = events.sender
+    AND ud.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
@@ -26,8 +27,16 @@ LEFT JOIN (
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
 WHERE ej.room_id = $1
+AND (events.type = 'm.room.message'
+    OR events.type = 'm.room.name' 
+    OR events.type = 'm.room.topic' 
+    OR events.type = 'm.room.avatar' 
+    OR events.type = 'm.room.header' 
+    OR events.type = 'm.reaction'
+    OR events.type = 'm.room.member')
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
+AND (events.origin_server_ts > sqlc.narg('after') OR sqlc.narg('after') IS NULL)
 AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
 AND redactions.redacts is null
 GROUP BY
@@ -40,7 +49,13 @@ GROUP BY
     ud.avatar_url,
     aliases.room_alias,
     events.origin_server_ts
-ORDER BY events.origin_server_ts ASC
+ORDER BY CASE
+    WHEN @order_by::text = 'ASC' THEN events.origin_server_ts 
+END ASC, CASE 
+    WHEN @order_by::text = 'DESC' THEN events.origin_server_ts 
+END DESC, CASE
+    WHEN @order_by::text = '' THEN events.origin_server_ts 
+END DESC
 LIMIT 30;
 
 

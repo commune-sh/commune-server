@@ -1,7 +1,6 @@
 package app
 
 import (
-	"shpong/config"
 	"errors"
 	"fmt"
 	"html/template"
@@ -12,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"shpong/config"
 	"strconv"
 	"strings"
 	"time"
@@ -47,10 +47,20 @@ var fMap = template.FuncMap{
 	"Iter":           iter,
 	"Rat":            rat,
 	"HTML":           html,
+	"Markdown":       markdown,
 }
 
 func html(s string) template.HTML {
 	return template.HTML(s)
+}
+
+func markdown(s string) template.HTML {
+	html, err := ToHTML(s)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return html
 }
 
 func hasColon(s string) bool {

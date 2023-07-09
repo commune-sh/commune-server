@@ -302,6 +302,7 @@ type EventProcessor struct {
 	Reactions   any
 	Edited      interface{}
 	EditedOn    interface{}
+	SSR         bool
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {

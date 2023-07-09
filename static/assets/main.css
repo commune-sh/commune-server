@@ -1,0 +1,42 @@
+html {
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: none;
+    font-size: 15px;
+    width: 100%;
+}
+
+body {
+    font-family: monospace;
+    font-weight: normal;
+    line-height: 1;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+a, a:link, a:visited, a:active {
+    text-decoration: none;
+    transition: 0.1s;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.href {
+    cursor: pointer;
+}
+
+.href:hover {
+    text-decoration: underline;
+}
+
+* {
+  font-smooth: always;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+
+

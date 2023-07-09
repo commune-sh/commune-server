@@ -10,12 +10,8 @@
   <body>
       {{range $idx, $event := .Events}}
         <div class="event " style="padding: 1rem;">
-            {{$body := index $event.Content "formatted_body"}}
-            {{if $body}}
-                {{HTML ($body)}}
-            {{else}}
-                {{index $event.Content "body"}}
-            {{end}}
+            {{$body := index $event.Content "body"}}
+            {{Markdown ($body)}}
         </div>
       {{end}}
 

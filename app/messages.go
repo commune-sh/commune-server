@@ -2,95 +2,29 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
 	"strconv"
+	"sync"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func (c *App) SpaceRoomMessages() http.HandlerFunc {
+func (c *App) RoomMessages() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		user := c.LoggedInUser(r)
-
-		space := chi.URLParam(r, "space")
 		room := chi.URLParam(r, "room")
 
-		log.Println("space is", space)
 		log.Println("room is", room)
-
-		alias := c.ConstructMatrixRoomID(space)
-
-		ssp := matrix_db.GetSpaceStateParams{
-			RoomAlias: alias,
-		}
-
-		if user != nil && user.MatrixUserID != "" {
-			ssp.UserID = pgtype.Text{
-				String: user.MatrixUserID,
-				Valid:  true,
-			}
-		}
-
-		// check if space exists in DB
-		state, err := c.MatrixDB.Queries.GetSpaceState(context.Background(), ssp)
-
-		if err != nil {
-			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":  "space does not exist",
-					"exists": false,
-				},
-			})
-			return
-		}
-
-		sps := ProcessState(state)
-
-		scp := matrix_db.GetSpaceChildParams{
-			ParentRoomAlias: pgtype.Text{
-				String: alias,
-				Valid:  true,
-			},
-			ChildRoomAlias: pgtype.Text{
-				String: room,
-				Valid:  true,
-			},
-		}
-
-		if user != nil {
-			log.Println("user is ", user.MatrixUserID)
-			scp.UserID = pgtype.Text{
-				String: user.MatrixUserID,
-				Valid:  true,
-			}
-		}
-
-		crs, err := c.MatrixDB.Queries.GetSpaceChild(context.Background(), scp)
-
-		if err != nil || crs.ChildRoomID.String == "" {
-			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":  "space room does not exist",
-					"state":  sps,
-					"exists": false,
-				},
-			})
-			return
-		}
-		log.Println("what is child room ID?", crs.ChildRoomID)
 
 		// get events for this space
 		events, err := c.GetSpaceMessages(&SpaceMessagesParams{
-			RoomID: crs.ChildRoomID.String,
+			RoomID: room,
 			Last:   r.URL.Query().Get("last"),
 			After:  r.URL.Query().Get("after"),
 			Topic:  r.URL.Query().Get("topic"),
@@ -141,7 +75,7 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 
 	// get events for this space
 
-	if p.Last != "" {
+	if p.Last != "" && p.After == "" {
 		i, _ := strconv.ParseInt(p.Last, 10, 64)
 		log.Println("adding last", i)
 		sreq.OriginServerTS = pgtype.Int8{
@@ -153,7 +87,13 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 	if p.After != "" {
 		i, _ := strconv.ParseInt(p.After, 10, 64)
 		log.Println(i)
+		sreq.After = pgtype.Int8{
+			Int64: i,
+			Valid: true,
+		}
 	}
+
+	log.Println("request is", sreq)
 
 	// get events for this space
 	events, err := c.MatrixDB.Queries.GetSpaceMessages(context.Background(), sreq)
@@ -189,4 +129,98 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 	}
 
 	return &items, nil
+}
+
+var messageClients = make(map[string][]*Client)
+var messageClientsMutex sync.Mutex
+
+type Client struct {
+	Conn   *websocket.Conn
+	RoomID string
+}
+
+func (c *App) SyncMessages() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		roomID := chi.URLParam(r, "room")
+
+		log.Println("room ID is ", roomID)
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println("Failed to upgrade connection to WebSocket:", err)
+			return
+		}
+		defer conn.Close()
+
+		client := &Client{Conn: conn, RoomID: roomID}
+
+		messageClientsMutex.Lock()
+		messageClients[roomID] = append(messageClients[roomID], client)
+		messageClientsMutex.Unlock()
+
+		for {
+
+			last := ""
+
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("Failed to read message:", err)
+				break
+			}
+
+			after := string(msg)
+
+			// let's check for messages since last sync
+			if after != "" && after != last {
+				events, err := c.GetSpaceMessages(&SpaceMessagesParams{
+					RoomID: roomID,
+					After:  after,
+				})
+
+				if err != nil {
+					log.Println("error getting event: ", err)
+				}
+
+				if events != nil {
+					serialized, err := json.Marshal(events)
+					if err != nil {
+						log.Println(err)
+					}
+					err = conn.WriteMessage(websocket.TextMessage, serialized)
+				}
+			}
+			last = after
+
+		}
+
+		messageClientsMutex.Lock()
+		clients := messageClients[roomID]
+		for i, c := range clients {
+			if c == client {
+				// Remove the client from the slice
+				clients[i] = clients[len(clients)-1]
+				clients = clients[:len(clients)-1]
+				break
+			}
+		}
+		messageClients[roomID] = clients
+		messageClientsMutex.Unlock()
+
+	}
+}
+
+func (c *App) sendMessageNotification(mid string, json []byte) {
+
+	messageClientsMutex.Lock()
+	clients := messageClients[mid]
+	for _, client := range clients {
+		err := client.Conn.WriteMessage(websocket.TextMessage, json)
+		if err != nil {
+			log.Println("Failed to send notification to client:", err)
+			client.Conn.Close()
+		}
+	}
+	messageClientsMutex.Unlock()
+
 }
