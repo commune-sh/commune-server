@@ -24,6 +24,7 @@ type NewPostBody struct {
 	ReactingTo string `json:"reacting_to"`
 	Type       string `json:"type"`
 	Editing    bool   `json:"editing"`
+	Session    string `json:session`
 }
 
 type NewPostParams struct {
@@ -158,6 +159,7 @@ func (c *App) CreatePost() http.HandlerFunc {
 			JSON: map[string]any{
 				"success": "true",
 				"event":   event,
+				"session": p.Session,
 			},
 		})
 

@@ -86,7 +86,6 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 
 	if p.After != "" {
 		i, _ := strconv.ParseInt(p.After, 10, 64)
-		log.Println(i)
 		sreq.After = pgtype.Int8{
 			Int64: i,
 			Valid: true,

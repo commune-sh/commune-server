@@ -27,13 +27,6 @@ LEFT JOIN (
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
 WHERE ej.room_id = $1
-AND (events.type = 'm.room.message'
-    OR events.type = 'm.room.name' 
-    OR events.type = 'm.room.topic' 
-    OR events.type = 'm.room.avatar' 
-    OR events.type = 'm.room.header' 
-    OR events.type = 'm.reaction'
-    OR events.type = 'm.room.member')
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
 AND (events.origin_server_ts > sqlc.narg('after') OR sqlc.narg('after') IS NULL)
@@ -56,7 +49,7 @@ END ASC, CASE
 END DESC, CASE
     WHEN @order_by::text = '' THEN events.origin_server_ts 
 END DESC
-LIMIT 30;
+LIMIT 100;
 
 
 

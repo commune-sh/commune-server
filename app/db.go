@@ -85,7 +85,7 @@ func (c *App) StartNotifyListener() {
 			if err != nil {
 				log.Println(err)
 			} else {
-				c.sendMessageNotification("!xfYiYITIJtPOqBnJfj:localhost", serialized)
+				c.sendMessageNotification(event.RoomID, serialized)
 			}
 		}
 	}
