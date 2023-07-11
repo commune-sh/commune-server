@@ -92,8 +92,6 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 		}
 	}
 
-	log.Println("request is", sreq)
-
 	// get events for this space
 	events, err := c.MatrixDB.Queries.GetSpaceMessages(context.Background(), sreq)
 
@@ -142,8 +140,6 @@ func (c *App) SyncMessages() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		roomID := chi.URLParam(r, "room")
-
-		log.Println("room ID is ", roomID)
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {

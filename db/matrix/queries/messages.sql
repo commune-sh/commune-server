@@ -49,7 +49,7 @@ END ASC, CASE
 END DESC, CASE
     WHEN @order_by::text = '' THEN events.origin_server_ts 
 END DESC
-LIMIT 100;
+LIMIT 50;
 
 
 
