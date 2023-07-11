@@ -160,7 +160,7 @@ func (c *App) SyncMessages() http.HandlerFunc {
 
 		for {
 
-			last := ""
+			last := 0
 
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
@@ -168,13 +168,23 @@ func (c *App) SyncMessages() http.HandlerFunc {
 				break
 			}
 
-			after := string(msg)
+			type syncMessage struct {
+				Type  string `json:"type"`
+				Last  int    `json:"last"`
+				Value string `json:"value"`
+			}
+
+			var sm syncMessage
+			err = json.Unmarshal(msg, &sm)
+			if err != nil {
+				log.Println(err)
+			}
 
 			// let's check for messages since last sync
-			if after != "" && after != last {
+			if sm.Type == "sync" && sm.Last != last {
 				events, err := c.GetSpaceMessages(&SpaceMessagesParams{
 					RoomID: roomID,
-					After:  after,
+					After:  strconv.Itoa(sm.Last),
 				})
 
 				if err != nil {
@@ -189,7 +199,12 @@ func (c *App) SyncMessages() http.HandlerFunc {
 					err = conn.WriteMessage(websocket.TextMessage, serialized)
 				}
 			}
-			last = after
+
+			last = sm.Last
+
+			if sm.Type == "typing" && sm.Value != "" {
+				c.sendMessageNotification(roomID, msg)
+			}
 
 		}
 

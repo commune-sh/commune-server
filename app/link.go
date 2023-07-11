@@ -126,7 +126,7 @@ func (c *App) GetYoutubeMetadata(href string) (*LinkMetaData, error) {
 				lmd.Author = items[0].Snippet.ChannelTitle
 			}
 
-			if len(lmd.Description) > 100 {
+			if len(lmd.Description) > 140 {
 				lmd.Description = lmd.Description[:140]
 			}
 
