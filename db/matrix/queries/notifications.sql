@@ -1,5 +1,5 @@
 -- name: GetUserNotifications :many
-SELECT DISTINCT ON(n.id) n.from_matrix_user_id,
+SELECT DISTINCT ON(n.created_at) n.from_matrix_user_id,
     ms.display_name,
     ms.avatar_url,
     n.relates_to_event_id,
@@ -14,7 +14,7 @@ FROM
 notifications n
 LEFT JOIN membership_state ms ON ms.user_id = n.from_matrix_user_id
 WHERE n.for_matrix_user_id = $1 
-ORDER BY n.id, n.created_at DESC
+ORDER BY n.created_at DESC
 LIMIT 30;
 
 -- name: MarkAsRead :exec
