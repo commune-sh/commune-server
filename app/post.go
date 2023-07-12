@@ -144,6 +144,7 @@ func (c *App) CreatePost() http.HandlerFunc {
 			}
 			if isReaction {
 				err := c.NewReactionNotification(&NotificationParams{
+					ThreadEventID:  p.InThread,
 					ReplyToEventID: p.ReactingTo,
 					User:           user,
 					ReplyEvent:     event,

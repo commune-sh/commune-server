@@ -269,7 +269,12 @@ func (c *App) NewReactionNotification(n *NotificationParams) error {
 
 	notificationType := "reaction"
 
+	if replyingToEvent.EventID != n.ThreadEventID {
+		notificationType = "reply.reaction"
+	}
+
 	np := matrix_db.CreateNotificationParams{
+		ThreadEventID:    n.ThreadEventID,
 		FromMatrixUserID: n.User.MatrixUserID,
 		ForMatrixUserID:  replyingToEvent.Sender.ID,
 		RelatesToEventID: replyingToEvent.EventID,
