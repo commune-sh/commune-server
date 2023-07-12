@@ -208,6 +208,7 @@ func (c *App) CreateAccount() http.HandlerFunc {
 		user := &User{
 			//UserID:   idu,
 			Username:          p.Username,
+			DisplayName:       p.Username,
 			Email:             p.Email,
 			AccessToken:       token,
 			MatrixAccessToken: resp.Response.AccessToken,
