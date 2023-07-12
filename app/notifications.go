@@ -28,7 +28,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var connectedClients = make(map[string]*websocket.Conn)
+var connectedClients = make(map[string][]*websocket.Conn)
 var clientsMutex sync.Mutex
 
 func (c *App) SyncNotifications() http.HandlerFunc {
@@ -60,7 +60,13 @@ func (c *App) SyncNotifications() http.HandlerFunc {
 		defer conn.Close()
 
 		clientsMutex.Lock()
-		connectedClients[user.MatrixUserID] = conn
+		if _, ok := connectedClients[user.MatrixUserID]; ok {
+			log.Println("already exists in list, adding new client")
+			connectedClients[user.MatrixUserID] = append(connectedClients[user.MatrixUserID], conn)
+		} else {
+			log.Println("adding new client")
+			connectedClients[user.MatrixUserID] = []*websocket.Conn{conn}
+		}
 		clientsMutex.Unlock()
 
 		for {
@@ -78,7 +84,7 @@ func (c *App) SyncNotifications() http.HandlerFunc {
 		}
 
 		clientsMutex.Lock()
-		delete(connectedClients, token)
+		delete(connectedClients, user.MatrixUserID)
 		clientsMutex.Unlock()
 
 	}
@@ -86,17 +92,19 @@ func (c *App) SyncNotifications() http.HandlerFunc {
 
 func (c *App) sendNotification(mid string, json []byte) {
 	clientsMutex.Lock()
-	conn, found := connectedClients[mid]
+	conns, found := connectedClients[mid]
 	clientsMutex.Unlock()
 
 	if found {
-		err := conn.WriteMessage(websocket.TextMessage, json)
-		if err != nil {
-			log.Println("Failed to send notification to client:", err)
-			conn.Close()
-			clientsMutex.Lock()
-			delete(connectedClients, mid)
-			clientsMutex.Unlock()
+		for _, conn := range conns {
+			err := conn.WriteMessage(websocket.TextMessage, json)
+			if err != nil {
+				log.Println("Failed to send notification to client:", err)
+				conn.Close()
+				clientsMutex.Lock()
+				delete(connectedClients, mid)
+				clientsMutex.Unlock()
+			}
 		}
 	} else {
 		log.Println("No client with the provided token:", mid)
