@@ -269,7 +269,7 @@ func (c *App) NewReactionNotification(n *NotificationParams) error {
 
 	notificationType := "reaction"
 
-	if replyingToEvent.EventID != n.ThreadEventID {
+	if replyingToEvent.EventID != n.ThreadEventID && n.ThreadEventID != "" {
 		notificationType = "reply.reaction"
 	}
 
