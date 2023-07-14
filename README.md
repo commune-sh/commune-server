@@ -7,10 +7,18 @@ To see a live running instance, check out [Shpong](https://shpong.com)
 #### What does it do?
 Commune opens up all spaces and underlying rooms to the web by reading data directly from the Synapse DB, bypassing Synapse's client-server API. Additional features such as discussion boards, threaded comments are rendered by the [client](https://github.com/commune-os/commune-client). Commune makes use of many [materialized views](https://github.com/commune-os/commune-server/tree/main/db/matrix/views) for querying Synapse events.
 
+##### Short-term roadmap
+- Make private spaces/boards and Encrypted DMs work
+- ActivityPub support for interacting with the fediverse
+- Make it dead simple to deploy and self-host
+
 #### How to run
 You'll need to set up a matrix/synapse server. Existing servers can be used too, but Commune is highly experimental at the moment, so it's best to set up a new homeserver.
 
 Check back here soon for instructions.
+
+#### Get in touch
+Find us on the [Commune](https://shpong.com/commune) board on [Shpong](https://shpong.com).
 
 ##### WARNING
 Commune is operating in `world_readable` mode. This means that everything on your matrix server has the potential to be accessible from the web. No work has been put into private spaces/rooms or encryption. Unless explicitly stated, assume that every event on a Commune-based matrix server will be public.
