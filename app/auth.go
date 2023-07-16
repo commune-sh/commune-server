@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	matrix_db "shpong/db/matrix/gen"
 
@@ -29,7 +30,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 		log.Println("recieved payload ", p)
 
 		creds, err := c.MatrixDB.Queries.GetCredentials(context.Background(), pgtype.Text{
-			String: p.Username,
+			String: strings.ToLower(p.Username),
 			Valid:  true,
 		})
 		if err != nil {
@@ -45,7 +46,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			return
 		}
 
-		username := p.Username
+		username := strings.ToLower(p.Username)
 
 		if &creds.Email.String != nil {
 			username = creds.Username
