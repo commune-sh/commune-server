@@ -19,7 +19,9 @@ func (c *App) DomainAPIEndpoint() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		domain := chi.URLParam(r, "domain")
 
-		if !strings.HasPrefix(domain, "https://") {
+		if strings.Contains(domain, "localhost") {
+			domain = "http://" + domain
+		} else if !strings.HasPrefix(domain, "https://") {
 			domain = "https://" + domain
 		}
 
@@ -27,6 +29,7 @@ func (c *App) DomainAPIEndpoint() http.HandlerFunc {
 
 		resp, err := http.Get(domain)
 		if err != nil {
+			log.Println(err)
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
@@ -39,6 +42,7 @@ func (c *App) DomainAPIEndpoint() http.HandlerFunc {
 
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
+			log.Println(err)
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
@@ -228,7 +232,10 @@ func (c *App) CreateSpace() http.HandlerFunc {
 		}
 
 		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), matrix_db.GetSpaceInfoParams{
-			RoomAlias: strings.ToLower(alias),
+			RoomAlias: pgtype.Text{
+				String: strings.ToLower(alias),
+				Valid:  true,
+			},
 			Creator: pgtype.Text{
 				String: user.MatrixUserID,
 				Valid:  true,

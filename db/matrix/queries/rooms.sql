@@ -107,12 +107,13 @@ WHERE rs.room_id = sqlc.narg('room_id') ::text;
 
 -- name: GetSpaceInfo :one
 SELECT ra.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header, rs.is_profile::boolean as is_profile,
-CASE WHEN rooms.creator = $2 THEN true ELSE false END as is_owner
+CASE WHEN rooms.creator = $1 THEN true ELSE false END as is_owner
 FROM room_aliases ra
 JOIN rooms on ra.room_id = rooms.room_id
 JOIN spaces ON spaces.room_id = ra.room_id
 LEFT JOIN room_state rs ON rs.room_id = ra.room_id
-WHERE LOWER(ra.room_alias) = $1;
+WHERE LOWER(ra.room_alias) = sqlc.narg('room_alias') 
+OR ra.room_id = sqlc.narg('room_alias');
 
 
 -- name: GetSpaceRoomIDs :one

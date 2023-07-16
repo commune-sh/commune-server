@@ -29,24 +29,36 @@ func (c *App) JoinSpace() http.HandlerFunc {
 			return
 		}
 
+		homeserver := ""
+
+		hs := GetHomeServerPart(space)
+
+		if hs != c.Config.Matrix.PublicServer {
+			homeserver = hs
+		}
+
 		alias := c.ConstructMatrixRoomID(space)
+
+		log.Println("alias is", alias)
 
 		user := c.LoggedInUser(r)
 
-		// get space room_id and all it's children's room_ids
-		sri, err := c.MatrixDB.Queries.GetSpaceRoomIDs(context.Background(), alias)
+		/*
+			// get space room_id and all it's children's room_ids
+			sri, err := c.MatrixDB.Queries.GetSpaceRoomIDs(context.Background(), alias)
 
-		if err != nil {
-			log.Println("error getting space room ids: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":  "space does not exist",
-					"exists": false,
-				},
-			})
-			return
-		}
+			if err != nil {
+				log.Println("error getting space room ids: ", err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"error":  "space does not exist",
+						"exists": false,
+					},
+				})
+				return
+			}
+		*/
 
 		//log.Println(sri)
 
@@ -61,7 +73,7 @@ func (c *App) JoinSpace() http.HandlerFunc {
 			return
 		}
 
-		re, err := matrix.JoinRoom(sri.RoomID, "", nil)
+		re, err := matrix.JoinRoom(space, homeserver, nil)
 
 		if err != nil {
 			log.Println("could not join space", err)
@@ -79,7 +91,10 @@ func (c *App) JoinSpace() http.HandlerFunc {
 		//alias = strings.ToLower(alias)
 
 		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), matrix_db.GetSpaceInfoParams{
-			RoomAlias: alias,
+			RoomAlias: pgtype.Text{
+				String: space,
+				Valid:  true,
+			},
 			Creator: pgtype.Text{
 				String: user.MatrixUserID,
 				Valid:  true,
@@ -104,7 +119,7 @@ func (c *App) JoinSpace() http.HandlerFunc {
 				err := c.NewJoinNotification(&JoinNotificationParams{
 					User:   user,
 					Space:  space,
-					RoomID: sri.RoomID,
+					RoomID: re.RoomID,
 				})
 				if err != nil {
 					log.Println(err)
