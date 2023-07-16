@@ -181,6 +181,7 @@ JOIN rooms ON rooms.room_id = spaces.room_id
 JOIN room_members rm ON rm.room_id = spaces.room_id
 LEFT JOIN room_state rs ON rs.room_id = spaces.room_id
 WHERE rooms.is_public = true
+AND spaces.space_alias NOT LIKE '@%'
 AND rs.is_profile = false
 AND rs.do_not_index = false
 ORDER BY rm.members DESC LIMIT 100;

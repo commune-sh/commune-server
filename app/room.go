@@ -31,15 +31,16 @@ func (c *App) JoinSpace() http.HandlerFunc {
 
 		homeserver := ""
 
+		alias := c.ConstructMatrixRoomID(space)
+
 		hs := GetHomeServerPart(space)
 
 		if hs != c.Config.Matrix.PublicServer {
 			homeserver = hs
+			alias = space
 		}
 
-		alias := c.ConstructMatrixRoomID(space)
-
-		log.Println("alias is", alias)
+		log.Println("alias and space are", alias, space)
 
 		user := c.LoggedInUser(r)
 
