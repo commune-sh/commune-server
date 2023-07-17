@@ -100,7 +100,8 @@ func routes(c *App) chi.Router {
 		r.Route("/password", func(r chi.Router) {
 			r.Post("/", c.SendRecoveryCode())
 			r.Post("/verify", c.VerifyRecoveryCode())
-			r.Post("/reset", c.UpdatePassword())
+			r.Post("/reset", c.ResetPassword())
+			r.Post("/update", c.UpdatePassword())
 		})
 		r.Route("/", func(r chi.Router) {
 			r.Post("/verify/code", c.SendCode())

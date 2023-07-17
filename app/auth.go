@@ -688,7 +688,7 @@ func (c *App) VerifyRecoveryCode() http.HandlerFunc {
 	}
 }
 
-func (c *App) UpdatePassword() http.HandlerFunc {
+func (c *App) ResetPassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		p, err := ReadRequestJSON(r, w, &CodeVerification{})
@@ -751,6 +751,90 @@ func (c *App) UpdatePassword() http.HandlerFunc {
 				return
 			}
 
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"success": true,
+			},
+		})
+	}
+}
+
+type PasswordUpdate struct {
+	Password string `json:"password"`
+	New      string `json:"new"`
+}
+
+func (c *App) UpdatePassword() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		p, err := ReadRequestJSON(r, w, &PasswordUpdate{})
+
+		if err != nil {
+			RespondWithBadRequestError(w)
+			return
+		}
+
+		user := c.LoggedInUser(r)
+
+		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+		matrix, err := gomatrix.NewClient(serverName, "", "")
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"authenticated": false,
+					"error":         "internal server error",
+				},
+			})
+			return
+		}
+
+		rl := &gomatrix.ReqLogin{
+			Type:     "m.login.password",
+			User:     user.Username,
+			Password: p.Password,
+		}
+
+		resp, err := matrix.Login(rl)
+		if err != nil || resp == nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"success": false,
+					"error":   "password is incorrect",
+				},
+			})
+			return
+		}
+
+		hash, _ := HashPassword(p.New)
+
+		err = c.MatrixDB.Queries.UpdatePassword(context.Background(), matrix_db.UpdatePasswordParams{
+			PasswordHash: pgtype.Text{
+				String: hash,
+				Valid:  true,
+			},
+			Name: pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			},
+		})
+
+		if err != nil {
+			log.Println(err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"success": false,
+				},
+			})
+			return
 		}
 
 		RespondWithJSON(w, &JSONResponse{
