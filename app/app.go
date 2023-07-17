@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/sessions"
+	"github.com/meilisearch/meilisearch-go"
 	"github.com/robfig/cron/v3"
 )
 
@@ -38,6 +39,7 @@ type App struct {
 	DefaultMatrixAccount string
 	DefaultMatrixSpace   string
 	Version              string
+	SearchStore          *meilisearch.Client
 }
 
 func (c *App) Activate() {
@@ -141,6 +143,13 @@ func Start(s *StartRequest) {
 		Sessions:      sess,
 		Cron:          cron,
 		Cache:         cache,
+	}
+	if conf.Search.Enabled {
+		mei := meilisearch.NewClient(meilisearch.ClientConfig{
+			Host:   conf.Search.Host,
+			APIKey: conf.Search.APIKey,
+		})
+		c.SearchStore = mei
 	}
 
 	media, err := c.NewMediaStorage()

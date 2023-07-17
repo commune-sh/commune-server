@@ -105,6 +105,11 @@ type Restrictions struct {
 		SenderAge              int32 `toml:"sender_age"`
 	} `toml:"space"`
 }
+type Search struct {
+	Enabled bool   `toml:"enabled"`
+	Host    string `toml:"host"`
+	APIKey  string `toml:"api_key"`
+}
 
 type Config struct {
 	Name           string         `toml:"name"`
@@ -122,6 +127,7 @@ type Config struct {
 	ThirdParty     ThirdParty     `toml:"third_party"`
 	Discovery      Discovery      `toml:"discovery"`
 	Restrictions   Restrictions   `toml:"restrictions"`
+	Search         Search         `toml:"search"`
 }
 
 var conf Config

@@ -13,6 +13,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+func (c *App) AddSearchEvent(e map[string]interface{}) {
+
+	doc := []map[string]interface{}{e}
+
+	log.Println("doc is", doc)
+	up, err := c.SearchStore.Index("events").AddDocuments(doc)
+	if err != nil {
+		log.Println(err)
+	}
+	finalTask, err := c.SearchStore.Index("events").WaitForTask(up.TaskUID)
+	if err != nil {
+		log.Println(err)
+	}
+	if finalTask.Status != "succeeded" {
+		log.Println(finalTask)
+	}
+}
+
 func (c *App) SearchEvents() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -32,6 +50,20 @@ func (c *App) SearchEvents() http.HandlerFunc {
 			})
 			return
 		}
+
+		/*
+			{
+				searchRes, err := c.SearchStore.Index("events").Search(q,
+					&meilisearch.SearchRequest{
+						Limit: 10,
+					})
+				if err != nil {
+					log.Println(err)
+				}
+
+				log.Println(searchRes.Hits)
+			}
+		*/
 
 		events, err := c.MatrixDB.Queries.SearchEvents(context.Background(), matrix_db.SearchEventsParams{
 			RoomID: pgtype.Text{

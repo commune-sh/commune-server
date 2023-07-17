@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"shpong/gomatrix"
 	"time"
 
@@ -16,15 +17,15 @@ import (
 )
 
 type NewPostBody struct {
-	RoomID     string `json:"room_id"`
-	Content    any    `json:"content"`
-	IsReply    bool   `json:"is_reply"`
-	InThread   string `json:"in_thread"`
-	ReplyingTo string `json:"replying_to"`
-	ReactingTo string `json:"reacting_to"`
-	Type       string `json:"type"`
-	Editing    bool   `json:"editing"`
-	Session    string `json:session`
+	RoomID     string      `json:"room_id"`
+	Content    interface{} `json:"content"`
+	IsReply    bool        `json:"is_reply"`
+	InThread   string      `json:"in_thread"`
+	ReplyingTo string      `json:"replying_to"`
+	ReactingTo string      `json:"reacting_to"`
+	Type       string      `json:"type"`
+	Editing    bool        `json:"editing"`
+	Session    string      `json:session`
 }
 
 type NewPostParams struct {
@@ -154,6 +155,29 @@ func (c *App) CreatePost() http.HandlerFunc {
 				}
 			}
 		}()
+
+		if c.Config.Search.Enabled {
+			go func() {
+
+				if co, ok := p.Content.(map[string]interface{}); ok {
+
+					event := map[string]interface{}{
+						"id":         RandomString(32),
+						"event":      event.EventID,
+						"room":       event.RoomID,
+						"room_alias": event.RoomAlias,
+						"title":      co["title"],
+						"body":       co["body"],
+					}
+
+					c.AddSearchEvent(event)
+				} else {
+					log.Println("couln't")
+					reflect.TypeOf(p.Content)
+				}
+
+			}()
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
