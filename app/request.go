@@ -79,6 +79,9 @@ func (c *App) HealthCheck() http.HandlerFunc {
 				"healthy":  true,
 				"version":  c.Version,
 				"features": c.Config.Features,
+				"restrictions": map[string]any{
+					"space": c.Config.Restrictions.Space,
+				},
 			},
 		})
 
