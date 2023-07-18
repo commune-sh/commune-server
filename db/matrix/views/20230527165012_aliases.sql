@@ -6,9 +6,10 @@ DROP FUNCTION aliases_mv_refresh();
 CREATE MATERIALIZED VIEW IF NOT EXISTS aliases AS 
 WITH space_children AS(
     WITH sc AS (
-        SELECT ra.room_alias as parent_room_alias, ra.room_id as parent_room_id, cse.state_key as child_room_id, trim(BOTH '-' FROM regexp_replace(unaccent(trim(sc.alias)), '[^a-z0-9\\_-]+', '-', 'gi')) as child_room_alias, events.origin_server_ts
-        FROM room_aliases ra
-        LEFT JOIN current_state_events as cse ON cse.room_id = ra.room_id AND cse.type ='m.space.child'
+	SELECT er.json::jsonb->'content'->>'alias' as parent_room_alias, rooms.room_id as parent_room_id, cse.state_key as child_room_id, trim(BOTH '-' FROM regexp_replace(unaccent(trim(sc.alias)), '[^a-z0-9\\_-]+', '-', 'gi')) as child_room_alias, events.origin_server_ts
+        FROM rooms
+	JOIN event_json er ON er.room_id = rooms.room_id AND er.json::jsonb->>'type' = 'm.room.canonical_alias'
+        LEFT JOIN current_state_events as cse ON cse.room_id = rooms.room_id AND cse.type ='m.space.child'
         LEFT JOIN event_json ev ON ev.event_id = cse.event_id
         JOIN events ON events.event_id = ev.event_id
         LEFT JOIN (
@@ -24,10 +25,11 @@ WITH space_children AS(
     END as child_room_alias
     FROM sc
 )
-    SELECT rooms.room_id, CASE WHEN sc.child_room_id IS NULL THEN substring(split_part(ra.room_alias, ':', 1) FROM 2) ELSE substring(split_part(sc.parent_room_alias, ':', 1) FROM 2)::text || '/' || (sc.child_room_alias) END as room_alias
+    SELECT rooms.room_id, CASE WHEN sc.child_room_id IS NULL THEN substring(split_part(er.json::jsonb->'content'->>'alias', ':', 1) FROM 2) ELSE substring(split_part(sc.parent_room_alias, ':', 1) FROM 2)::text || '/' || (sc.child_room_alias) END as room_alias
     FROM rooms
-    LEFT JOIN room_aliases ra ON ra.room_id = rooms.room_id
+    LEFT JOIN event_json er ON er.room_id = rooms.room_id AND er.json::jsonb->>'type' = 'm.room.canonical_alias'
     LEFT JOIN space_children sc ON sc.child_room_id = rooms.room_id;
+
 
 CREATE UNIQUE INDEX IF NOT EXISTS aliases_idx ON aliases (room_id);
 

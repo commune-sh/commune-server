@@ -33,7 +33,11 @@ func (c *App) JoinSpace() http.HandlerFunc {
 
 		alias := c.ConstructMatrixRoomID(space)
 
-		hs := GetHomeServerPart(space)
+		hs := GetHomeserverFromAlias(space)
+
+		log.Println("homeserver is ", hs)
+		log.Println("homeserver is ", hs)
+		log.Println("homeserver is ", hs)
 
 		if hs != c.Config.Matrix.PublicServer {
 			homeserver = hs

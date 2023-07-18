@@ -130,6 +130,15 @@ func GetHomeServerPart(s string) string {
 	return s
 }
 
+func GetHomeserverFromAlias(alias string) string {
+	parts := strings.Split(alias, ":")
+	lastPart := parts[len(parts)-1]
+	if strings.Contains(lastPart, ":") {
+		return strings.Join(parts[1:len(parts)-1], ":")
+	}
+	return strings.Join(parts[1:], ":")
+}
+
 func (c *App) IsFederated(username string) (bool, *UserID) {
 	// federated user paths should have the same format as email, like so: username@homeserver.com
 	// obviously a very loose regexp
