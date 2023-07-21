@@ -8,9 +8,11 @@ import (
 
 func (c *App) Middleware() {
 
-	if c.Config.Mode == "development" {
-		c.Router.Use(c.reloadtemplates)
-	}
+	/*
+		if c.Config.Mode == "development" {
+			c.Router.Use(c.reloadtemplates)
+		}
+	*/
 }
 
 func (c *App) LoggedInUser(r *http.Request) *User {

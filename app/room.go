@@ -31,41 +31,15 @@ func (c *App) JoinSpace() http.HandlerFunc {
 
 		homeserver := ""
 
-		alias := c.ConstructMatrixRoomID(space)
-
 		hs := GetHomeserverFromAlias(space)
 
-		log.Println("homeserver is ", hs)
-		log.Println("homeserver is ", hs)
 		log.Println("homeserver is ", hs)
 
 		if hs != c.Config.Matrix.PublicServer {
 			homeserver = hs
-			alias = space
 		}
 
-		log.Println("alias and space are", alias, space)
-
 		user := c.LoggedInUser(r)
-
-		/*
-			// get space room_id and all it's children's room_ids
-			sri, err := c.MatrixDB.Queries.GetSpaceRoomIDs(context.Background(), alias)
-
-			if err != nil {
-				log.Println("error getting space room ids: ", err)
-				RespondWithJSON(w, &JSONResponse{
-					Code: http.StatusOK,
-					JSON: map[string]any{
-						"error":  "space does not exist",
-						"exists": false,
-					},
-				})
-				return
-			}
-		*/
-
-		//log.Println(sri)
 
 		matrix, err := c.NewMatrixClient(user.MatrixUserID, user.MatrixAccessToken)
 		if err != nil {
@@ -92,8 +66,6 @@ func (c *App) JoinSpace() http.HandlerFunc {
 		} else {
 			log.Println(re)
 		}
-
-		//alias = strings.ToLower(alias)
 
 		details, err := c.MatrixDB.Queries.GetSpaceInfo(context.Background(), matrix_db.GetSpaceInfoParams{
 			RoomAlias: pgtype.Text{
@@ -160,13 +132,13 @@ func (c *App) LeaveSpace() http.HandlerFunc {
 			return
 		}
 
-		alias := c.ConstructMatrixRoomID(space)
+		//alias := c.ConstructMatrixRoomID(space)
 
 		user := c.LoggedInUser(r)
 
 		// get space room_id and all it's children's room_ids
 		sri, err := c.MatrixDB.Queries.GetSpaceJoinedRoomIDs(context.Background(), matrix_db.GetSpaceJoinedRoomIDsParams{
-			RoomAlias: alias,
+			RoomID: space,
 			UserID: pgtype.Text{
 				String: user.MatrixUserID,
 				Valid:  true,
@@ -247,6 +219,16 @@ func (c *App) JoinRoom() http.HandlerFunc {
 			return
 		}
 
+		homeserver := ""
+
+		hs := GetHomeserverFromAlias(room_id)
+
+		log.Println("homeserver is ", hs)
+
+		if hs != c.Config.Matrix.PublicServer {
+			homeserver = hs
+		}
+
 		user := c.LoggedInUser(r)
 
 		matrix, err := c.NewMatrixClient(user.MatrixUserID, user.MatrixAccessToken)
@@ -260,7 +242,7 @@ func (c *App) JoinRoom() http.HandlerFunc {
 			return
 		}
 
-		re, err := matrix.JoinRoom(room_id, "", nil)
+		re, err := matrix.JoinRoom(room_id, homeserver, nil)
 
 		if err != nil {
 			log.Println("could not join room", err)

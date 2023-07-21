@@ -125,15 +125,14 @@ WHERE ra.room_alias = $1
 GROUP BY ra.room_id;
 
 -- name: GetSpaceJoinedRoomIDs :one
-SELECT ra.room_id, COALESCE(array_agg(ch.child_room_id), NULL)::text[] as rooms
-FROM room_aliases ra 
-JOIN rooms on rooms.room_id = ra.room_id
+SELECT rooms.room_id, COALESCE(array_agg(ch.child_room_id), NULL)::text[] as rooms
+FROM rooms
 LEFT JOIN (
     SELECT spr.child_room_id, spr.parent_room_id FROM space_rooms spr
     JOIN membership_state mst ON mst.room_id = spr.child_room_id AND mst.user_id = sqlc.narg('user_id') AND mst.membership = 'join'
-) as ch ON ch.parent_room_id = ra.room_id
-WHERE ra.room_alias = $1
-GROUP BY ra.room_id;
+) as ch ON ch.parent_room_id = rooms.room_id
+WHERE rooms.room_id = $1
+GROUP BY rooms.room_id;
 
 
 
