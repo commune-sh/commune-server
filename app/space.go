@@ -601,7 +601,10 @@ func (c *App) NewStateEvent(p *NewStateEventParams) (string, error) {
 }
 
 func (c *App) GetDefaultSpaces() (*[]matrix_db.GetDefaultSpacesRow, error) {
-	spaces, err := c.MatrixDB.Queries.GetDefaultSpaces(context.Background())
+	spaces, err := c.MatrixDB.Queries.GetDefaultSpaces(context.Background(), pgtype.Text{
+		String: c.Config.Matrix.PublicServer,
+		Valid:  true,
+	})
 	if err != nil {
 		return nil, err
 	}

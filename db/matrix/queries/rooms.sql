@@ -170,6 +170,7 @@ SELECT spaces.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar
 FROM spaces 
 LEFT JOIN room_state rs ON rs.room_id = spaces.room_id
 WHERE spaces.is_default = true
+AND spaces.room_alias LIKE '%' || $1 || '%'
 ORDER BY spaces.space_alias ASC;
 
 
