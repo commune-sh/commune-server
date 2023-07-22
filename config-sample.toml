@@ -1,0 +1,94 @@
+name = "shpong"
+mode = "development"
+
+[app]
+domain = "localhost:8989"
+ssr_domain = "new.localhost:8989"
+shortlink_domain = ""
+port = 8989
+cookie_name = "shpong"
+secure_cookie = "something_random"
+jwt_key = "some_random_string"
+
+[features]
+show_index = true
+social = false
+space_rooms = true
+registration_enabled = true
+require_email = false
+space_creation_enabled = true
+
+
+[matrix]
+homeserver = "localhost"
+public_server = "localhost:8480"
+port = 8080
+password = "testpassword"
+config_file = "/path/to/synapse/homeserver.yaml"
+
+[db]
+matrix = "postgres://postgres:postgres@localhost:5432/synapse?sslmode=disable"
+
+[redis]
+address = "localhost:6379"
+password = "redispass"
+sessions_db = 1
+posts_db = 2
+verification_codes_db = 3
+system_db = 4
+room_state = 5
+
+[search]
+enabled = false
+host = "http://localhost:7700"
+api_key = "meilisearch_master_key"
+
+[cache]
+index_events = false
+space_events = false
+event_replies = false
+room_state = true
+
+[authentication]
+verify_email = true
+disable_registration = false
+shared_secret = "synapse_registration_shared_secret"
+block_popular_email_providers = false
+query_mx_records = false
+
+[privacy]
+disable_public = false
+
+[smtp]
+domain = ""
+account = ""
+server = ""
+port = 587
+username = ""
+password = ""
+
+[storage]
+bucket_name = ""
+region = ""
+account_id = ""
+endpoint = ""
+access_key_id = ""
+access_key_secret = ""
+
+[third_party]
+youtube_key = ""
+tenor_key = ""
+
+[restrictions.space]
+require_verification = false
+spaces_per_user = 1000
+time_since_last_space = 60
+reject_reserved_keywords = false
+sender_age = 0 # in days
+
+
+[discovery]
+enabled = true
+server = ""
+key = ""
+domain = ""

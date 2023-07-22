@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	matrix_db "shpong/db/matrix/gen"
 
@@ -186,6 +187,8 @@ func (c *App) LeaveSpace() http.HandlerFunc {
 					if err != nil {
 						log.Println("could not leave child room", err)
 					}
+
+					time.Sleep(3 * time.Second)
 
 				}
 			}()

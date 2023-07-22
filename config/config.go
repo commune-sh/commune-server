@@ -36,7 +36,6 @@ type Matrix struct {
 }
 
 type DB struct {
-	App    string `toml:"app"`
 	Matrix string `toml:"matrix"`
 }
 
