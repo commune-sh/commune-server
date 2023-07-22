@@ -1,11 +1,11 @@
 package main
 
 import (
-	"shpong/app"
 	"flag"
 	"log"
 	"os"
 	"os/signal"
+	"shpong/app"
 )
 
 func main() {
@@ -23,7 +23,18 @@ func main() {
 
 	flag.Parse()
 
-	app.Start(&app.StartRequest{
+	req := &app.StartRequest{
 		Config: *config,
-	})
+	}
+
+	if len(os.Args) > 1 {
+		command := os.Args[1]
+
+		switch command {
+		case "views":
+			req.MakeViews = true
+		}
+	}
+
+	app.Start(req)
 }

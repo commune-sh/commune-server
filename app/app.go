@@ -70,7 +70,8 @@ func (c *App) Activate() {
 }
 
 type StartRequest struct {
-	Config string
+	Config    string
+	MakeViews bool
 }
 
 var CONFIG_FILE string
@@ -92,6 +93,11 @@ func Start(s *StartRequest) {
 	mdb, err := NewMatrixDB()
 	if err != nil {
 		panic(err)
+	}
+
+	if s.MakeViews {
+		MakeViews(mdb)
+		return
 	}
 
 	QueryMatrixServerHealth(conf.Matrix)

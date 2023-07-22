@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"path/filepath"
 	"shpong/gomatrix"
 	"shpong/static"
 	"strings"
@@ -54,6 +56,39 @@ func IsKeywordReserved(keyword string) bool {
 		}
 	}
 	return false
+}
+
+func MakeViews(db *MatrixDB) {
+	log.Println("making views")
+
+	dir := "db/matrix/views"
+
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, file := range files {
+
+		if strings.HasSuffix(file.Name(), ".sql") {
+			log.Println("Processing SQL file:", file.Name())
+
+			filePath := filepath.Join(dir, file.Name())
+			sqlContent, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				fmt.Printf("Error reading SQL file %s: %v\n", file.Name(), err)
+				continue
+			}
+
+			sqlString := string(sqlContent)
+
+			tx, err := db.Exec(context.Background(), sqlString)
+			if err != nil {
+				log.Println(err)
+			}
+			log.Println(tx)
+		}
+	}
 }
 
 func (c *App) Setup() {
