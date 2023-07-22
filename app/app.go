@@ -95,6 +95,10 @@ func Start(s *StartRequest) {
 		panic(err)
 	}
 
+	// On first run, check to see if MVs exist
+	// If not, create them
+	InitViews(mdb)
+
 	if s.MakeViews {
 		MakeViews(mdb)
 		return
