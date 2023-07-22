@@ -7,9 +7,12 @@ import (
 	"log"
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Notification struct {
@@ -116,7 +119,29 @@ func (c *App) GetNotifications() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		items, err := c.MatrixDB.Queries.GetUserNotifications(context.Background(), user.MatrixUserID)
+		last, err := c.Cache.Notifications.Get(user.MatrixUserID).Result()
+		if err != nil {
+			log.Println(err)
+		}
+
+		gn := matrix_db.GetNotificationsParams{
+			Sender: pgtype.Text{
+				String: user.MatrixUserID,
+				Valid:  true,
+			},
+			OriginServerTS: pgtype.Int8{
+				Int64: time.Now().UnixMilli(),
+				Valid: true,
+			},
+		}
+
+		if last != "" {
+			i, _ := strconv.ParseInt(last, 10, 64)
+			log.Println(i)
+			gn.OriginServerTS.Int64 = i
+		}
+
+		items, err := c.MatrixDB.Queries.GetNotifications(context.Background(), gn)
 		if err != nil {
 			log.Println(err)
 			RespondWithJSON(w, &JSONResponse{
@@ -142,19 +167,16 @@ func (c *App) GetNotifications() http.HandlerFunc {
 func (c *App) MarkRead() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		query := r.URL.Query()
+		last := query.Get("last")
+
+		log.Println(last)
+
 		user := c.LoggedInUser(r)
 
-		err := c.MatrixDB.Queries.MarkAsRead(context.Background(), user.MatrixUserID)
+		err := c.Cache.Notifications.Set(user.MatrixUserID, last, 0).Err()
 		if err != nil {
 			log.Println(err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusInternalServerError,
-				JSON: map[string]any{
-					"error":   "Could not get notifications",
-					"success": false,
-				},
-			})
-			return
 		}
 
 		RespondWithJSON(w, &JSONResponse{

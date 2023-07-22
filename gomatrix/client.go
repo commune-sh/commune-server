@@ -694,6 +694,13 @@ func (cli *Client) StateEvent(roomID, eventType, stateKey string, outContent int
 	return
 }
 
+// Get a single event based on roomId/eventId
+func (cli *Client) GetEvent(roomID, eventID string) (resp Event, err error) {
+	u := cli.BuildURL("rooms", roomID, "event", eventID)
+	err = cli.MakeRequest("GET", u, nil, &resp)
+	return
+}
+
 // UploadLink uploads an HTTP URL and then returns an MXC URI.
 func (cli *Client) UploadLink(link string) (*RespMediaUpload, error) {
 	res, err := cli.Client.Get(link)

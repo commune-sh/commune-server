@@ -40,11 +40,12 @@ type DB struct {
 }
 
 type Redis struct {
-	Address    string `toml:"address"`
-	Password   string `toml:"password"`
-	SessionsDB int    `toml:"sessions_db"`
-	PostsDB    int    `toml:"posts_db"`
-	SystemDB   int    `toml:"system_db"`
+	Address         string `toml:"address"`
+	Password        string `toml:"password"`
+	SessionsDB      int    `toml:"sessions_db"`
+	PostsDB         int    `toml:"posts_db"`
+	SystemDB        int    `toml:"system_db"`
+	NotificationsDB int    `toml:"notifications_db"`
 }
 
 type Cache struct {

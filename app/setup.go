@@ -60,7 +60,6 @@ func IsKeywordReserved(keyword string) bool {
 
 func InitViews(db *MatrixDB) {
 	var exists bool
-
 	err := db.QueryRow(context.Background(), "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_matviews WHERE matviewname = $1)", "aliases").Scan(&exists)
 	if err != nil {
 		log.Fatal("Error checking for materialized view existence:", err)

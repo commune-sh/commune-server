@@ -69,23 +69,41 @@ func (c *App) StartNotifyListener() {
 			log.Println("error acquiring pool: ", err)
 		}
 
-		log.Println(x)
+		if x != nil && x.Payload != "" {
 
-		eventID := x.Payload
+			eventID := x.Payload
 
-		slug := eventID[len(eventID)-11:]
+			slug := eventID[len(eventID)-11:]
 
-		event, err := c.GetEvent(&GetEventParams{
-			Slug: slug,
-		})
+			event, err := c.GetEvent(&GetEventParams{
+				Slug: slug,
+			})
 
-		if err == nil {
+			log.Println("GOT NOTIFIED with new event", event)
 
-			serialized, err := json.Marshal(event)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.sendMessageNotification(event.RoomID, serialized)
+			if err == nil && event.Type == "m.room.message" {
+
+				serialized, err := json.Marshal(event)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.sendMessageNotification(event.RoomID, serialized)
+				}
+			}
+
+			if err == nil {
+				n, err := c.MatrixDB.Queries.GetNotification(context.Background(), eventID)
+				if err != nil {
+					log.Println(err)
+				} else {
+
+					serialized, err := json.Marshal(n)
+					if err != nil {
+						log.Println(err)
+					}
+
+					c.sendNotification(n.ForMatrixUserID.String, serialized)
+				}
 			}
 		}
 	}

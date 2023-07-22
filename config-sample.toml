@@ -36,7 +36,8 @@ sessions_db = 1
 posts_db = 2
 verification_codes_db = 3
 system_db = 4
-room_state = 5
+room_state_db = 5
+notifications_db = 6
 
 [search]
 enabled = false

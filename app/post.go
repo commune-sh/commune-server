@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"shpong/gomatrix"
+	"strings"
 	"time"
 
 	matrix_db "shpong/db/matrix/gen"
@@ -111,6 +112,26 @@ func (c *App) CreatePost() http.HandlerFunc {
 			log.Println("is sender's age valid?", valid)
 		}
 
+		if !strings.Contains(p.RoomID, c.Config.Matrix.PublicServer) &&
+		p.ReplyingTo != "" {
+
+			serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+			matrix, err := gomatrix.NewClient(serverName, user.MatrixUserID, user.MatrixAccessToken)
+			if err != nil {
+				log.Println(err)
+			}
+
+			resp, err := matrix.GetEvent(p.RoomID, p.ReplyingTo)
+			if err != nil {
+				log.Println(err)
+			}
+			log.Println(resp)
+			log.Println(resp)
+			log.Println(resp)
+		}
+
+
 		event, err := c.NewPost(&NewPostParams{
 			Body:              p,
 			MatrixUserID:      user.MatrixUserID,
@@ -129,32 +150,34 @@ func (c *App) CreatePost() http.HandlerFunc {
 			return
 		}
 
-		go func() {
-			isReply := p.IsReply && p.InThread != "" && p.ReplyingTo != ""
-			isReaction := p.Type == "m.reaction" && p.ReactingTo != ""
-			if isReply {
-				err := c.NewReplyNotification(&NotificationParams{
-					ThreadEventID:  p.InThread,
-					ReplyToEventID: p.ReplyingTo,
-					User:           user,
-					ReplyEvent:     event,
-				})
-				if err != nil {
-					log.Println(err)
+		/*
+			go func() {
+				isReply := p.IsReply && p.InThread != "" && p.ReplyingTo != ""
+				isReaction := p.Type == "m.reaction" && p.ReactingTo != ""
+				if isReply {
+					err := c.NewReplyNotification(&NotificationParams{
+						ThreadEventID:  p.InThread,
+						ReplyToEventID: p.ReplyingTo,
+						User:           user,
+						ReplyEvent:     event,
+					})
+					if err != nil {
+						log.Println(err)
+					}
 				}
-			}
-			if isReaction {
-				err := c.NewReactionNotification(&NotificationParams{
-					ThreadEventID:  p.InThread,
-					ReplyToEventID: p.ReactingTo,
-					User:           user,
-					ReplyEvent:     event,
-				})
-				if err != nil {
-					log.Println(err)
+				if isReaction {
+					err := c.NewReactionNotification(&NotificationParams{
+						ThreadEventID:  p.InThread,
+						ReplyToEventID: p.ReactingTo,
+						User:           user,
+						ReplyEvent:     event,
+					})
+					if err != nil {
+						log.Println(err)
+					}
 				}
-			}
-		}()
+			}()
+		*/
 
 		if c.Config.Search.Enabled {
 			go func() {

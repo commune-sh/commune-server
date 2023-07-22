@@ -21,6 +21,9 @@ $$;
 CREATE TRIGGER events_insert_trigger
 AFTER INSERT ON events
 FOR EACH ROW
-WHEN (NEW.type = 'm.room.message')
+WHEN (NEW.type = 'm.room.message' 
+    OR NEW.type = 'm.reaction'
+    OR NEW.type = 'space.board.post'
+    OR NEW.type = 'space.board.post.reply')
 EXECUTE FUNCTION events_trigger_function();
 

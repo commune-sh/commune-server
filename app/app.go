@@ -95,7 +95,7 @@ func Start(s *StartRequest) {
 		panic(err)
 	}
 
-	// On first run, check to see if MVs exist
+	// On first run, check to see if Migrations & MVs exist
 	// If not, create them
 	InitViews(mdb)
 
