@@ -95,7 +95,8 @@ func (c *App) StartNotifyListener() {
 					continue
 				}
 
-				if ms.Membership.String == "join" {
+				if ms.Membership.String == "join" &&
+					ms.UserID.String != ms.Creator.String {
 					log.Println("someone joined, let's notify owner")
 					n := Notification{
 						FromMatrixUserID: ms.UserID.String,

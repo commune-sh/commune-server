@@ -120,6 +120,7 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 			Reactions:   item.Reactions,
 			Edited:      item.Edited,
 			EditedOn:    item.EditedOn,
+			PrevContent: item.PrevContent,
 		})
 
 		items = append(items, s)

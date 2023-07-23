@@ -268,27 +268,27 @@ type sender struct {
 }
 
 type Event struct {
-	Type           any      `json:"type"`
-	Content        any      `json:"content"`
-	Sender         sender   `json:"sender"`
-	EventID        string   `json:"event_id"`
-	StateKey       any      `json:"state_key,omitempty"`
-	RoomAlias      string   `json:"room_alias,omitempty"`
-	RoomID         string   `json:"room_id"`
-	OriginServerTs float64  `json:"origin_server_ts"`
-	Unsigned       any      `json:"unsigned"`
-	Slug           string   `json:"slug,omitempty"`
-	ReplyCount     int64    `json:"reply_count"`
-	Reactions      any      `json:"reactions,omitempty"`
-	UserReactions  []string `json:"user_reactions,omitempty"`
-	Children       []*Event `json:"children,omitempty"`
-	InReplyTo      string   `json:"in_reply_to,omitempty"`
-	EditedOn       any      `json:"edited_on,omitempty"`
-	Upvotes        int64    `json:"upvotes,omitempty"`
-	Downvotes      int64    `json:"downvotes,omitempty"`
-	Upvoted        bool     `json:"upvoted,omitempty"`
-	Downvoted      bool     `json:"downvoted,omitempty"`
-	Pinned         bool     `json:"pinned,omitempty"`
+	Type           any                    `json:"type"`
+	Content        any                    `json:"content"`
+	Sender         sender                 `json:"sender"`
+	EventID        string                 `json:"event_id"`
+	StateKey       any                    `json:"state_key,omitempty"`
+	RoomAlias      string                 `json:"room_alias,omitempty"`
+	RoomID         string                 `json:"room_id"`
+	OriginServerTs float64                `json:"origin_server_ts"`
+	Unsigned       map[string]interface{} `json:"unsigned"`
+	Slug           string                 `json:"slug,omitempty"`
+	ReplyCount     int64                  `json:"reply_count"`
+	Reactions      any                    `json:"reactions,omitempty"`
+	UserReactions  []string               `json:"user_reactions,omitempty"`
+	Children       []*Event               `json:"children,omitempty"`
+	InReplyTo      string                 `json:"in_reply_to,omitempty"`
+	EditedOn       any                    `json:"edited_on,omitempty"`
+	Upvotes        int64                  `json:"upvotes,omitempty"`
+	Downvotes      int64                  `json:"downvotes,omitempty"`
+	Upvoted        bool                   `json:"upvoted,omitempty"`
+	Downvoted      bool                   `json:"downvoted,omitempty"`
+	Pinned         bool                   `json:"pinned,omitempty"`
 }
 
 type EventProcessor struct {
@@ -303,6 +303,7 @@ type EventProcessor struct {
 	Edited      interface{}
 	EditedOn    interface{}
 	SSR         bool
+	PrevContent interface{}
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {
@@ -315,7 +316,17 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 		},
 		RoomID:         ep.JSON.Path("room_id").Data().(string),
 		OriginServerTs: ep.JSON.Path("origin_server_ts").Data().(float64),
-		Unsigned:       ep.JSON.Path("unsigned").Data().(any),
+		Unsigned:       ep.JSON.Path("unsigned").Data().(map[string]interface{}),
+	}
+
+	if ep.PrevContent != nil {
+		if bytes, ok := ep.PrevContent.([]uint8); ok {
+			var result map[string]interface{}
+			err := json.Unmarshal(bytes, &result)
+			if err == nil {
+				e.Unsigned["prev_content"] = result
+			}
+		}
 	}
 
 	if ep.Edited != nil {

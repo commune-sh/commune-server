@@ -8,7 +8,8 @@ SELECT ej.event_id,
     COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
     ed.json::jsonb->'content'->>'m.new_content' as edited,
-    COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on
+    COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on,
+    cast(prev.content as jsonb) as prev_content
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
@@ -26,6 +27,11 @@ LEFT JOIN (
 	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
+LEFT JOIN (
+    SELECT event_json.event_id,
+        event_json.json::jsonb->>'content' as content
+    FROM event_json
+) prev ON prev.event_id = ej.json::jsonb->'unsigned'->>'replaces_state'
 WHERE ej.room_id = $1
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
@@ -41,7 +47,8 @@ GROUP BY
     ud.display_name,
     ud.avatar_url,
     aliases.room_alias,
-    events.origin_server_ts
+    events.origin_server_ts,
+    prev.content
 ORDER BY CASE
     WHEN @order_by::text = 'ASC' THEN events.origin_server_ts 
 END ASC, CASE 
