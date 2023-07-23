@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS membership_state (
     room_id text,
     membership text,
     display_name text,
-    avatar_url text
+    avatar_url text,
+    origin_server_ts bigint,
+    event_id text
 );
 -- +goose StatementEnd
 

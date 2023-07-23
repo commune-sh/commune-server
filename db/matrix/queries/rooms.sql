@@ -14,6 +14,19 @@ FROM room_aliases ra
 WHERE ra.room_alias = $1
 AND ra.creator = $2;
 
+-- name: GetSpaceAliasFromRoomID :one
+SELECT spaces.room_alias, spaces.space_alias
+FROM spaces
+WHERE spaces.room_id = $1;
+
+-- name: GetMembershipState :one
+SELECT ms.*, spaces.room_alias, rooms.creator
+FROM membership_state ms
+JOIN spaces ON spaces.room_id = ms.room_id
+JOIN rooms ON rooms.room_id = ms.room_id
+WHERE ms.event_id = $1;
+
+
 -- name: GetAllCommunities :many
 SELECT room_aliases.room_alias,
     room_aliases.room_id,

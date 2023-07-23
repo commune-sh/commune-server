@@ -16,4 +16,3 @@ views:
 deps:
 	-go install github.com/kyleconroy/sqlc/cmd/sqlc@latest;
 	-go get -d github.com/cortesi/modd/cmd/modd;
-	-go install github.com/pressly/goose/v3/cmd/goose@latest;

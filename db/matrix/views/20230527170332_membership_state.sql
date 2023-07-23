@@ -4,10 +4,10 @@ DROP TRIGGER membership_state_mv_trigger on room_memberships;
 DROP FUNCTION membership_state_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS membership_state AS 
-    SELECT DISTINCT ON (rm.room_id, user_id) rm.user_id, rm.room_id, rm.membership, rm.display_name, rm.avatar_url
+    SELECT DISTINCT ON (rm.room_id, user_id) rm.user_id, rm.room_id, rm.membership, rm.display_name, rm.avatar_url, ev.origin_server_ts, ev.event_id
     FROM room_memberships rm  
     JOIN events ev ON ev.event_id = rm.event_id
-    GROUP BY rm.user_id, rm.room_id, rm.membership, ev.origin_server_ts, rm.display_name, rm.avatar_url
+    GROUP BY rm.user_id, rm.room_id, rm.membership, ev.origin_server_ts, rm.display_name, rm.avatar_url, ev.event_id
     ORDER BY rm.room_id, rm.user_id, ev.origin_server_ts DESC;
 
 CREATE UNIQUE INDEX IF NOT EXISTS membership_state_idx ON membership_state (user_id, room_id);

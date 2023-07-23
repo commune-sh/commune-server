@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	matrix_db "shpong/db/matrix/gen"
@@ -89,20 +88,6 @@ func (c *App) JoinSpace() http.HandlerFunc {
 				},
 			})
 			return
-		}
-
-		if strings.HasPrefix(space, "@") {
-
-			go func() {
-				err := c.NewJoinNotification(&JoinNotificationParams{
-					User:   user,
-					Space:  space,
-					RoomID: re.RoomID,
-				})
-				if err != nil {
-					log.Println(err)
-				}
-			}()
 		}
 
 		RespondWithJSON(w, &JSONResponse{

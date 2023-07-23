@@ -6,11 +6,15 @@ CREATE OR REPLACE FUNCTION events_trigger_function()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE notification_payload text;
 BEGIN
-    SELECT ej.event_id
+    SELECT 
+    jsonb_build_object(
+        'event_id', ej.event_id, 
+        'type', ev.type,
+        'room_id', ev.room_id)
     INTO notification_payload
     FROM event_json ej
-    JOIN events e ON ej.event_id = e.event_id
-    WHERE e.event_id = NEW.event_id;
+    JOIN events ev ON ej.event_id = ev.event_id
+    WHERE ev.event_id = NEW.event_id;
 
   PERFORM pg_notify('events_notification', notification_payload);
 
@@ -23,6 +27,7 @@ AFTER INSERT ON events
 FOR EACH ROW
 WHEN (NEW.type = 'm.room.message' 
     OR NEW.type = 'm.reaction'
+    OR NEW.type = 'm.room.member'
     OR NEW.type = 'space.board.post'
     OR NEW.type = 'space.board.post.reply')
 EXECUTE FUNCTION events_trigger_function();

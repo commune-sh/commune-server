@@ -61,6 +61,14 @@ FROM membership_state ms
 WHERE ms.user_id = $1
 AND ms.membership = 'join';
 
+-- name: GetProfileFollowers :many
+SELECT ms.*
+FROM membership_state ms 
+WHERE ms.user_id != $1
+AND ms.room_id = $2
+AND (ms.origin_server_ts > sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
+AND ms.membership = 'join';
+
 -- name: IsUserSpaceMember :one
 SELECT exists(
 SELECT 1

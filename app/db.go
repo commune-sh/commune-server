@@ -9,6 +9,7 @@ import (
 	"shpong/config"
 	matrix_db "shpong/db/matrix/gen"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	_ "github.com/lib/pq"
@@ -71,7 +72,50 @@ func (c *App) StartNotifyListener() {
 
 		if x != nil && x.Payload != "" {
 
-			eventID := x.Payload
+			log.Println("PAYLOAD IS", x.Payload)
+
+			type NotifyEvent struct {
+				EventID string `json:"event_id"`
+				RoomID  string `json:"room_id"`
+				Type    string `json:"type"`
+			}
+
+			ne := NotifyEvent{}
+
+			err := json.Unmarshal([]byte(x.Payload), &ne)
+
+			if err != nil {
+				log.Println("error unmarshalling payload: ", err)
+			}
+
+			if ne.Type == "m.room.member" {
+				ms, err := c.MatrixDB.Queries.GetMembershipState(context.Background(), pgtype.Text{String: ne.EventID, Valid: true})
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
+				if ms.Membership.String == "join" {
+					log.Println("someone joined, let's notify owner")
+					n := Notification{
+						FromMatrixUserID: ms.UserID.String,
+						DisplayName:      ms.DisplayName.String,
+						AvatarURL:        ms.AvatarUrl.String,
+						CreatedAt:        ms.OriginServerTS.Int64,
+						Type:             "space.follow",
+					}
+
+					serialized, err := json.Marshal(n)
+					if err != nil {
+						log.Println(err)
+					}
+
+					c.sendNotification(ms.Creator.String, serialized)
+				}
+				continue
+			}
+
+			eventID := ne.EventID
 
 			slug := eventID[len(eventID)-11:]
 
@@ -89,6 +133,7 @@ func (c *App) StartNotifyListener() {
 				} else {
 					c.sendMessageNotification(event.RoomID, serialized)
 				}
+				continue
 			}
 
 			if err == nil {
@@ -104,6 +149,7 @@ func (c *App) StartNotifyListener() {
 
 					c.sendNotification(n.ForMatrixUserID.String, serialized)
 				}
+				continue
 			}
 		}
 	}

@@ -113,7 +113,7 @@ func (c *App) CreatePost() http.HandlerFunc {
 		}
 
 		if !strings.Contains(p.RoomID, c.Config.Matrix.PublicServer) &&
-		p.ReplyingTo != "" {
+			p.ReplyingTo != "" {
 
 			serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
@@ -130,7 +130,6 @@ func (c *App) CreatePost() http.HandlerFunc {
 			log.Println(resp)
 			log.Println(resp)
 		}
-
 
 		event, err := c.NewPost(&NewPostParams{
 			Body:              p,
@@ -149,35 +148,6 @@ func (c *App) CreatePost() http.HandlerFunc {
 			})
 			return
 		}
-
-		/*
-			go func() {
-				isReply := p.IsReply && p.InThread != "" && p.ReplyingTo != ""
-				isReaction := p.Type == "m.reaction" && p.ReactingTo != ""
-				if isReply {
-					err := c.NewReplyNotification(&NotificationParams{
-						ThreadEventID:  p.InThread,
-						ReplyToEventID: p.ReplyingTo,
-						User:           user,
-						ReplyEvent:     event,
-					})
-					if err != nil {
-						log.Println(err)
-					}
-				}
-				if isReaction {
-					err := c.NewReactionNotification(&NotificationParams{
-						ThreadEventID:  p.InThread,
-						ReplyToEventID: p.ReactingTo,
-						User:           user,
-						ReplyEvent:     event,
-					})
-					if err != nil {
-						log.Println(err)
-					}
-				}
-			}()
-		*/
 
 		if c.Config.Search.Enabled {
 			go func() {

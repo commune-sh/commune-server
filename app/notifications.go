@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
@@ -16,8 +14,17 @@ import (
 )
 
 type Notification struct {
-	MatrixUserID string `json:"matrix_user_id"`
-	JSON         []byte `json:"json"`
+	Type             string `json:"type"`
+	FromMatrixUserID string `json:"from_matrix_user_id"`
+	EventID          string `json:"event_id"`
+	ThreadEventID    string `json:"thread_event_id"`
+	CreatedAt        int64  `json:"created_at"`
+	Body             string `json:"body"`
+	DisplayName      string `json:"display_name"`
+	AvatarURL        string `json:"avatar_url"`
+	Read             bool   `json:"read"`
+	RoomAlias        string `json:"room_alias"`
+	RelatesToEventID string `json:"relates_to_event_id"`
 }
 
 type NotificationClient struct {
@@ -129,6 +136,10 @@ func (c *App) GetNotifications() http.HandlerFunc {
 				String: user.MatrixUserID,
 				Valid:  true,
 			},
+			RoomID: pgtype.Text{
+				String: user.UserSpaceID,
+				Valid:  true,
+			},
 			OriginServerTS: pgtype.Int8{
 				Int64: time.Now().UnixMilli(),
 				Valid: true,
@@ -187,190 +198,4 @@ func (c *App) MarkRead() http.HandlerFunc {
 		})
 
 	}
-}
-
-type NotificationParams struct {
-	ThreadEventID  string
-	ReplyToEventID string
-	User           *User
-	ReplyEvent     *Event
-}
-
-func (c *App) NewReplyNotification(n *NotificationParams) error {
-
-	eventID := n.ReplyToEventID
-
-	slug := eventID[len(eventID)-11:]
-
-	// get event
-	replyingToEvent, err := c.GetEvent(&GetEventParams{
-		Slug: slug,
-	})
-
-	if err != nil || replyingToEvent == nil {
-		log.Println("error getting thread event", err)
-		return err
-	}
-
-	// don't create notification if replying/reacting to self
-	replyingToSelf := replyingToEvent.Sender.ID == n.User.MatrixUserID
-	log.Println("is replying to self?", replyingToSelf)
-	if replyingToSelf {
-		return nil
-	}
-
-	notificationType := "post.reply"
-
-	if replyingToEvent.EventID != n.ThreadEventID {
-		notificationType = "reply.reply"
-	}
-
-	np := matrix_db.CreateNotificationParams{
-		FromMatrixUserID: n.User.MatrixUserID,
-		ForMatrixUserID:  replyingToEvent.Sender.ID,
-		RelatesToEventID: replyingToEvent.EventID,
-		EventID:          n.ReplyEvent.EventID,
-		ThreadEventID:    n.ThreadEventID,
-		Type:             notificationType,
-		Body:             "",
-		RoomAlias:        replyingToEvent.RoomAlias,
-		RoomID:           replyingToEvent.RoomID,
-	}
-
-	js, ok := n.ReplyEvent.Content.(map[string]interface{})
-	if ok {
-		body, ok := js["body"].(string)
-		if ok {
-			x := body
-			if len(x) > 100 {
-				x = x[:100]
-			}
-			np.Body = x
-		}
-	}
-
-	notification, err := c.MatrixDB.Queries.CreateNotification(context.Background(), np)
-
-	if err != nil {
-		log.Println("notification could not be created")
-		return err
-	}
-
-	serialized, err := json.Marshal(notification)
-	if err != nil {
-		log.Println(err)
-	}
-
-	c.sendNotification(replyingToEvent.Sender.ID, serialized)
-
-	return nil
-}
-
-func (c *App) NewReactionNotification(n *NotificationParams) error {
-
-	eventID := n.ReplyToEventID
-
-	slug := eventID[len(eventID)-11:]
-
-	// get event
-	replyingToEvent, err := c.GetEvent(&GetEventParams{
-		Slug: slug,
-	})
-
-	if err != nil || replyingToEvent == nil {
-		log.Println("error getting thread event", err)
-		return err
-	}
-
-	// don't create notification if replying/reacting to self
-	replyingToSelf := replyingToEvent.Sender.ID == n.User.MatrixUserID
-	log.Println("is replying to self?", replyingToSelf)
-	if replyingToSelf {
-		return nil
-	}
-
-	notificationType := "reaction"
-
-	if replyingToEvent.EventID != n.ThreadEventID && n.ThreadEventID != "" {
-		notificationType = "reply.reaction"
-	}
-
-	np := matrix_db.CreateNotificationParams{
-		ThreadEventID:    n.ThreadEventID,
-		FromMatrixUserID: n.User.MatrixUserID,
-		ForMatrixUserID:  replyingToEvent.Sender.ID,
-		RelatesToEventID: replyingToEvent.EventID,
-		EventID:          n.ReplyEvent.EventID,
-		Type:             notificationType,
-		Body:             "",
-		RoomAlias:        replyingToEvent.RoomAlias,
-		RoomID:           replyingToEvent.RoomID,
-	}
-
-	js, ok := n.ReplyEvent.Content.(map[string]interface{})
-	if ok {
-
-		log.Println("reaction event content", js)
-		rt, ok := js["m.relates_to"].(map[string]interface{})
-
-		if ok {
-			key, ok := rt["key"].(string)
-			if ok {
-				np.Body = key
-			}
-		}
-
-	}
-
-	notification, err := c.MatrixDB.Queries.CreateNotification(context.Background(), np)
-
-	if err != nil {
-		log.Println("notification could not be created")
-		return err
-	}
-
-	serialized, err := json.Marshal(notification)
-	if err != nil {
-		log.Println(err)
-	}
-
-	c.sendNotification(replyingToEvent.Sender.ID, serialized)
-
-	return nil
-}
-
-type JoinNotificationParams struct {
-	User   *User
-	Space  string
-	RoomID string
-}
-
-func (c *App) NewJoinNotification(n *JoinNotificationParams) error {
-
-	mid := fmt.Sprintf("%s:%s", n.Space, c.Config.Matrix.PublicServer)
-
-	np := matrix_db.CreateNotificationParams{
-		FromMatrixUserID: n.User.MatrixUserID,
-		ForMatrixUserID:  mid,
-		Type:             "space.follow",
-		Body:             "",
-		RoomAlias:        n.Space,
-		RoomID:           n.RoomID,
-	}
-
-	notification, err := c.MatrixDB.Queries.CreateNotification(context.Background(), np)
-
-	if err != nil {
-		log.Println("notification could not be created")
-		return err
-	}
-
-	serialized, err := json.Marshal(notification)
-	if err != nil {
-		log.Println(err)
-	}
-
-	c.sendNotification(mid, serialized)
-
-	return nil
 }
