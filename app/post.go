@@ -18,15 +18,16 @@ import (
 )
 
 type NewPostBody struct {
-	RoomID     string      `json:"room_id"`
-	Content    interface{} `json:"content"`
-	IsReply    bool        `json:"is_reply"`
-	InThread   string      `json:"in_thread"`
-	ReplyingTo string      `json:"replying_to"`
-	ReactingTo string      `json:"reacting_to"`
-	Type       string      `json:"type"`
-	Editing    bool        `json:"editing"`
-	Session    string      `json:session`
+	RoomID        string      `json:"room_id"`
+	Content       interface{} `json:"content"`
+	IsReply       bool        `json:"is_reply"`
+	InThread      string      `json:"in_thread"`
+	ReplyingTo    string      `json:"replying_to"`
+	ReactingTo    string      `json:"reacting_to"`
+	Type          string      `json:"type"`
+	Editing       bool        `json:"editing"`
+	Session       string      `json:session`
+	TransactionID string      `json:"transaction_id"`
 }
 
 type NewPostParams struct {
@@ -45,11 +46,10 @@ func (c *App) NewPost(p *NewPostParams) (*Event, error) {
 		return nil, err
 	}
 
-	resp, err := matrix.SendMessageEvent(p.Body.RoomID, p.Body.Type, p.Body.Content)
+	resp, err := matrix.SendMessageEvent(p.Body.RoomID, p.Body.Type, p.Body.Content, p.Body.TransactionID)
 	if err != nil {
 		return nil, err
 	}
-
 	slug := resp.EventID[len(resp.EventID)-11:]
 
 	item, err := c.MatrixDB.Queries.GetSpaceEvent(context.Background(), slug)
@@ -127,8 +127,6 @@ func (c *App) CreatePost() http.HandlerFunc {
 				log.Println(err)
 			}
 			log.Println(resp)
-			log.Println(resp)
-			log.Println(resp)
 		}
 
 		event, err := c.NewPost(&NewPostParams{
@@ -178,6 +176,7 @@ func (c *App) CreatePost() http.HandlerFunc {
 				"success": "true",
 				"event":   event,
 				"session": p.Session,
+				"txn_id":  p.TransactionID,
 			},
 		})
 

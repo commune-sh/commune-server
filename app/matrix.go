@@ -289,21 +289,23 @@ type Event struct {
 	Upvoted        bool                   `json:"upvoted,omitempty"`
 	Downvoted      bool                   `json:"downvoted,omitempty"`
 	Pinned         bool                   `json:"pinned,omitempty"`
+	TransactionID  string                 `json:"transaction_id,omitempty"`
 }
 
 type EventProcessor struct {
-	JSON        *gabs.Container
-	EventID     string
-	Slug        string
-	DisplayName string
-	AvatarURL   string
-	RoomAlias   string
-	ReplyCount  int64
-	Reactions   any
-	Edited      interface{}
-	EditedOn    interface{}
-	SSR         bool
-	PrevContent interface{}
+	JSON          *gabs.Container
+	EventID       string
+	Slug          string
+	DisplayName   string
+	AvatarURL     string
+	RoomAlias     string
+	ReplyCount    int64
+	Reactions     any
+	Edited        interface{}
+	EditedOn      interface{}
+	SSR           bool
+	PrevContent   interface{}
+	TransactionID string
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {
@@ -317,6 +319,7 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 		RoomID:         ep.JSON.Path("room_id").Data().(string),
 		OriginServerTs: ep.JSON.Path("origin_server_ts").Data().(float64),
 		Unsigned:       ep.JSON.Path("unsigned").Data().(map[string]interface{}),
+		TransactionID:  ep.TransactionID,
 	}
 
 	if ep.PrevContent != nil {

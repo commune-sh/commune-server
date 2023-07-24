@@ -72,12 +72,13 @@ func (c *App) StartNotifyListener() {
 
 		if x != nil && x.Payload != "" {
 
-			log.Println("PAYLOAD IS", x.Payload)
+			log.Println("PAYLOAD IS", x)
 
 			type NotifyEvent struct {
-				EventID string `json:"event_id"`
-				RoomID  string `json:"room_id"`
-				Type    string `json:"type"`
+				EventID       string `json:"event_id"`
+				RoomID        string `json:"room_id"`
+				Type          string `json:"type"`
+				TransactionID string `json:"txn_id"`
 			}
 
 			ne := NotifyEvent{}

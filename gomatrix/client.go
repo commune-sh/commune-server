@@ -544,8 +544,7 @@ func (cli *Client) SetStatus(presence, status string) (err error) {
 
 // SendMessageEvent sends a message event into a room. See http://matrix.org/docs/spec/client_server/r0.2.0.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid
 // contentJSON should be a pointer to something that can be encoded as JSON using json.Marshal.
-func (cli *Client) SendMessageEvent(roomID string, eventType string, contentJSON interface{}) (resp *RespSendEvent, err error) {
-	txnID := txnID()
+func (cli *Client) SendMessageEvent(roomID string, eventType string, contentJSON interface{}, txnID string) (resp *RespSendEvent, err error) {
 	urlPath := cli.BuildURL("rooms", roomID, "send", eventType, txnID)
 	err = cli.MakeRequest("PUT", urlPath, contentJSON, &resp)
 	return
@@ -561,45 +560,45 @@ func (cli *Client) SendStateEvent(roomID, eventType, stateKey string, contentJSO
 
 // SendText sends an m.room.message event into the given room with a msgtype of m.text
 // See http://matrix.org/docs/spec/client_server/r0.2.0.html#m-text
-func (cli *Client) SendText(roomID, text string) (*RespSendEvent, error) {
+func (cli *Client) SendText(roomID, text, txnID string) (*RespSendEvent, error) {
 	return cli.SendMessageEvent(roomID, "m.room.message",
-		TextMessage{MsgType: "m.text", Body: text})
+		TextMessage{MsgType: "m.text", Body: text}, txnID)
 }
 
 // SendFormattedText sends an m.room.message event into the given room with a msgtype of m.text, supports a subset of HTML for formatting.
 // See https://matrix.org/docs/spec/client_server/r0.6.0#m-text
-func (cli *Client) SendFormattedText(roomID, text, formattedText string) (*RespSendEvent, error) {
+func (cli *Client) SendFormattedText(roomID, text, formattedText, txnID string) (*RespSendEvent, error) {
 	return cli.SendMessageEvent(roomID, "m.room.message",
-		TextMessage{MsgType: "m.text", Body: text, FormattedBody: formattedText, Format: "org.matrix.custom.html"})
+		TextMessage{MsgType: "m.text", Body: text, FormattedBody: formattedText, Format: "org.matrix.custom.html"}, txnID)
 }
 
 // SendImage sends an m.room.message event into the given room with a msgtype of m.image
 // See https://matrix.org/docs/spec/client_server/r0.2.0.html#m-image
-func (cli *Client) SendImage(roomID, body, url string) (*RespSendEvent, error) {
+func (cli *Client) SendImage(roomID, body, url, txnID string) (*RespSendEvent, error) {
 	return cli.SendMessageEvent(roomID, "m.room.message",
 		ImageMessage{
 			MsgType: "m.image",
 			Body:    body,
 			URL:     url,
-		})
+		}, txnID)
 }
 
 // SendVideo sends an m.room.message event into the given room with a msgtype of m.video
 // See https://matrix.org/docs/spec/client_server/r0.2.0.html#m-video
-func (cli *Client) SendVideo(roomID, body, url string) (*RespSendEvent, error) {
+func (cli *Client) SendVideo(roomID, body, url, txnID string) (*RespSendEvent, error) {
 	return cli.SendMessageEvent(roomID, "m.room.message",
 		VideoMessage{
 			MsgType: "m.video",
 			Body:    body,
 			URL:     url,
-		})
+		}, txnID)
 }
 
 // SendNotice sends an m.room.message event into the given room with a msgtype of m.notice
 // See http://matrix.org/docs/spec/client_server/r0.2.0.html#m-notice
-func (cli *Client) SendNotice(roomID, text string) (*RespSendEvent, error) {
+func (cli *Client) SendNotice(roomID, text, txnID string) (*RespSendEvent, error) {
 	return cli.SendMessageEvent(roomID, "m.room.message",
-		TextMessage{MsgType: "m.notice", Body: text})
+		TextMessage{MsgType: "m.notice", Body: text}, txnID)
 }
 
 // RedactEvent redacts the given event. See http://matrix.org/docs/spec/client_server/r0.2.0.html#put-matrix-client-r0-rooms-roomid-redact-eventid-txnid

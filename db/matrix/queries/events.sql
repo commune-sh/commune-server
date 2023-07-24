@@ -91,7 +91,8 @@ SELECT ej.event_id,
     COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
     ed.json::jsonb->'content'->>'m.new_content' as edited,
-    COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on
+    COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on,
+    txn.txn_id
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN membership_state ud ON ud.user_id = events.sender
@@ -109,6 +110,7 @@ LEFT JOIN (
 	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
+LEFT JOIN event_txn_id txn ON txn.event_id = ej.event_id
 WHERE RIGHT(events.event_id, 11) = $1
 AND redactions.redacts is null
 GROUP BY
@@ -119,7 +121,8 @@ GROUP BY
     ud.display_name,
     ud.avatar_url,
     aliases.room_alias,
-    rc.count
+    rc.count,
+    txn.txn_id
 LIMIT 1;
 
 

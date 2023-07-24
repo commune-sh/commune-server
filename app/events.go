@@ -336,18 +336,21 @@ func (c *App) GetEvent(p *GetEventParams) (*Event, error) {
 		return nil, err
 	}
 
+	log.Println("TransactionID iisss", item.TxnID.String)
+
 	s := ProcessComplexEvent(&EventProcessor{
 		EventID:     item.EventID,
 		JSON:        json,
 		DisplayName: item.DisplayName.String,
 		Slug:        item.Slug,
 
-		RoomAlias:  item.RoomAlias.String,
-		AvatarURL:  item.AvatarUrl.String,
-		ReplyCount: item.Replies,
-		Reactions:  item.Reactions,
-		Edited:     item.Edited,
-		EditedOn:   item.EditedOn,
+		RoomAlias:     item.RoomAlias.String,
+		AvatarURL:     item.AvatarUrl.String,
+		ReplyCount:    item.Replies,
+		Reactions:     item.Reactions,
+		Edited:        item.Edited,
+		EditedOn:      item.EditedOn,
+		TransactionID: item.TxnID.String,
 	})
 
 	// get event replies
