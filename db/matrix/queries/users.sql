@@ -77,6 +77,11 @@ WHERE ms.user_id = $1
 AND ms.room_id = $2 
 AND ms.membership = 'join');
 
+-- name: GetDMs :many
+SELECT ad.content
+FROM account_data ad
+WHERE ad.user_id = $1
+AND ad.account_data_type = 'm.direct';
 
 -- name: IsAdmin :one
 SELECT CASE WHEN admin = 1 THEN TRUE ELSE FALSE END as admin

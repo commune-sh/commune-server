@@ -152,16 +152,10 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 		}
-		/*
-
-			pl, err := c.MatrixDB.Queries.GetUserPowerLevels(context.Background(), pgtype.Text{
-				String: user.MatrixUserID,
-				Valid:  true,
-			})
-			if err != nil {
-				log.Panicln(err)
-			}
-		*/
+		dms, err := c.MatrixDB.Queries.GetDMs(context.Background(), user.MatrixUserID)
+		if err != nil {
+			log.Println(err)
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -171,7 +165,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 				"credentials":   user,
 				"spaces":        spaces,
 				"rooms":         rooms,
-				//"power_levels": pl,
+				"dms":           dms,
 			},
 		})
 
@@ -257,15 +251,10 @@ func (c *App) ValidateSession() http.HandlerFunc {
 			log.Println(err)
 		}
 
-		/*
-			pl, err := c.MatrixDB.Queries.GetUserPowerLevels(context.Background(), pgtype.Text{
-				String: user.MatrixUserID,
-				Valid:  true,
-			})
-			if err != nil {
-				log.Panicln(err)
-			}
-		*/
+		dms, err := c.MatrixDB.Queries.GetDMs(context.Background(), user.MatrixUserID)
+		if err != nil {
+			log.Println(err)
+		}
 
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
@@ -274,7 +263,7 @@ func (c *App) ValidateSession() http.HandlerFunc {
 				"credentials": user,
 				"spaces":      spaces,
 				"rooms":       rooms,
-				//"power_levels": pl,
+				"dms":         dms,
 			},
 		})
 

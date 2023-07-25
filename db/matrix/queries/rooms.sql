@@ -52,6 +52,7 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
         'do_not_index', rs.do_not_index, 
         'pinned_events', rs.pinned_events, 
         'settings', json_build_object(
+            'nsfw', CASE WHEN rs.settings->'nsfw' = 'true' THEN TRUE ELSE FALSE END,
             'room_order', rs.settings->'room_order'
         ),
         'topics', room_topics.topics) as state,
@@ -69,7 +70,7 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
         'topics', ch.topics, 
         'pinned_events', ch.pinned_events,
         'settings', json_build_object(
-            'room_order', ch.settings->'room_order'
+            'nsfw', CASE WHEN rs.settings->'nsfw' = 'true' THEN TRUE ELSE FALSE END
         ),
         'joined', ch.joined,
         'banned', ch.banned

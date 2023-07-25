@@ -41,7 +41,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS room_state AS
         SELECT ej.json::jsonb->'content'->>'do_not_index' as do_not_index, cse.room_id FROM current_state_events as cse JOIN event_json as ej ON cse.event_id = ej.event_id WHERE cse.type='m.room.do_not_index'
     ) as ind ON ind.room_id = rooms.room_id
     LEFT JOIN (
-        SELECT ej.json::jsonb->'content'->>'settings' as settings, cse.room_id FROM current_state_events as cse JOIN event_json as ej ON cse.event_id = ej.event_id WHERE cse.type='shpong.space.settings'
+        SELECT ej.json::jsonb->>'content' as settings, cse.room_id FROM current_state_events as cse JOIN event_json as ej ON cse.event_id = ej.event_id WHERE cse.type='room.settings'
     ) as set ON set.room_id = rooms.room_id
     LEFT JOIN room_aliases ra ON ra.room_id = rooms.room_id
     GROUP BY rooms.room_id, ra.room_alias, st.type, n.name, t.topic, av.avatar, h.header, pev.pinned_events, rstr.age, rstr.verified, ind.do_not_index, set.settings;
@@ -69,5 +69,5 @@ WHEN (NEW.type = 'm.room.create'
     OR NEW.type = 'm.room.do_not_index'
     OR NEW.type = 'm.restrict_events_to'
     OR NEW.type = 'm.room.pinned_events'
-    OR NEW.type = 'shpong.space.settings')
+    OR NEW.type = 'room.settings')
 EXECUTE FUNCTION room_state_mv_refresh();
