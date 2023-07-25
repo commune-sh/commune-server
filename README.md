@@ -20,10 +20,20 @@ Commune opens up all spaces and underlying rooms to the web by reading data dire
 #### How to run
 You'll need to set up a matrix/synapse server. Existing servers can be used too, but Commune is highly experimental at the moment, so it's best to set up a new homeserver.
 
-Check back here soon for instructions.
+1. Clone this repo
+2. Run `make deps` to fetch dependencies.
+3. Copy `config-sample.toml` to `config.toml`. Update the config with your
+   Synapse details.
+4. Run `make` to build the app.
+5. Run `modd` to run app locally.
+6. To deploy, put the app behind `nginx`.
+
+Finally, you'll need to go install the
+[client](https://github.com/commune-os/commune-client) and point it to your
+Commune backend.
 
 #### Get in touch
-Find us  on [Commune](https://commune.sh) or on [Matrix](https://matrix.to/#/#commune:matrix.org).
+Find us  on [Commune](https://commune.sh/commune) or on [Matrix](https://matrix.to/#/#commune:matrix.org).
 
 ##### WARNING
 Commune is operating in `world_readable` mode. This means that everything on your matrix server has the potential to be accessible from the web. No work has been put into private spaces/rooms or encryption. Unless explicitly stated, assume that every event on a Commune-based matrix server will be public.
