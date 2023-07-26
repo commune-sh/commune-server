@@ -127,6 +127,8 @@ func (c *App) StartNotifyListener() {
 
 			if err == nil && event.Type == "m.room.message" ||
 				event.Type == "m.room.member" ||
+				event.Type == "m.room.name" ||
+				event.Type == "m.room.topic" ||
 				event.Type == "m.room.redaction" {
 
 				serialized, err := json.Marshal(event)
