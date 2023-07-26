@@ -328,6 +328,11 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 			"redacted": true,
 		}
 	}
+	if e.Type == "m.room.redaction" {
+		e.Content = map[string]interface{}{
+			"redacts": ep.JSON.Path("redacts").Data().(string),
+		}
+	}
 
 	if ep.PrevContent != nil {
 		if bytes, ok := ep.PrevContent.([]uint8); ok {
