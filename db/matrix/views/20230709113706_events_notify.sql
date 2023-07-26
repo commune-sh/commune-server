@@ -28,6 +28,7 @@ FOR EACH ROW
 WHEN (NEW.type = 'm.room.message' 
     OR NEW.type = 'm.reaction'
     OR NEW.type = 'm.room.member'
+    OR NEW.type = 'm.room.redaction'
     OR NEW.type = 'space.board.post'
     OR NEW.type = 'space.board.post.reply')
 EXECUTE FUNCTION events_trigger_function();

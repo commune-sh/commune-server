@@ -306,6 +306,7 @@ type EventProcessor struct {
 	SSR           bool
 	PrevContent   interface{}
 	TransactionID string
+	Redacted      bool
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {
@@ -320,6 +321,12 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 		OriginServerTs: ep.JSON.Path("origin_server_ts").Data().(float64),
 		Unsigned:       ep.JSON.Path("unsigned").Data().(map[string]interface{}),
 		TransactionID:  ep.TransactionID,
+	}
+
+	if ep.Redacted {
+		e.Content = map[string]interface{}{
+			"redacted": true,
+		}
 	}
 
 	if ep.PrevContent != nil {

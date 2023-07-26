@@ -126,7 +126,8 @@ func (c *App) StartNotifyListener() {
 			log.Println("GOT NOTIFIED with new event", event)
 
 			if err == nil && event.Type == "m.room.message" ||
-				event.Type == "m.room.member" {
+				event.Type == "m.room.member" ||
+				event.Type == "m.room.redaction" {
 
 				serialized, err := json.Marshal(event)
 				if err != nil {

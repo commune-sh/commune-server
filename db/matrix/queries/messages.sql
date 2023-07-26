@@ -9,7 +9,8 @@ SELECT ej.event_id,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
     ed.json::jsonb->'content'->>'m.new_content' as edited,
     COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on,
-    cast(prev.content as jsonb) as prev_content
+    cast(prev.content as jsonb) as prev_content,
+    CASE WHEN redactions.redacts IS NOT NULL THEN true ELSE false END as redacted
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
@@ -37,7 +38,6 @@ AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
 AND (events.origin_server_ts > sqlc.narg('after') OR sqlc.narg('after') IS NULL)
 AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
-AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
     ed.json,
@@ -48,7 +48,8 @@ GROUP BY
     ud.avatar_url,
     aliases.room_alias,
     events.origin_server_ts,
-    prev.content
+    prev.content,
+    redactions.redacts
 ORDER BY CASE
     WHEN @order_by::text = 'ASC' THEN events.origin_server_ts 
 END ASC, CASE 
