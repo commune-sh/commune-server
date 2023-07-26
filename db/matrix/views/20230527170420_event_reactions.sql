@@ -4,7 +4,13 @@ DROP TRIGGER event_reactions_mv_trigger on event_relations;
 DROP FUNCTION event_reactions_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS event_reactions AS 
-    SELECT er.relates_to_id, er.aggregation_key, array_agg(ev.sender) as senders
+    SELECT er.relates_to_id, er.aggregation_key, 
+    array_agg(
+        jsonb_build_object(
+            'sender', ev.sender,
+            'event_id', er.event_id
+        )
+    ) as senders
     FROM event_relations er 
     JOIN events ev ON ev.event_id = er.event_id AND er.relation_type = 'm.annotation'
     WHERE aggregation_key != 'upvote' AND aggregation_key != 'downvote'
