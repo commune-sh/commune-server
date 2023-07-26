@@ -20,7 +20,7 @@ FROM spaces
 WHERE spaces.room_id = $1;
 
 -- name: GetMembershipState :one
-SELECT ms.*, spaces.room_alias, rooms.creator
+SELECT ms.*, spaces.room_alias, spaces.space_alias, rooms.creator
 FROM membership_state ms
 JOIN spaces ON spaces.room_id = ms.room_id
 JOIN rooms ON rooms.room_id = ms.room_id

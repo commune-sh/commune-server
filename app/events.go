@@ -336,8 +336,6 @@ func (c *App) GetEvent(p *GetEventParams) (*Event, error) {
 		return nil, err
 	}
 
-	log.Println("TransactionID iisss", item.TxnID.String)
-
 	s := ProcessComplexEvent(&EventProcessor{
 		EventID:     item.EventID,
 		JSON:        json,

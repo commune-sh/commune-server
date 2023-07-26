@@ -64,7 +64,6 @@ func (c *App) StartNotifyListener() {
 	m := n.Hijack()
 
 	for {
-		log.Println("\nwaiting for notification")
 		x, err := m.WaitForNotification(context.Background())
 		if err != nil {
 			log.Println("error acquiring pool: ", err)
@@ -93,12 +92,12 @@ func (c *App) StartNotifyListener() {
 				ms, err := c.MatrixDB.Queries.GetMembershipState(context.Background(), pgtype.Text{String: ne.EventID, Valid: true})
 				if err != nil {
 					log.Println(err)
-					continue
 				}
 
 				if ms.Membership.String == "join" &&
+					ms.SpaceAlias.String[0] == '@' &&
 					ms.UserID.String != ms.Creator.String {
-					log.Println("someone joined, let's notify owner")
+
 					n := Notification{
 						FromMatrixUserID: ms.UserID.String,
 						DisplayName:      ms.DisplayName.String,
@@ -114,7 +113,6 @@ func (c *App) StartNotifyListener() {
 
 					c.sendNotification(ms.Creator.String, serialized)
 				}
-				continue
 			}
 
 			eventID := ne.EventID
@@ -127,7 +125,8 @@ func (c *App) StartNotifyListener() {
 
 			log.Println("GOT NOTIFIED with new event", event)
 
-			if err == nil && event.Type == "m.room.message" {
+			if err == nil && event.Type == "m.room.message" ||
+				event.Type == "m.room.member" {
 
 				serialized, err := json.Marshal(event)
 				if err != nil {
