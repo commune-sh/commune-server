@@ -18,6 +18,11 @@ Commune opens up all spaces and underlying rooms to the web by reading data dire
 - [ ] Simplify self-hosting deployment
 
 #### How to run
+
+##### Requirements
+- Synapse
+- Redis
+
 You'll need to set up a matrix/synapse server. Existing servers can be used too, but Commune is highly experimental at the moment, so it's best to set up a new homeserver.
 
 1. Clone this repo
@@ -25,8 +30,9 @@ You'll need to set up a matrix/synapse server. Existing servers can be used too,
 3. Copy `config-sample.toml` to `config.toml`. Update the config with your
    Synapse details.
 4. Run `make` to build the app.
-5. Run `modd` to run app locally.
-6. To deploy, put the app behind `nginx`.
+5. Run the `db/matrix/views/creates.sh` script to create the materialized views.
+6. Run `modd` to run app locally.
+7. To deploy, put the app behind `nginx`.
 
 Finally, you'll need to go install the
 [client](https://github.com/commune-os/commune-client) and point it to your
