@@ -43,7 +43,7 @@ Finally, you'll need to go install the
 Commune backend.
 
 #### Get in touch
-Find us  on [commune.sh/commune](https://commune.sh/commune) or on [Matrix](https://matrix.to/#/#commune:matrix.org).
+Find us  on [#commune:commune.sh](https://commune.sh/commune) or on [#commune:matrix.org](https://matrix.to/#/#commune:matrix.org).
 
 ##### WARNING
 Commune is operating in `world_readable` mode. This means that everything on your matrix server has the potential to be accessible from the web. No work has been put into private spaces/rooms or encryption. Unless explicitly stated, assume that every event on a Commune-based matrix server will be public.
