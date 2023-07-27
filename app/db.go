@@ -147,6 +147,10 @@ func (c *App) StartNotifyListener() {
 					log.Println(err)
 				} else {
 
+					if n.ForMatrixUserID.String == event.Sender.ID {
+						continue
+					}
+
 					serialized, err := json.Marshal(n)
 					if err != nil {
 						log.Println(err)
