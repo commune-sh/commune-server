@@ -4,14 +4,14 @@ Commune lets you build free and open public communities on a matrix server. It t
 
 We're operating these live instances at the moment:
 
-- [Commune](https://commune.sh)
-- [Shpong](https://shpong.com)
+- [shpong.com](https://shpong.com)
+- [commune.sh](https://commune.sh)
 
 #### What does it do?
 Commune opens up all spaces and underlying rooms to the web by reading data directly from the Synapse DB, bypassing Synapse's client-server API. Additional features such as discussion boards, threaded comments are rendered by the [client](https://github.com/commune-os/commune-client). Commune makes use of many [materialized views](https://github.com/commune-os/commune-server/tree/main/db/matrix/views) for querying Synapse events.
 
 ##### Short-term roadmap
-- [ ] Federation between Commune instances
+- [x] Federation between Commune instances
 - [ ] Social login support
 - [ ] ActivityPub support for interacting with the fediverse
 - [ ] Private spaces/boards and Encrypted DMs
@@ -22,6 +22,8 @@ Commune opens up all spaces and underlying rooms to the web by reading data dire
 ##### Requirements
 - Synapse
 - Redis
+- S3-compatible object storage (optional)
+- Email/SMTP provider (optional)
 
 You'll need to set up a matrix/synapse server. Existing servers can be used too, but Commune is highly experimental at the moment, so it's best to set up a new homeserver.
 
@@ -30,8 +32,8 @@ You'll need to set up a matrix/synapse server. Existing servers can be used too,
 3. Copy `config-sample.toml` to `config.toml`. Update the config with your
    Synapse details.
 4. Run `make` to build the app.
-5. Run the `db/matrix/views/creates.sh` script to create the materialized views.
-6. Run `modd` to run app locally.
+5. Run the `db/matrix/views/creates.sh` script to create materialized views.
+6. Run `modd` to run app locally while developing.
 7. To deploy, put the app behind `nginx`.
 
 Finally, you'll need to go install the
@@ -39,7 +41,7 @@ Finally, you'll need to go install the
 Commune backend.
 
 #### Get in touch
-Find us  on [Commune](https://commune.sh/commune) or on [Matrix](https://matrix.to/#/#commune:matrix.org).
+Find us  on [commune.sh/commune](https://commune.sh/commune) or on [Matrix](https://matrix.to/#/#commune:matrix.org).
 
 ##### WARNING
 Commune is operating in `world_readable` mode. This means that everything on your matrix server has the potential to be accessible from the web. No work has been put into private spaces/rooms or encryption. Unless explicitly stated, assume that every event on a Commune-based matrix server will be public.
