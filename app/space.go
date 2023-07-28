@@ -206,7 +206,7 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			return
 		}
 
-		if exists {
+		if exists && !p.Private {
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
@@ -215,6 +215,10 @@ func (c *App) CreateSpace() http.HandlerFunc {
 				},
 			})
 			return
+		}
+
+		if exists && p.Private {
+			p.Username = p.Username + RandomString(4)
 		}
 
 		_, err = c.NewSpace(&NewSpaceParams{
