@@ -161,6 +161,10 @@ func (c *App) CreateSpace() http.HandlerFunc {
 			return
 		}
 
+		if p.Private {
+			p.Username = RandomString(8)
+		}
+
 		valid := IsValidAlias(p.Username)
 		if !valid {
 			RespondWithJSON(w, &JSONResponse{
@@ -307,16 +311,24 @@ func (c *App) NewSpace(p *NewSpaceParams) (string, error) {
 		},
 	}
 
+	hv := "world_readable"
+	ga := "can_join"
+
+	if p.Space.Private {
+		hv = "shared"
+		ga = "forbidden"
+	}
+
 	initState := []gomatrix.Event{
 		gomatrix.Event{
 			Type: "m.room.history_visibility",
 			Content: map[string]interface{}{
-				"history_visibility": "world_readable",
+				"history_visibility": hv,
 			},
 		}, gomatrix.Event{
 			Type: "m.room.guest_access",
 			Content: map[string]interface{}{
-				"guest_access": "can_join",
+				"guest_access": ga,
 			},
 		}, gomatrix.Event{
 			Type: "m.room.name",
@@ -343,14 +355,29 @@ func (c *App) NewSpace(p *NewSpaceParams) (string, error) {
 		pl,
 	}
 
+	if p.Space.AvatarURL != "" {
+		initState = append(initState, gomatrix.Event{
+			Type: "m.room.avatar",
+			Content: map[string]interface{}{
+				"url": p.Space.AvatarURL,
+			},
+		})
+	}
+
+	username := p.Space.Username
+
 	creq := &gomatrix.ReqCreateRoom{
-		RoomAliasName: p.Space.Username,
+		RoomAliasName: username,
 		Preset:        "public_chat",
 		Visibility:    "public",
 		CreationContent: map[string]interface{}{
 			"type": "m.space",
 		},
 		InitialState: initState,
+	}
+	if p.Space.Private {
+		creq.Preset = "private_chat"
+		creq.Visibility = "private"
 	}
 
 	log.Println("creating actual room...")

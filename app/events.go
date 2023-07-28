@@ -789,9 +789,19 @@ func (c *App) SpaceEvents() http.HandlerFunc {
 			})
 			return
 		}
-		sps := ProcessState(state)
 
-		log.Println("public, owner, joined", sps.IsPublic, sps.IsOwner, sps.Joined)
+		hideRoom := !state.IsPublic.Bool && !state.Joined
+
+		if hideRoom {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "space does not exist",
+					"exists": false,
+				},
+			})
+			return
+		}
 
 		// get events for this space
 		events, err := c.GetSpaceEvents(&SpaceEventsParams{

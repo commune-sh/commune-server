@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	matrix_db "shpong/db/matrix/gen"
@@ -39,8 +40,10 @@ func (c *App) GetSpaceState(p *SpaceStateParams) (*SpaceState, error) {
 		return nil, err
 	}
 
-	//hideRoom := state.IsPublic.Bool != state.Joined
-	//log.Println("should we hide room? ", hideRoom)
+	hideRoom := !state.IsPublic.Bool && !state.Joined
+	if hideRoom {
+		return nil, errors.New("space does not exist")
+	}
 
 	sps := ProcessState(state)
 
