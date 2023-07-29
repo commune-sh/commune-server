@@ -2,7 +2,9 @@
 
 #### Commune
 
-Commune lets you build free and open public communities on a matrix server. It transforms a Matrix server into a publicly accessible community platform. The goal is to make it easy for existing homeserver operators to open up their Matrix instance (or a subset of it) to the web, and add extra community features using native Matrix functionality.
+Commune lets you build free and open public communities on a Matrix server. It transforms a Matrix server into a publicly accessible community platform. The goal is to make it easy for existing homeserver operators to open up their Matrix instance (or a subset of it) to the web, and add extra community features using native Matrix functionality.
+
+Conceptual Introduction: [Communal Bonfires](https://blog.erlend.sh/communal-bonfires).
 
 We're operating these live instances at the moment:
 
