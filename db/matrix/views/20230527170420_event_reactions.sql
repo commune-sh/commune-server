@@ -4,7 +4,8 @@ DROP TRIGGER event_reactions_mv_trigger on event_relations;
 DROP FUNCTION event_reactions_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS event_reactions AS 
-    SELECT er.relates_to_id, er.aggregation_key, 
+    SELECT er.relates_to_id, er.aggregation_key, er.event_id,
+    ej.json::jsonb->'content'->'m.relates_to'->>'url' as url,
     array_agg(
         jsonb_build_object(
             'sender', ev.sender,
@@ -13,10 +14,11 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS event_reactions AS
     ) as senders
     FROM event_relations er 
     JOIN events ev ON ev.event_id = er.event_id AND er.relation_type = 'm.annotation'
+    LEFT JOIN event_json ej ON ej.event_id = er.event_id
     WHERE aggregation_key != 'upvote' AND aggregation_key != 'downvote'
-    GROUP BY er.aggregation_key, er.relates_to_id;
+    GROUP BY er.aggregation_key, er.relates_to_id, er.event_id, ej.json;
 
-CREATE UNIQUE INDEX IF NOT EXISTS event_reactions_idx ON event_reactions (relates_to_id, aggregation_key);
+CREATE UNIQUE INDEX IF NOT EXISTS event_reactions_idx ON event_reactions (relates_to_id, event_id, aggregation_key);
 
 CREATE OR REPLACE FUNCTION event_reactions_mv_refresh()
 RETURNS trigger LANGUAGE plpgsql AS $$
