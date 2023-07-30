@@ -33,6 +33,18 @@ AND ms.membership = 'join'
 AND (rs.is_profile is false OR (rs.is_profile and rooms.creator = $1))
 ORDER BY rs.is_profile DESC, LOWER(spaces.space_alias) ASC;
 
+-- name: GetUserSpacesEmoji :many
+SELECT spaces.space_alias as alias, rs.avatar, rs.settings->'emoji' as emoji
+FROM membership_state ms 
+JOIN spaces ON spaces.room_id = ms.room_id
+JOIN rooms ON rooms.room_id = spaces.room_id
+LEFT JOIN room_state rs ON rs.room_id = ms.room_id
+WHERE ms.user_id = $1
+AND ms.membership = 'join'
+AND (rs.is_profile is false OR (rs.is_profile and rooms.creator = $1))
+AND rs.settings->'emoji' IS NOT NULL
+ORDER BY rs.is_profile DESC, LOWER(spaces.space_alias) ASC;
+
 
 -- name: GetUserCreatedAt :one
 SELECT creation_ts FROM users WHERE name = $1;

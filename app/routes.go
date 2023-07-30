@@ -204,6 +204,7 @@ func routes(c *App) chi.Router {
 		r.Post("/{space}/leave", c.LeaveSpace())
 		r.Post("/create", c.CreateSpace())
 		r.Post("/room/create", c.CreateSpaceRoom())
+		r.Get("/emoji", c.GetSpaceEmoji())
 	})
 
 	r.Route("/{space}", func(r chi.Router) {

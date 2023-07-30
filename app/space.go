@@ -699,3 +699,23 @@ func (c *App) AllSpaces() http.HandlerFunc {
 
 	}
 }
+
+func (c *App) GetSpaceEmoji() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := c.LoggedInUser(r)
+
+		emoji, err := c.MatrixDB.Queries.GetUserSpacesEmoji(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+		if err != nil {
+			log.Println(err)
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"emoji": emoji,
+			},
+		})
+
+	}
+}
