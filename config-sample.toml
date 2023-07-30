@@ -76,6 +76,10 @@ endpoint = ""
 access_key_id = ""
 access_key_secret = ""
 
+[images]
+account_id = ""
+api_token = ""
+
 [third_party]
 youtube_key = ""
 tenor_key = ""

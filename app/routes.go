@@ -142,6 +142,7 @@ func routes(c *App) chi.Router {
 	r.Route("/media", func(r chi.Router) {
 		r.Use(c.RequireAuthentication)
 		r.Get("/presigned_url", c.GetPresignedURL())
+		r.Get("/upload_url", c.GetUploadURL())
 	})
 
 	r.Route("/default_spaces", func(r chi.Router) {

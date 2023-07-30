@@ -10,6 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+
+	"github.com/cloudflare/cloudflare-go"
 )
 
 func (c *App) NewMediaStorage() (*s3.Client, error) {
@@ -72,6 +74,42 @@ func (c *App) GetPresignedURL() http.HandlerFunc {
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: resp,
+		})
+
+	}
+}
+
+func (c *App) GetUploadURL() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		id := RandomString(32)
+
+		api, err := cloudflare.NewWithAPIToken(c.Config.Images.APIToken)
+		if err != nil {
+			log.Println(err)
+		}
+
+		ctx := context.Background()
+
+		aid := cloudflare.AccountIdentifier(c.Config.Images.AccountID)
+
+		rsu := true
+
+		u, err := api.CreateImageDirectUploadURL(ctx, aid, cloudflare.CreateImageDirectUploadURLParams{
+			RequireSignedURLs: &rsu,
+			Metadata: map[string]interface{}{
+				"id": id,
+			},
+		})
+		if err != nil {
+			log.Println(err)
+		}
+
+		fmt.Println(u)
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: u,
 		})
 
 	}

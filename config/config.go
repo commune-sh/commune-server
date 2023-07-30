@@ -84,6 +84,11 @@ type Storage struct {
 	Endpoint        string `toml:"endpoint"`
 }
 
+type Images struct {
+	AccountID string `toml:"account_id"`
+	APIToken  string `toml:"api_token"`
+}
+
 type ThirdParty struct {
 	YoutubeKey string `toml:"youtube_key"`
 	TenorKey   string `toml:"tenor_key"`
@@ -124,6 +129,7 @@ type Config struct {
 	SMTP           SMTP           `toml:"smtp"`
 	Features       Features       `toml:"features"`
 	Storage        Storage        `toml:"storage"`
+	Images         Images         `toml:"images"`
 	ThirdParty     ThirdParty     `toml:"third_party"`
 	Discovery      Discovery      `toml:"discovery"`
 	Restrictions   Restrictions   `toml:"restrictions"`
