@@ -110,18 +110,19 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 		}
 
 		s := ProcessComplexEvent(&EventProcessor{
-			EventID:     item.EventID,
-			Slug:        item.Slug,
-			JSON:        json,
-			RoomAlias:   item.RoomAlias.String,
-			DisplayName: item.DisplayName.String,
-			AvatarURL:   item.AvatarUrl.String,
-			ReplyCount:  item.Replies,
-			Reactions:   item.Reactions,
-			Edited:      item.Edited,
-			EditedOn:    item.EditedOn,
-			PrevContent: item.PrevContent,
-			Redacted:    item.Redacted,
+			EventID:         item.EventID,
+			Slug:            item.Slug,
+			JSON:            json,
+			RoomAlias:       item.RoomAlias.String,
+			DisplayName:     item.DisplayName.String,
+			AvatarURL:       item.AvatarUrl.String,
+			ReplyCount:      item.Replies.Int64,
+			Reactions:       item.Reactions,
+			Edited:          item.Edited,
+			EditedOn:        item.EditedOn,
+			PrevContent:     item.PrevContent,
+			Redacted:        item.Redacted,
+			LastThreadReply: item.LastThreadReply,
 		})
 
 		items = append(items, s)

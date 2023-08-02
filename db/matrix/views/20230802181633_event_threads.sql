@@ -6,7 +6,7 @@ DROP FUNCTION event_threads_mv_refresh();
 CREATE MATERIALIZED VIEW IF NOT EXISTS event_threads AS 
     SELECT DISTINCT ON (events.event_id) events.event_id, count(er.relates_to_id) as replies, last.last_reply
     FROM events
-    LEFT JOIN event_relations er ON er.relates_to_id = events.event_id
+    JOIN event_relations er ON er.relates_to_id = events.event_id
     LEFT JOIN (
         SELECT evr.relates_to_id,
         jsonb_build_object(
@@ -24,7 +24,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS event_threads AS
         LEFT JOIN membership_state ud ON ud.user_id = events.sender
         AND ud.room_id = ej.room_id
         WHERE evr.relation_type = 'm.thread'
-        ORDER BY events.origin_server_ts DESC LIMIT 1
+        ORDER BY events.origin_server_ts DESC
     ) as last ON last.relates_to_id = events.event_id
     WHERE er.relation_type = 'm.thread'
     GROUP BY events.event_id, last.last_reply;

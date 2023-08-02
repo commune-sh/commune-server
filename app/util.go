@@ -532,3 +532,20 @@ func removeElement(arr []string, element string) []string {
 	}
 	return arr
 }
+
+func ConvertToJSON(data interface{}) interface{} {
+	switch v := data.(type) {
+	case map[string]interface{}:
+		for key, val := range v {
+			v[key] = ConvertToJSON(val)
+		}
+		return v
+	case []interface{}:
+		for i, val := range v {
+			v[i] = ConvertToJSON(val)
+		}
+		return v
+	default:
+		return data
+	}
+}
