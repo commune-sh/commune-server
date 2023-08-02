@@ -130,6 +130,7 @@ func (c *App) StartNotifyListener() {
 				event.Type == "m.room.name" ||
 				event.Type == "m.room.topic" ||
 				event.Type == "m.reaction" ||
+				event.Type == "space.board.post" ||
 				event.Type == "m.room.redaction" {
 
 				serialized, err := json.Marshal(event)
