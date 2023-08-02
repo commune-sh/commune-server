@@ -4,11 +4,11 @@ DROP TRIGGER event_threads_mv_trigger on event_relations;
 DROP FUNCTION event_threads_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS event_threads AS 
-    SELECT DISTINCT ON (events.event_id) events.event_id, count(er.relates_to_id) as replies, last.last_reply
+    SELECT events.event_id, count(er.relates_to_id) as replies, last.last_reply
     FROM events
-    JOIN event_relations er ON er.relates_to_id = events.event_id
+    LEFT JOIN event_relations er ON er.relates_to_id  = events.event_id
     LEFT JOIN (
-        SELECT evr.relates_to_id,
+        SELECT DISTINCT ON (evr.relates_to_id) evr.relates_to_id, 
         jsonb_build_object(
             'event_id', ej.event_id,
             'content', ej.json::jsonb->>'content',
@@ -18,13 +18,13 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS event_threads AS
                 'avatar_url', ud.avatar_url
             )
         ) as last_reply
-        FROM event_json ej
-        JOIN event_relations evr ON evr.event_id = ej.event_id
-        JOIN events ON events.event_id = ej.event_id
+        FROM events
+        JOIN event_relations evr ON evr.event_id = events.event_id
+        JOIN event_json ej ON events.event_id = ej.event_id
         LEFT JOIN membership_state ud ON ud.user_id = events.sender
         AND ud.room_id = ej.room_id
         WHERE evr.relation_type = 'm.thread'
-        ORDER BY events.origin_server_ts DESC
+        ORDER BY evr.relates_to_id, events.origin_server_ts DESC
     ) as last ON last.relates_to_id = events.event_id
     WHERE er.relation_type = 'm.thread'
     GROUP BY events.event_id, last.last_reply;
