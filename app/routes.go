@@ -182,8 +182,9 @@ func routes(c *App) chi.Router {
 			r.Put("/upvote", c.Upvote())
 			r.Put("/downvote", c.Downvote())
 		})
-		r.Get("/{event}", c.Event())
+		r.Get("/{event}/thread", c.EventThread())
 		r.Get("/{event}/replies", c.EventReplies())
+		r.Get("/{event}", c.Event())
 	})
 
 	r.Route("/room", func(r chi.Router) {

@@ -63,3 +63,56 @@ LIMIT 50;
 
 
 
+-- name: GetEventThread :many
+SELECT ej.event_id, 
+    ej.json, 
+    ud.display_name,
+    ud.avatar_url,
+    aliases.room_alias,
+    RIGHT(events.event_id, 11) as slug,
+    COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'url', CASE WHEN re.url IS NOT NULL THEN re.url ELSE NULL END, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
+    ed.json::jsonb->'content'->>'m.new_content' as edited,
+    COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on,
+    cast(prev.content as jsonb) as prev_content,
+    CASE WHEN redactions.redacts IS NOT NULL THEN true ELSE false END as redacted
+FROM event_json ej
+JOIN event_relations evre ON evre.event_id = ej.event_id
+    AND evre.relation_type = 'm.thread'
+LEFT JOIN events on events.event_id = ej.event_id
+LEFT JOIN aliases ON aliases.room_id = ej.room_id
+LEFT JOIN membership_state ud ON ud.user_id = events.sender
+    AND ud.room_id = ej.room_id
+LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
+LEFT JOIN redactions ON redactions.redacts = ej.event_id
+LEFT JOIN (
+	SELECT DISTINCT ON(evr.relates_to_id) ejs.json, evr.relates_to_id
+	FROM event_json ejs
+	JOIN event_relations evr ON evr.event_id = ejs.event_id
+	JOIN events evs ON evr.event_id = evs.event_id
+	AND evr.relation_type = 'm.replace'
+	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
+	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
+) ed ON ed.relates_to_id = ej.event_id
+LEFT JOIN (
+    SELECT event_json.event_id,
+        event_json.json::jsonb->>'content' as content
+    FROM event_json
+) prev ON prev.event_id = ej.json::jsonb->'unsigned'->>'replaces_state'
+WHERE evre.relates_to_id = $1
+AND events.type = 'm.room.message'
+GROUP BY
+    ej.event_id, 
+    ed.json,
+    events.event_id, 
+    ej.json,
+    ud.display_name,
+    ud.avatar_url,
+    aliases.room_alias,
+    events.origin_server_ts,
+    prev.content,
+    redactions.redacts
+ORDER BY events.origin_server_ts ASC
+LIMIT 100;
+
+
+

@@ -113,7 +113,6 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 			EventID:         item.EventID,
 			Slug:            item.Slug,
 			JSON:            json,
-			RoomAlias:       item.RoomAlias.String,
 			DisplayName:     item.DisplayName.String,
 			AvatarURL:       item.AvatarUrl.String,
 			ReplyCount:      item.Replies.Int64,
@@ -236,4 +235,74 @@ func (c *App) sendMessageNotification(mid string, json []byte) {
 	}
 	messageClientsMutex.Unlock()
 
+}
+
+type GetEventThreadParams struct {
+	EventID string
+}
+
+func (c *App) GetEventThread(p *GetEventThreadParams) (*[]*Event, error) {
+
+	replies, err := c.MatrixDB.Queries.GetEventThread(context.Background(), p.EventID)
+
+	if err != nil {
+		log.Println("error getting event replies: ", err)
+		return nil, err
+	}
+
+	var items []*Event
+
+	for _, item := range replies {
+
+		json, err := gabs.ParseJSON([]byte(item.JSON.String))
+		if err != nil {
+			log.Println("error parsing json: ", err)
+		}
+
+		s := ProcessComplexEvent(&EventProcessor{
+			EventID:     item.EventID,
+			Slug:        item.Slug,
+			JSON:        json,
+			DisplayName: item.DisplayName.String,
+			AvatarURL:   item.AvatarUrl.String,
+			Reactions:   item.Reactions,
+			Edited:      item.Edited,
+			EditedOn:    item.EditedOn,
+		})
+
+		items = append(items, &s)
+	}
+
+	return &items, nil
+}
+
+func (c *App) EventThread() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		event := chi.URLParam(r, "event")
+
+		replies, err := c.GetEventThread(&GetEventThreadParams{
+			EventID: event,
+		})
+
+		if err != nil {
+			log.Println("error getting event replies: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "couldn't get event replies",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"replies": replies,
+			},
+		})
+
+	}
 }
