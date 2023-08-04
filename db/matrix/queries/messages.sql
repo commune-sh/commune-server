@@ -37,7 +37,7 @@ LEFT JOIN (
 ) prev ON prev.event_id = ej.json::jsonb->'unsigned'->>'replaces_state'
 LEFT JOIN event_threads evt ON evt.event_id = ej.event_id
 WHERE ej.room_id = $1
-AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id)
+AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id AND (relation_type = 'm.thread' OR relation_type = 'm.replace'))
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
 AND (events.origin_server_ts > sqlc.narg('after') OR sqlc.narg('after') IS NULL)
 AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
