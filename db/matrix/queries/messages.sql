@@ -5,12 +5,13 @@ SELECT ej.event_id,
     ud.avatar_url,
     aliases.room_alias,
     RIGHT(events.event_id, 11) as slug,
+    COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'url', CASE WHEN re.url IS NOT NULL THEN re.url ELSE NULL END, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
     ed.json::jsonb->'content'->>'m.new_content' as edited,
     COALESCE(NULLIF(ed.json::jsonb->>'origin_server_ts', '')::BIGINT, 0) as edited_on,
     cast(prev.content as jsonb) as prev_content,
     CASE WHEN redactions.redacts IS NOT NULL THEN true ELSE false END as redacted,
-    evt.replies,
+    evt.replies as thread_replies,
     evt.last_reply as last_thread_reply
 FROM event_json ej
 LEFT JOIN events on events.event_id = ej.event_id
@@ -18,6 +19,7 @@ LEFT JOIN aliases ON aliases.room_id = ej.room_id
 LEFT JOIN membership_state ud ON ud.user_id = events.sender
     AND ud.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
+LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
 LEFT JOIN redactions ON redactions.redacts = ej.event_id
 LEFT JOIN (
 	SELECT DISTINCT ON(evr.relates_to_id) ejs.json, evr.relates_to_id
@@ -46,6 +48,7 @@ GROUP BY
     ej.json,
     ud.display_name,
     ud.avatar_url,
+    rc.count,
     aliases.room_alias,
     events.origin_server_ts,
     prev.content,
@@ -76,7 +79,7 @@ SELECT ej.event_id,
     cast(prev.content as jsonb) as prev_content,
     CASE WHEN redactions.redacts IS NOT NULL THEN true ELSE false END as redacted
 FROM event_json ej
-JOIN event_relations evre ON evre.event_id = ej.event_id
+LEFT JOIN event_relations evre ON evre.event_id = ej.event_id
     AND evre.relation_type = 'm.thread'
 LEFT JOIN events on events.event_id = ej.event_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
@@ -98,7 +101,8 @@ LEFT JOIN (
         event_json.json::jsonb->>'content' as content
     FROM event_json
 ) prev ON prev.event_id = ej.json::jsonb->'unsigned'->>'replaces_state'
-WHERE evre.relates_to_id = $1
+WHERE (RIGHT(evre.relates_to_id, 11) = $1
+OR RIGHT(ej.event_id, 11) = $1)
 AND events.type = 'm.room.message'
 GROUP BY
     ej.event_id, 

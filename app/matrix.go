@@ -268,47 +268,49 @@ type sender struct {
 }
 
 type Event struct {
-	Type            any                    `json:"type"`
-	Content         any                    `json:"content"`
-	Sender          sender                 `json:"sender"`
-	EventID         string                 `json:"event_id"`
-	StateKey        any                    `json:"state_key,omitempty"`
-	RoomAlias       string                 `json:"room_alias,omitempty"`
-	RoomID          string                 `json:"room_id"`
-	OriginServerTs  float64                `json:"origin_server_ts"`
-	Unsigned        map[string]interface{} `json:"unsigned"`
-	Slug            string                 `json:"slug,omitempty"`
-	ReplyCount      int64                  `json:"reply_count"`
-	Reactions       any                    `json:"reactions,omitempty"`
-	UserReactions   []string               `json:"user_reactions,omitempty"`
-	Children        []*Event               `json:"children,omitempty"`
-	InReplyTo       string                 `json:"in_reply_to,omitempty"`
-	EditedOn        any                    `json:"edited_on,omitempty"`
-	Upvotes         int64                  `json:"upvotes,omitempty"`
-	Downvotes       int64                  `json:"downvotes,omitempty"`
-	Upvoted         bool                   `json:"upvoted,omitempty"`
-	Downvoted       bool                   `json:"downvoted,omitempty"`
-	Pinned          bool                   `json:"pinned,omitempty"`
-	TransactionID   string                 `json:"transaction_id,omitempty"`
-	LastThreadReply interface{}            `json:"last_thread_reply,omitempty"`
+	Type             any                    `json:"type"`
+	Content          any                    `json:"content"`
+	Sender           sender                 `json:"sender"`
+	EventID          string                 `json:"event_id"`
+	StateKey         any                    `json:"state_key,omitempty"`
+	RoomAlias        string                 `json:"room_alias,omitempty"`
+	RoomID           string                 `json:"room_id"`
+	OriginServerTs   float64                `json:"origin_server_ts"`
+	Unsigned         map[string]interface{} `json:"unsigned"`
+	Slug             string                 `json:"slug,omitempty"`
+	ReplyCount       int64                  `json:"reply_count"`
+	Reactions        any                    `json:"reactions,omitempty"`
+	UserReactions    []string               `json:"user_reactions,omitempty"`
+	Children         []*Event               `json:"children,omitempty"`
+	InReplyTo        string                 `json:"in_reply_to,omitempty"`
+	EditedOn         any                    `json:"edited_on,omitempty"`
+	Upvotes          int64                  `json:"upvotes,omitempty"`
+	Downvotes        int64                  `json:"downvotes,omitempty"`
+	Upvoted          bool                   `json:"upvoted,omitempty"`
+	Downvoted        bool                   `json:"downvoted,omitempty"`
+	Pinned           bool                   `json:"pinned,omitempty"`
+	TransactionID    string                 `json:"transaction_id,omitempty"`
+	LastThreadReply  interface{}            `json:"last_thread_reply,omitempty"`
+	ThreadReplyCount int64                  `json:"thread_reply_count,omitempty"`
 }
 
 type EventProcessor struct {
-	JSON            *gabs.Container
-	EventID         string
-	Slug            string
-	DisplayName     string
-	AvatarURL       string
-	RoomAlias       string
-	ReplyCount      int64
-	Reactions       any
-	Edited          interface{}
-	EditedOn        interface{}
-	SSR             bool
-	PrevContent     interface{}
-	TransactionID   string
-	Redacted        bool
-	LastThreadReply interface{}
+	JSON             *gabs.Container
+	EventID          string
+	Slug             string
+	DisplayName      string
+	AvatarURL        string
+	RoomAlias        string
+	ReplyCount       int64
+	Reactions        any
+	Edited           interface{}
+	EditedOn         interface{}
+	SSR              bool
+	PrevContent      interface{}
+	TransactionID    string
+	Redacted         bool
+	LastThreadReply  interface{}
+	ThreadReplyCount int64
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {
@@ -387,6 +389,8 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 	e.Sender.AvatarURL = ep.AvatarURL
 
 	e.ReplyCount = ep.ReplyCount
+
+	e.ThreadReplyCount = ep.ThreadReplyCount
 
 	e.Reactions = ep.Reactions
 

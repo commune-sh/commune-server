@@ -110,18 +110,19 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 		}
 
 		s := ProcessComplexEvent(&EventProcessor{
-			EventID:         item.EventID,
-			Slug:            item.Slug,
-			JSON:            json,
-			DisplayName:     item.DisplayName.String,
-			AvatarURL:       item.AvatarUrl.String,
-			ReplyCount:      item.Replies.Int64,
-			Reactions:       item.Reactions,
-			Edited:          item.Edited,
-			EditedOn:        item.EditedOn,
-			PrevContent:     item.PrevContent,
-			Redacted:        item.Redacted,
-			LastThreadReply: item.LastThreadReply,
+			EventID:          item.EventID,
+			Slug:             item.Slug,
+			JSON:             json,
+			DisplayName:      item.DisplayName.String,
+			AvatarURL:        item.AvatarUrl.String,
+			ReplyCount:       item.Replies,
+			Reactions:        item.Reactions,
+			Edited:           item.Edited,
+			EditedOn:         item.EditedOn,
+			PrevContent:      item.PrevContent,
+			Redacted:         item.Redacted,
+			LastThreadReply:  item.LastThreadReply,
+			ThreadReplyCount: item.ThreadReplies.Int64,
 		})
 
 		items = append(items, s)
@@ -281,8 +282,26 @@ func (c *App) EventThread() http.HandlerFunc {
 
 		event := chi.URLParam(r, "event")
 
+		slug := event[len(event)-11:]
+
+		item, err := c.GetEvent(&GetEventParams{
+			Slug: event,
+		})
+
+		if err != nil {
+			log.Println("error getting event: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "thread not found",
+					"exists": false,
+				},
+			})
+			return
+		}
+
 		replies, err := c.GetEventThread(&GetEventThreadParams{
-			EventID: event,
+			EventID: slug,
 		})
 
 		if err != nil {
@@ -300,7 +319,8 @@ func (c *App) EventThread() http.HandlerFunc {
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
 			JSON: map[string]any{
-				"replies": replies,
+				"event":  item,
+				"events": replies,
 			},
 		})
 
