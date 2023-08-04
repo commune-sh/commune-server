@@ -367,6 +367,8 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 				log.Println("Failed to unmarshal JSON:", err)
 			} else {
 				ep.JSON.Set(result["body"], "content", "body")
+				ep.JSON.Set(result["formatted_body"], "content", "formatted_body")
+				ep.JSON.Set(result["full_body"], "content", "full_body")
 				ep.JSON.Set(result["title"], "content", "title")
 				e.Content = ep.JSON.Path("content").Data().(any)
 			}
