@@ -62,7 +62,7 @@ END ASC, CASE
 END DESC, CASE
     WHEN @order_by::text = '' THEN events.origin_server_ts 
 END DESC
-LIMIT 50;
+LIMIT 100;
 
 
 
@@ -116,7 +116,7 @@ GROUP BY
     prev.content,
     redactions.redacts
 ORDER BY events.origin_server_ts ASC
-LIMIT 100;
+LIMIT 1000;
 
 
 
