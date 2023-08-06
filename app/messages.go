@@ -115,6 +115,7 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 			JSON:             json,
 			DisplayName:      item.DisplayName.String,
 			AvatarURL:        item.AvatarUrl.String,
+			RoomAlias:        item.RoomAlias.String,
 			ReplyCount:       item.Replies,
 			Reactions:        item.Reactions,
 			Edited:           item.Edited,
