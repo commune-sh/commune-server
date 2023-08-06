@@ -11,7 +11,11 @@ SELECT
 	END END as type,
 	ev.sender as from_matrix_user_id, 
 	events.sender as for_matrix_user_id, 
-	CASE WHEN er.relation_type = 'm.annotation' THEN er.aggregation_key ELSE ej.json::jsonb->'content'->>'body' END as body, 
+	CASE WHEN er.relation_type = 'm.annotation' THEN 
+        CASE WHEN ej.json::jsonb->'content'->'m.relates_to'->>'url' IS NOT NULL
+            THEN ej.json::jsonb->'content'->'m.relates_to'->>'url'
+        ELSE ej.json::jsonb->'content'->'m.relates_to'->>'key' END
+    ELSE ej.json::jsonb->'content'->>'body' END as body, 
 	ej.json::jsonb->'content'->'m.relates_to'->>'thread_event_id' as thread_event_id,
 	ev.origin_server_ts as created_at, 
 	ev.event_id, 
@@ -44,7 +48,11 @@ SELECT DISTINCT ON (ev.origin_server_ts)
 	    END
 	END END as type,
 	ev.sender as from_matrix_user_id, 
-	CASE WHEN er.relation_type = 'm.annotation' THEN er.aggregation_key ELSE ej.json::jsonb->'content'->>'body' END as body, 
+	CASE WHEN er.relation_type = 'm.annotation' THEN 
+        CASE WHEN ej.json::jsonb->'content'->'m.relates_to'->>'url' IS NOT NULL
+            THEN ej.json::jsonb->'content'->'m.relates_to'->>'url'
+        ELSE ej.json::jsonb->'content'->'m.relates_to'->>'key' END
+    ELSE ej.json::jsonb->'content'->>'body' END as body, 
 	ej.json::jsonb->'content'->'m.relates_to'->>'thread_event_id' as thread_event_id,
 	ev.origin_server_ts as created_at, 
 	ev.event_id, 

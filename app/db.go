@@ -139,7 +139,7 @@ func (c *App) StartNotifyListener() {
 				} else {
 					c.sendMessageNotification(event.RoomID, serialized)
 				}
-				continue
+				//continue
 			}
 
 			if err == nil {
