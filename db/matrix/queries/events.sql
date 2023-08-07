@@ -1,21 +1,3 @@
--- name: GetEvent :one
-SELECT event_json.event_id, event_json.json FROM event_json
-LEFT JOIN events on events.event_id = event_json.event_id
-LEFT JOIN aliases ON aliases.room_id = event_json.room_id
-WHERE events.sender = $1 
-AND events.slug = $2
-AND aliases.room_alias = $3 LIMIT 1;
-
--- name: GetUserEvents :many
-SELECT event_json.event_id, event_json.json, events.slug FROM event_json
-LEFT JOIN events on events.event_id = event_json.event_id
-LEFT JOIN aliases ON aliases.room_id = event_json.room_id
-WHERE events.sender = $1 
-AND aliases.room_alias = $2
-AND events.type = 'space.board.post'
-ORDER BY events.origin_server_ts DESC LIMIT 100;
-
-
 -- name: GetPinnedEvents :one
 SELECT ej.json::json->'content'->>'pinned'::text AS events
 FROM current_state_events cse

@@ -22,12 +22,23 @@ func (c *App) RoomMessages() http.HandlerFunc {
 
 		log.Println("room is", room)
 
+		con := r.URL.Query().Get("context")
+		if con != "" {
+			log.Println("context is", con)
+			c.GetMessagesAtEventID(w, r, &SpaceMessagesParams{
+				RoomID:  room,
+				Context: con,
+			})
+			return
+		}
+
 		// get events for this space
 		events, err := c.GetSpaceMessages(&SpaceMessagesParams{
-			RoomID: room,
-			Last:   r.URL.Query().Get("last"),
-			After:  r.URL.Query().Get("after"),
-			Topic:  r.URL.Query().Get("topic"),
+			RoomID:  room,
+			Last:    r.URL.Query().Get("last"),
+			After:   r.URL.Query().Get("after"),
+			Topic:   r.URL.Query().Get("topic"),
+			Context: r.URL.Query().Get("context"),
 		})
 
 		if err != nil {
@@ -54,10 +65,11 @@ func (c *App) RoomMessages() http.HandlerFunc {
 }
 
 type SpaceMessagesParams struct {
-	RoomID string
-	Last   string
-	After  string
-	Topic  string
+	RoomID  string
+	Last    string
+	After   string
+	Topic   string
+	Context string
 }
 
 func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
@@ -78,7 +90,7 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 	if p.Last != "" && p.After == "" {
 		i, _ := strconv.ParseInt(p.Last, 10, 64)
 		log.Println("adding last", i)
-		sreq.OriginServerTS = pgtype.Int8{
+		sreq.Last = pgtype.Int8{
 			Int64: i,
 			Valid: true,
 		}
@@ -130,6 +142,65 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 	}
 
 	return &items, nil
+}
+
+func (c *App) GetMessagesAtEventID(w http.ResponseWriter, r *http.Request, p *SpaceMessagesParams) {
+
+	sreq := matrix_db.GetSpaceMessagesAtEventIDParams{
+		RoomID:  p.RoomID,
+		EventID: p.Context,
+	}
+
+	events, err := c.MatrixDB.Queries.GetSpaceMessagesAtEventID(context.Background(), sreq)
+
+	if err != nil {
+		log.Println("error getting events: ", err)
+		log.Println("error getting events: ", err)
+		log.Println("error getting events: ", err)
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: map[string]any{
+				"error": err,
+			},
+		})
+		return
+	}
+
+	items := []Event{}
+
+	for _, item := range events {
+
+		json, err := gabs.ParseJSON([]byte(item.JSON.String))
+		if err != nil {
+			log.Println("error parsing json: ", err)
+		}
+
+		s := ProcessComplexEvent(&EventProcessor{
+			EventID:          item.EventID,
+			Slug:             item.Slug,
+			JSON:             json,
+			DisplayName:      item.DisplayName.String,
+			AvatarURL:        item.AvatarUrl.String,
+			RoomAlias:        item.RoomAlias.String,
+			ReplyCount:       item.Replies,
+			Reactions:        item.Reactions,
+			Edited:           item.Edited,
+			EditedOn:         item.EditedOn,
+			PrevContent:      item.PrevContent,
+			Redacted:         item.Redacted,
+			LastThreadReply:  item.LastThreadReply,
+			ThreadReplyCount: item.ThreadReplies.Int64,
+		})
+
+		items = append(items, s)
+	}
+
+	RespondWithJSON(w, &JSONResponse{
+		Code: http.StatusOK,
+		JSON: map[string]any{
+			"events": items,
+		},
+	})
 }
 
 var messageClients = make(map[string][]*Client)

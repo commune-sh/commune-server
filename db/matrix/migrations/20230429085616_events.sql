@@ -17,8 +17,7 @@ CREATE TABLE IF NOT EXISTS events (
     instance_name text,
     stream_ordering bigint, 
     state_key text,
-    rejection_reason text,
-    slug char(7)
+    rejection_reason text
 );
 -- +goose StatementEnd
 
