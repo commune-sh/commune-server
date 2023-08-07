@@ -66,33 +66,29 @@ LIMIT 100;
 
 
 -- name: GetSpaceMessagesAtEventID :many
-WITH cevents AS (
-  SELECT *
-  FROM (
-    SELECT *
+WITH messages AS (
+    (SELECT event_id, sender, origin_server_ts
     FROM events 
     WHERE origin_server_ts < (SELECT y.origin_server_ts FROM events y WHERE y.event_id = $2)
     ORDER BY origin_server_ts DESC
-    LIMIT 5
-  ) AS before_events
+    LIMIT 50
+  ) 
 
   UNION ALL
 
-  SELECT *
-  FROM (
-    SELECT *
+    (SELECT event_id, sender, origin_server_ts
     FROM events
     WHERE origin_server_ts >= (SELECT origin_server_ts FROM events WHERE event_id = $2)
     ORDER BY origin_server_ts ASC
-    LIMIT 5
-  ) AS after_events
+    LIMIT 50
+  )
 )
 SELECT ej.event_id, 
     ej.json, 
     ud.display_name,
     ud.avatar_url,
     aliases.room_alias,
-    RIGHT(cevents.event_id, 11) as slug,
+    RIGHT(messages.event_id, 11) as slug,
     COALESCE(rc.count, 0) as replies,
     COALESCE(array_agg(json_build_object('key', re.aggregation_key, 'url', CASE WHEN re.url IS NOT NULL THEN re.url ELSE NULL END, 'senders', re.senders)) FILTER (WHERE re.aggregation_key is not null), null) as reactions,
     ed.json::jsonb->'content'->>'m.new_content' as edited,
@@ -101,10 +97,10 @@ SELECT ej.event_id,
     CASE WHEN redactions.redacts IS NOT NULL THEN true ELSE false END as redacted,
     evt.replies as thread_replies,
     evt.last_reply as last_thread_reply
-FROM cevents
-JOIN event_json ej on cevents.event_id = ej.event_id
+FROM messages
+JOIN event_json ej on messages.event_id = ej.event_id
 LEFT JOIN aliases ON aliases.room_id = ej.room_id
-LEFT JOIN membership_state ud ON ud.user_id = cevents.sender
+LEFT JOIN membership_state ud ON ud.user_id = messages.sender
     AND ud.room_id = ej.room_id
 LEFT JOIN event_reactions re ON re.relates_to_id = ej.event_id
 LEFT JOIN reply_count rc ON rc.relates_to_id = ej.event_id
@@ -129,6 +125,9 @@ AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id AND (re
 AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
 GROUP BY
     ej.event_id, 
+    messages.event_id,
+    messages.sender,
+    messages.origin_server_ts,
     ed.json,
     ej.json,
     ud.display_name,
@@ -139,7 +138,7 @@ GROUP BY
     redactions.redacts,
     evt.replies,
     evt.last_reply
-ORDER BY cevents.origin_server_ts DESC;
+ORDER BY messages.origin_server_ts DESC;
 
 
 
