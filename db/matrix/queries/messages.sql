@@ -69,7 +69,8 @@ LIMIT 100;
 WITH messages AS (
     (SELECT event_id, sender, origin_server_ts
     FROM events 
-    WHERE origin_server_ts < (SELECT y.origin_server_ts FROM events y WHERE y.event_id = $2)
+    WHERE origin_server_ts < (
+        SELECT y.origin_server_ts FROM events y WHERE RIGHT(y.event_id, 11) = $2)
     ORDER BY origin_server_ts DESC
     LIMIT 50
   ) 
@@ -78,7 +79,8 @@ WITH messages AS (
 
     (SELECT event_id, sender, origin_server_ts
     FROM events
-    WHERE origin_server_ts >= (SELECT origin_server_ts FROM events WHERE event_id = $2)
+    WHERE origin_server_ts >= (
+        SELECT origin_server_ts FROM events WHERE RIGHT(event_id, 11) = $2)
     ORDER BY origin_server_ts ASC
     LIMIT 50
   )

@@ -155,8 +155,6 @@ func (c *App) GetMessagesAtEventID(w http.ResponseWriter, r *http.Request, p *Sp
 
 	if err != nil {
 		log.Println("error getting events: ", err)
-		log.Println("error getting events: ", err)
-		log.Println("error getting events: ", err)
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusInternalServerError,
 			JSON: map[string]any{

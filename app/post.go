@@ -46,7 +46,12 @@ func (c *App) NewPost(p *NewPostParams) (*Event, error) {
 		return nil, err
 	}
 
-	resp, err := matrix.SendMessageEvent(p.Body.RoomID, p.Body.Type, p.Body.Content, RandomString(16))
+	txid := p.Body.TransactionID
+	if txid == "" {
+		txid = RandomString(16)
+	}
+
+	resp, err := matrix.SendMessageEvent(p.Body.RoomID, p.Body.Type, p.Body.Content, txid)
 	if err != nil {
 		return nil, err
 	}
