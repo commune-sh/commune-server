@@ -4,7 +4,7 @@ DROP TRIGGER event_reactions_mv_trigger on event_relations;
 DROP FUNCTION event_reactions_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS event_reactions AS 
-    SELECT DISTINCT ON(er.relates_to_id) er.relates_to_id, er.aggregation_key, ej.url,
+    SELECT er.relates_to_id, er.aggregation_key, ej.url,
     array_agg(
         jsonb_build_object(
             'sender', ev.sender,
