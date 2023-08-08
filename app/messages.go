@@ -32,6 +32,9 @@ func (c *App) RoomMessages() http.HandlerFunc {
 			return
 		}
 
+		limit := r.URL.Query().Get("limit")
+		i, _ := strconv.ParseInt(limit, 10, 64)
+
 		// get events for this space
 		events, err := c.GetSpaceMessages(&SpaceMessagesParams{
 			RoomID:  room,
@@ -39,6 +42,8 @@ func (c *App) RoomMessages() http.HandlerFunc {
 			After:   r.URL.Query().Get("after"),
 			Topic:   r.URL.Query().Get("topic"),
 			Context: r.URL.Query().Get("context"),
+			Order:   r.URL.Query().Get("order"),
+			Limit:   i,
 		})
 
 		if err != nil {
@@ -70,12 +75,29 @@ type SpaceMessagesParams struct {
 	After   string
 	Topic   string
 	Context string
+	Limit   int64
+	Order   string
 }
 
 func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 
 	sreq := matrix_db.GetSpaceMessagesParams{
 		RoomID: p.RoomID,
+		Limit: pgtype.Int8{
+			Int64: 100,
+			Valid: true,
+		},
+	}
+
+	if p.Order != "" {
+		sreq.OrderBy = p.Order
+	}
+
+	if p.Limit > 0 {
+		sreq.Limit = pgtype.Int8{
+			Int64: p.Limit,
+			Valid: true,
+		}
 	}
 
 	if len(p.Topic) > 0 {
@@ -96,7 +118,7 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 		}
 	}
 
-	if p.After != "" {
+	if p.After != "" && p.Last == "" {
 		i, _ := strconv.ParseInt(p.After, 10, 64)
 		sreq.After = pgtype.Int8{
 			Int64: i,

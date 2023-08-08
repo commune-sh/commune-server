@@ -697,6 +697,7 @@ func (c *App) GetSpaceEvents(p *SpaceEventsParams) (*[]Event, error) {
 			Reactions:   item.Reactions,
 			Edited:      item.Edited,
 			EditedOn:    item.EditedOn,
+			//Reference:   item.Reference,
 		})
 
 		exists := false

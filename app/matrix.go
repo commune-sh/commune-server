@@ -292,6 +292,7 @@ type Event struct {
 	TransactionID    string                 `json:"transaction_id,omitempty"`
 	LastThreadReply  interface{}            `json:"last_thread_reply,omitempty"`
 	ThreadReplyCount int64                  `json:"thread_reply_count,omitempty"`
+	Reference        interface{}            `json:"reference,omitempty"`
 }
 
 type EventProcessor struct {
@@ -311,6 +312,7 @@ type EventProcessor struct {
 	Redacted         bool
 	LastThreadReply  interface{}
 	ThreadReplyCount int64
+	Reference        interface{}
 }
 
 func ProcessComplexEvent(ep *EventProcessor) Event {
@@ -327,11 +329,26 @@ func ProcessComplexEvent(ep *EventProcessor) Event {
 		TransactionID:  ep.TransactionID,
 	}
 
+	/*
+		if ep.Reference != nil {
+			e.Reference = ep.Reference
+
+			if bytes, ok := ep.Reference.([]uint8); ok {
+				var result map[string]interface{}
+				err := json.Unmarshal(bytes, &result)
+				if err == nil {
+					e.Reference = result
+				}
+			}
+		}
+	*/
+
 	if ep.Redacted {
 		e.Content = map[string]interface{}{
 			"redacted": true,
 		}
 	}
+
 	if e.Type == "m.room.redaction" {
 		e.Content = map[string]interface{}{
 			"redacts": ep.JSON.Path("redacts").Data().(string),
