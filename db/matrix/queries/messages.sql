@@ -71,6 +71,7 @@ WITH messages AS (
     FROM events 
     WHERE origin_server_ts < (
         SELECT y.origin_server_ts FROM events y WHERE RIGHT(y.event_id, 11) = $2)
+    AND events.room_id = $1
     ORDER BY origin_server_ts DESC
     LIMIT 50
   ) 
@@ -81,6 +82,7 @@ WITH messages AS (
     FROM events
     WHERE origin_server_ts >= (
         SELECT origin_server_ts FROM events WHERE RIGHT(event_id, 11) = $2)
+    AND events.room_id = $1
     ORDER BY origin_server_ts ASC
     LIMIT 50
   )
@@ -122,7 +124,6 @@ LEFT JOIN (
     FROM event_json
 ) prev ON prev.event_id = ej.json::jsonb->'unsigned'->>'replaces_state'
 LEFT JOIN event_threads evt ON evt.event_id = ej.event_id
-WHERE ej.room_id = $1
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id AND (relation_type = 'm.thread' OR relation_type = 'm.replace'))
 AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
 GROUP BY
