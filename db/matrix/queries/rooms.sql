@@ -258,8 +258,15 @@ AND cse.type = 'm.restrict_events_to';
 SELECT jsonb_build_object(
         'user_id', ms.user_id,
         'display_name', ms.display_name,
-        'avatar_url', ms.avatar_url
+        'avatar_url', ms.avatar_url,
+        'power_level', CASE WHEN le.level IS NOT NULL THEN le.level ELSE '10' END
     ) as user
 FROM membership_state ms
 LEFT JOIN power_levels pl ON pl.room_id = ms.room_id
-WHERE ms.room_id = $1;
+LEFT JOIN (
+    SELECT jsonb_object_keys(users) AS user_id, users->>jsonb_object_keys(users) AS level
+	FROM power_levels
+	WHERE power_levels.room_id = $1
+) as le ON le.user_id = ms.user_id
+WHERE ms.room_id = $1 
+LIMIT 1000;
