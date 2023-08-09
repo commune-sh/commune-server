@@ -4,7 +4,8 @@ DROP TRIGGER power_levels_mv_trigger on current_state_events;
 DROP FUNCTION power_levels_mv_refresh();
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS power_levels AS 
-    SELECT cse.room_id, cast(ej.json::jsonb->'content'->>'users' as jsonb) as users
+    SELECT cse.room_id, cast(ej.json::jsonb->'content'->>'users' as jsonb) as users,
+    cast(ej.json::jsonb->>'content' as jsonb) as power_levels
     FROM current_state_events cse
     JOIN event_json ej ON ej.event_id = cse.event_id
     WHERE cse.type = 'm.room.power_levels';

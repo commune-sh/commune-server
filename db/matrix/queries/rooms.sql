@@ -56,6 +56,7 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
             'emoji', rs.settings->'emoji',
             'room_order', rs.settings->'room_order'
         ),
+        'power_levels', pl.power_levels,
         'topics', room_topics.topics) as state,
     COALESCE(array_agg(json_build_object(
         'room_id', ch.room_id, 
@@ -75,7 +76,8 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
             'emoji', rs.settings->'emoji'
         ),
         'joined', ch.joined,
-        'banned', ch.banned
+        'banned', ch.banned,
+        'power_levels', ch.power_levels
         ) ORDER BY LOWER(ch.child_room_alias)) FILTER (WHERE ch.room_id IS NOT NULL), null) as children,
     CASE WHEN ms.membership = 'join' THEN true ELSE false END as joined,
     CASE WHEN ms.membership = 'ban' THEN true ELSE false END as banned,
@@ -85,16 +87,18 @@ JOIN rooms on rooms.room_id = ra.room_id
 JOIN events ev ON ev.room_id = ra.room_id and ev.type = 'm.room.create'
 JOIN membership_state mes ON mes.room_id = ev.room_id AND mes.user_id = ev.sender
 JOIN spaces ON spaces.room_id = ra.room_id
+JOIN power_levels pl ON pl.room_id = ra.room_id
 LEFT JOIN (
 	SELECT * FROM room_state
 ) as rs ON rs.room_id = ra.room_id
 LEFT JOIN (
-    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, rst.restrictions, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.do_not_index, rst.settings,
+    	SELECT rst.room_id, rst.name, rst.type, rst.topic, rst.avatar, rst.header, rst.restrictions, sc.child_room_alias, sc.parent_room_id, events.origin_server_ts, rstm.topics, rst.pinned_events, rst.do_not_index, rst.settings, ple.power_levels,
     CASE WHEN mst.membership = 'join' THEN true ELSE false END as joined,
     CASE WHEN mst.membership = 'ban' THEN true ELSE false END as banned
 	FROM room_state rst
 	JOIN space_rooms sc ON sc.child_room_id = rst.room_id
 	JOIN events ON events.room_id = rst.room_id AND events.type = 'm.room.create'
+    JOIN power_levels ple ON ple.room_id = rst.room_id
     LEFT JOIN room_topics rstm ON rstm.room_id = rst.room_id
     LEFT JOIN membership_state mst ON mst.room_id = rst.room_id AND mst.user_id = sqlc.narg('user_id')
 ) as ch ON ch.parent_room_id = ra.room_id
@@ -102,7 +106,7 @@ LEFT JOIN room_topics ON room_topics.room_id = ra.room_id
 LEFT JOIN room_members rm ON rm.room_id = ra.room_id
 LEFT JOIN membership_state ms ON ms.room_id = ra.room_id AND ms.user_id = sqlc.narg('user_id')
 WHERE LOWER(ra.room_alias) = $1
-GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.alias, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, rs.restrictions, rs.do_not_index, rs.settings, room_topics.topics, ms.membership, spaces.is_default, mes.display_name, mes.avatar_url;
+GROUP BY ra.room_id, rm.members, ev.origin_server_ts, ev.sender, rooms.is_public, rs.name, rs.alias, rs.is_profile, rs.type, rs.topic, rs.avatar, rs.header, rs.pinned_events, rs.restrictions, rs.do_not_index, rs.settings, room_topics.topics, ms.membership, spaces.is_default, mes.display_name, mes.avatar_url, pl.power_levels;
 
 
 

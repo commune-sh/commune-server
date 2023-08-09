@@ -428,20 +428,21 @@ type SpaceState struct {
 }
 
 type RoomState struct {
-	Name         string `json:"name"`
-	Alias        string `json:"alias"`
-	RoomID       string `json:"room_id"`
-	Type         string `json:"type"`
-	Topic        string `json:"topic"`
-	Avatar       string `json:"avatar"`
-	Header       string `json:"header"`
-	Topics       any    `json:"topics"`
-	PinnedEvents any    `json:"pinned_events"`
-	Settings     any    `json:"settings"`
-	Restrictions any    `json:"restrictions"`
-	IsProfile    bool   `json:"is_profile"`
-	DoNotIndex   bool   `json:"do_not_index"`
-	Joined       bool   `json:"joined"`
+	Name         string      `json:"name"`
+	Alias        string      `json:"alias"`
+	RoomID       string      `json:"room_id"`
+	Type         string      `json:"type"`
+	Topic        string      `json:"topic"`
+	Avatar       string      `json:"avatar"`
+	Header       string      `json:"header"`
+	Topics       any         `json:"topics"`
+	PinnedEvents any         `json:"pinned_events"`
+	Settings     any         `json:"settings"`
+	Restrictions any         `json:"restrictions"`
+	IsProfile    bool        `json:"is_profile"`
+	DoNotIndex   bool        `json:"do_not_index"`
+	Joined       bool        `json:"joined"`
+	PowerLevels  interface{} `json:"power_levels"`
 }
 
 func ProcessState(m matrix_db.GetSpaceStateRow) *SpaceState {

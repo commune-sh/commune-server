@@ -2,7 +2,8 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS power_levels (
     room_id text,
-    users jsonb
+    users jsonb,
+    power_levels jsonb
 );
 -- +goose StatementEnd
 
