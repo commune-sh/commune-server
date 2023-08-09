@@ -190,6 +190,7 @@ func routes(c *App) chi.Router {
 	r.Route("/room", func(r chi.Router) {
 		r.Get("/{room}/messages", c.RoomMessages())
 		r.Get("/{room}/sync", c.SyncMessages())
+		r.Get("/{room}/members", c.RoomMembers())
 		r.Route("/", func(r chi.Router) {
 			r.Use(c.RequireAuthentication)
 			r.Route("/joined", func(r chi.Router) {

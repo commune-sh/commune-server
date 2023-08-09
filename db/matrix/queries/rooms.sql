@@ -250,3 +250,12 @@ JOIN current_state_events cse ON cse.event_id = ej.event_id
 WHERE cse.room_id = $1
 AND cse.type = 'm.restrict_events_to';
 
+-- name: GetRoomMembers :many
+SELECT jsonb_build_object(
+        'user_id', ms.user_id,
+        'display_name', ms.display_name,
+        'avatar_url', ms.avatar_url
+    ) as user
+FROM membership_state ms
+LEFT JOIN power_levels pl ON pl.room_id = ms.room_id
+WHERE ms.room_id = $1;

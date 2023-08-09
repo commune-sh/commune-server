@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -361,6 +362,47 @@ func (c *App) RoomJoined() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"joined": joined,
+			},
+		})
+
+	}
+}
+
+func (c *App) RoomMembers() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		room := chi.URLParam(r, "room")
+
+		log.Println("room is", room)
+
+		members, err := c.MatrixDB.Queries.GetRoomMembers(context.Background(), pgtype.Text{String: room, Valid: true})
+
+		if err != nil {
+			log.Println("error getting members: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "inter server error",
+				},
+			})
+			return
+		}
+
+		items := []interface{}{}
+
+		for _, member := range members {
+			var item map[string]any
+			err := json.Unmarshal(member, &item)
+			if err != nil {
+				log.Println(err)
+			}
+			items = append(items, item)
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"members": items,
 			},
 		})
 
