@@ -408,3 +408,33 @@ func (c *App) RoomMembers() http.HandlerFunc {
 
 	}
 }
+
+func (c *App) ProfileInfo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		alias := chi.URLParam(r, "alias")
+
+		log.Println("alias is", alias)
+
+		info, err := c.MatrixDB.Queries.GetProfileInfo(context.Background(), pgtype.Text{String: alias, Valid: true})
+
+		if err != nil {
+			log.Println("error getting members: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "inter server error",
+				},
+			})
+			return
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"profile": info,
+			},
+		})
+
+	}
+}

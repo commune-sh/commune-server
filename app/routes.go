@@ -200,6 +200,10 @@ func routes(c *App) chi.Router {
 			r.Post("/leave", c.LeaveRoom())
 		})
 	})
+	r.Route("/profile", func(r chi.Router) {
+		r.Get("/{alias}", c.ProfileInfo())
+	})
+
 	r.Route("/space", func(r chi.Router) {
 		r.Use(c.RequireAuthentication)
 		r.Post("/{space}/join", c.JoinSpace())

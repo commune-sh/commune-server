@@ -271,3 +271,14 @@ LEFT JOIN (
 WHERE ms.room_id = $1
 LIMIT 1000;
 
+
+-- name: GetProfileInfo :one
+SELECT ud.display_name, ud.avatar_url, rs.topic, rs.header, events.origin_server_ts
+FROM room_state rs
+JOIN spaces ON spaces.room_id = rs.room_id
+JOIN events ON events.room_id = rs.room_id
+	AND events.type='m.room.create'
+JOIN user_directory ud ON ud.user_id = events.sender
+WHERE spaces.space_alias = $1
+AND rs.is_profile = true
+LIMIT 1;
