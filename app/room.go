@@ -8,6 +8,7 @@ import (
 	"time"
 
 	matrix_db "shpong/db/matrix/gen"
+	"shpong/gomatrix"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -433,6 +434,55 @@ func (c *App) ProfileInfo() http.HandlerFunc {
 			Code: http.StatusOK,
 			JSON: map[string]any{
 				"profile": info,
+			},
+		})
+
+	}
+}
+
+func (c *App) InviteToRoom() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		room_id := chi.URLParam(r, "room_id")
+		user_id := chi.URLParam(r, "user")
+
+		log.Println("room_id is", room_id)
+		log.Println("user is", user_id)
+
+		user := c.LoggedInUser(r)
+
+		matrix, err := c.NewMatrixClient(user.MatrixUserID, user.MatrixAccessToken)
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: map[string]any{
+					"error": "internal server error",
+				},
+			})
+			return
+		}
+
+		re, err := matrix.InviteUser(room_id, &gomatrix.ReqInviteUser{
+			UserID: user_id,
+		})
+
+		if err != nil {
+			log.Println("could not join space", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "Could not join at this time.",
+				},
+			})
+			return
+		}
+
+		log.Println(re)
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"invited": true,
 			},
 		})
 

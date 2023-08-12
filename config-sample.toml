@@ -86,6 +86,7 @@ tenor_key = ""
 
 [restrictions.space]
 require_verification = false
+private_without_verification = false
 spaces_per_user = 1000
 time_since_last_space = 60
 reject_reserved_keywords = false

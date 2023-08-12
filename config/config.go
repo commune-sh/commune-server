@@ -103,11 +103,12 @@ type Discovery struct {
 
 type Restrictions struct {
 	Space struct {
-		RequireVerification    bool  `toml:"require_verification" json:"require_verification"`
-		SpacesPerUser          int   `toml:"spaces_per_user" json:"spaces_per_user"`
-		TimeSinceLastSpace     int   `toml:"time_since_last_space" json:"time_since_last_space"`
-		RejectReservedKeywords bool  `toml:"reject_reserved_keywords" json:"reject_reserved_keywords"`
-		SenderAge              int32 `toml:"sender_age" json:"sender_age"`
+		RequireVerification        bool  `toml:"require_verification" json:"require_verification"`
+		PrivateWithoutVerification bool  `toml:"private_without_verification" json:"private_without_verification"`
+		SpacesPerUser              int   `toml:"spaces_per_user" json:"spaces_per_user"`
+		TimeSinceLastSpace         int   `toml:"time_since_last_space" json:"time_since_last_space"`
+		RejectReservedKeywords     bool  `toml:"reject_reserved_keywords" json:"reject_reserved_keywords"`
+		SenderAge                  int32 `toml:"sender_age" json:"sender_age"`
 	} `toml:"space" json:"space"`
 }
 type Search struct {

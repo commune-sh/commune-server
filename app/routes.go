@@ -198,6 +198,7 @@ func routes(c *App) chi.Router {
 			})
 			r.Post("/join", c.JoinRoom())
 			r.Post("/leave", c.LeaveRoom())
+			r.Post("/{room_id}/invite/{user}", c.InviteToRoom())
 		})
 	})
 	r.Route("/profile", func(r chi.Router) {

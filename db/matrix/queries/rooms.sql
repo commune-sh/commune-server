@@ -72,8 +72,8 @@ SELECT ra.room_id, rm.members, ev.origin_server_ts, ev.sender as owner,
         'topics', ch.topics, 
         'pinned_events', ch.pinned_events,
         'settings', json_build_object(
-            'nsfw', CASE WHEN rs.settings->'nsfw' = 'true' THEN TRUE ELSE FALSE END,
-            'emoji', rs.settings->'emoji'
+            'nsfw', CASE WHEN ch.settings->'nsfw' = 'true' THEN TRUE ELSE FALSE END,
+            'emoji', ch.settings->'emoji'
         ),
         'joined', ch.joined,
         'banned', ch.banned,
