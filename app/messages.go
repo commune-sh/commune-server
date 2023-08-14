@@ -24,10 +24,10 @@ func (c *App) RoomMessages() http.HandlerFunc {
 
 		con := r.URL.Query().Get("context")
 		if con != "" {
-			log.Println("context is", con)
 			c.GetMessagesAtEventID(w, r, &SpaceMessagesParams{
 				RoomID:  room,
 				Context: con,
+				Topic:   r.URL.Query().Get("topic"),
 			})
 			return
 		}
@@ -171,6 +171,13 @@ func (c *App) GetMessagesAtEventID(w http.ResponseWriter, r *http.Request, p *Sp
 	sreq := matrix_db.GetSpaceMessagesAtEventIDParams{
 		RoomID:  p.RoomID,
 		EventID: p.Context,
+	}
+
+	if len(p.Topic) > 0 {
+		sreq.Topic = pgtype.Text{
+			String: p.Topic,
+			Valid:  true,
+		}
 	}
 
 	events, err := c.MatrixDB.Queries.GetSpaceMessagesAtEventID(context.Background(), sreq)

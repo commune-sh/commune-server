@@ -40,7 +40,11 @@ WHERE ej.room_id = $1
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id AND (relation_type = 'm.thread' OR relation_type = 'm.replace'))
 AND (events.origin_server_ts < sqlc.narg('last') OR sqlc.narg('last') IS NULL)
 AND (events.origin_server_ts > sqlc.narg('after') OR sqlc.narg('after') IS NULL)
-AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
+AND (
+    (sqlc.narg('topic')::text IS NOT NULL AND ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic'))
+    OR
+    (sqlc.narg('topic')::text IS NULL AND ej.json::jsonb->'content'->>'topic' IS NULL)
+)
 GROUP BY
     ej.event_id, 
     ed.json,
@@ -67,22 +71,34 @@ LIMIT sqlc.narg('limit')::bigint;
 
 -- name: GetSpaceMessagesAtEventID :many
 WITH messages AS (
-    (SELECT event_id, sender, origin_server_ts
+    (SELECT events.event_id, sender, origin_server_ts
     FROM events 
+    JOIN event_json ej on events.event_id = ej.event_id
     WHERE origin_server_ts < (
         SELECT y.origin_server_ts FROM events y WHERE RIGHT(y.event_id, 11) = $2)
     AND events.room_id = $1
+    AND (
+        (sqlc.narg('topic')::text IS NOT NULL AND ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic'))
+        OR
+        (sqlc.narg('topic')::text IS NULL AND ej.json::jsonb->'content'->>'topic' IS NULL)
+    )
     ORDER BY origin_server_ts DESC
     LIMIT 50
   ) 
 
   UNION ALL
 
-    (SELECT event_id, sender, origin_server_ts
+    (SELECT events.event_id, sender, origin_server_ts
     FROM events
+    JOIN event_json ej on events.event_id = ej.event_id
     WHERE origin_server_ts >= (
         SELECT origin_server_ts FROM events WHERE RIGHT(event_id, 11) = $2)
     AND events.room_id = $1
+    AND (
+        (sqlc.narg('topic')::text IS NOT NULL AND ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic'))
+        OR
+        (sqlc.narg('topic')::text IS NULL AND ej.json::jsonb->'content'->>'topic' IS NULL)
+    )
     ORDER BY origin_server_ts ASC
     LIMIT 50
   )
@@ -125,7 +141,6 @@ LEFT JOIN (
 ) prev ON prev.event_id = ej.json::jsonb->'unsigned'->>'replaces_state'
 LEFT JOIN event_threads evt ON evt.event_id = ej.event_id
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id AND (relation_type = 'm.thread' OR relation_type = 'm.replace'))
-AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
 GROUP BY
     ej.event_id, 
     messages.event_id,
