@@ -80,13 +80,13 @@ func (c *App) PinEventToIndex() http.HandlerFunc {
 
 		user := c.LoggedInUser(r)
 
-		if !user.Admin {
+		admin, err := c.MatrixDB.Queries.IsAdmin(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
+		if err != nil || !admin {
 
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
-					"error":     "Not authorized.",
-					"suspended": false,
+					"error": "Not authorized.",
 				},
 			})
 			return
@@ -177,14 +177,14 @@ func (c *App) UnpinIndexEvent() http.HandlerFunc {
 		log.Println("unpinning event on index", slug)
 
 		user := c.LoggedInUser(r)
+		admin, err := c.MatrixDB.Queries.IsAdmin(context.Background(), pgtype.Text{String: user.MatrixUserID, Valid: true})
 
-		if !user.Admin {
+		if err != nil || !admin {
 
 			RespondWithJSON(w, &JSONResponse{
 				Code: http.StatusOK,
 				JSON: map[string]any{
-					"error":     "Not authorized.",
-					"suspended": false,
+					"error": "Not authorized.",
 				},
 			})
 			return

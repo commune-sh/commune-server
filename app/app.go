@@ -196,6 +196,7 @@ func Start(s *StartRequest) {
 	c.UpdateIndexEventsCache()
 
 	go c.StartNotifyListener()
+	go c.StartPresenceListener()
 
 	c.Activate()
 }

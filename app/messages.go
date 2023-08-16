@@ -160,7 +160,9 @@ func (c *App) GetSpaceMessages(p *SpaceMessagesParams) (*[]Event, error) {
 			ThreadReplyCount: item.ThreadReplies.Int64,
 		})
 
-		items = append(items, s)
+		if !item.Redacted {
+			items = append(items, s)
+		}
 	}
 
 	return &items, nil

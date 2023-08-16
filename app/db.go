@@ -165,3 +165,36 @@ func (c *App) StartNotifyListener() {
 	}
 
 }
+
+func (c *App) StartPresenceListener() {
+
+	c.MatrixDB.Exec(context.Background(), "LISTEN presence_notification")
+	n, err := c.MatrixDB.Pool.Acquire(context.Background())
+	if err != nil {
+		log.Println("error acquiring pool: ", err)
+	}
+	m := n.Hijack()
+
+	for {
+		x, err := m.WaitForNotification(context.Background())
+		if err != nil {
+			log.Println("error acquiring pool: ", err)
+		}
+
+		if x != nil && x.Payload != "" {
+
+			log.Println("PAYLOAD IS", x)
+
+			type NotifyEvent struct {
+				EventID       string `json:"event_id"`
+				RoomID        string `json:"room_id"`
+				Type          string `json:"type"`
+				TransactionID string `json:"txn_id"`
+			}
+
+			//ne := NotifyEvent{}
+
+		}
+	}
+
+}
