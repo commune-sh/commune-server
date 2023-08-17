@@ -92,6 +92,9 @@ time_since_last_space = 60
 reject_reserved_keywords = false
 sender_age = 0 # in days
 
+[restrictions.media]
+verified_only = false
+max_size = 8388608
 
 [discovery]
 enabled = true

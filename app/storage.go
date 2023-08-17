@@ -43,6 +43,18 @@ func (c *App) NewMediaStorage() (*s3.Client, error) {
 func (c *App) GetPresignedURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		user := c.LoggedInUser(r)
+
+		if c.Config.Restrictions.Media.VerifiedOnly && !user.Verified {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "You must be verified to upload media",
+				},
+			})
+			return
+		}
+
 		query := r.URL.Query()
 		filetype := query.Get("filetype")
 
@@ -63,6 +75,7 @@ func (c *App) GetPresignedURL() http.HandlerFunc {
 					"error": "couldn't get presigned URL",
 				},
 			})
+			return
 		}
 		log.Println("returning ", key)
 

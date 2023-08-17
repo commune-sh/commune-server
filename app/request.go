@@ -81,6 +81,7 @@ func (c *App) HealthCheck() http.HandlerFunc {
 				"features": c.Config.Features,
 				"restrictions": map[string]any{
 					"space": c.Config.Restrictions.Space,
+					"media": c.Config.Restrictions.Media,
 				},
 			},
 		})

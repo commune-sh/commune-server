@@ -110,6 +110,10 @@ type Restrictions struct {
 		RejectReservedKeywords     bool  `toml:"reject_reserved_keywords" json:"reject_reserved_keywords"`
 		SenderAge                  int32 `toml:"sender_age" json:"sender_age"`
 	} `toml:"space" json:"space"`
+	Media struct {
+		VerifiedOnly bool `toml:"verified_only" json:"verified_only"`
+		MaxSize      int  `toml:"max_size" json:"max_size"`
+	}
 }
 type Search struct {
 	Enabled bool   `toml:"enabled"`
