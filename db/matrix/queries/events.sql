@@ -288,3 +288,16 @@ GROUP BY
     aliases.room_alias
 ORDER BY events.origin_server_ts DESC LIMIT 30;
 
+
+-- name: GetShortlinkEvent :one
+SELECT events.event_id, 
+    events.type,
+    aliases.room_alias::text as room_alias
+FROM events
+LEFT JOIN aliases ON aliases.room_id = events.room_id
+WHERE RIGHT(events.event_id, 11) = $1
+GROUP BY
+    events.event_id, 
+    events.type,
+    aliases.room_alias
+LIMIT 1;

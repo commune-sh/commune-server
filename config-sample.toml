@@ -3,7 +3,8 @@ mode = "development"
 
 [app]
 domain = "localhost:8989"
-ssr_domain = "new.localhost:8989"
+public_domain = "localhost:5173"
+ssr_domain = ""
 shortlink_domain = ""
 port = 8989
 cookie_name = "shpong"
@@ -94,7 +95,7 @@ sender_age = 0 # in days
 
 [restrictions.media]
 verified_only = false
-max_size = 8388608
+max_size = 2 # in MB
 
 [discovery]
 enabled = true

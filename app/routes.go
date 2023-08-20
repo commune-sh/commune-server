@@ -38,10 +38,30 @@ func (c *App) Routes() {
 
 	hr.Map(c.Config.App.Domain, routes(c))
 	hr.Map(c.Config.App.SSRDomain, SSRDomain(c))
+	hr.Map(c.Config.App.ShortlinkDomain, ShortlinkDomain(c))
 	// local dev please ignore
 	hr.Map("192.168.1.12:8989", routes(c))
 
 	c.Router.Mount("/", hr)
+}
+
+func ShortlinkDomain(c *App) chi.Router {
+
+	r := chi.NewRouter()
+
+	compressor := middleware.NewCompressor(5, "text/html", "text/css")
+	compressor.SetEncoder("nop", func(w io.Writer, _ int) io.Writer {
+		return w
+	})
+
+	r.Use(compressor.Handler)
+	r.Use(c.GetAuthSession)
+
+	r.Get("/{event}", c.ResolveShortlink())
+	r.Get("/", c.RedirectHome())
+
+	r.NotFound(c.NotFound)
+	return r
 }
 
 func SSRDomain(c *App) chi.Router {
