@@ -83,7 +83,11 @@ api_token = ""
 
 [third_party]
 youtube_key = ""
-tenor_key = ""
+
+[third_party.gif]
+enabled = false
+service = "" # giphy or tenor
+api_key = ""
 
 [restrictions.space]
 require_verification = false

@@ -92,7 +92,11 @@ type Images struct {
 
 type ThirdParty struct {
 	YoutubeKey string `toml:"youtube_key"`
-	TenorKey   string `toml:"tenor_key"`
+	GIF        struct {
+		Enabled bool   `toml:"enabled"`
+		Service string `toml:"service"`
+		APIKey  string `toml:"api_key"`
+	} `toml:"gif"`
 }
 
 type Discovery struct {

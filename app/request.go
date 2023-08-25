@@ -73,17 +73,27 @@ func RespondWithBadRequestError(w http.ResponseWriter) {
 func (c *App) HealthCheck() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		data := map[string]any{
+			"healthy":  true,
+			"version":  c.Version,
+			"features": c.Config.Features,
+			"restrictions": map[string]any{
+				"space": c.Config.Restrictions.Space,
+				"media": c.Config.Restrictions.Media,
+			},
+		}
+
+		if c.Config.ThirdParty.GIF.Enabled {
+			data["gif"] = map[string]any{
+				"enabled": true,
+				"service": c.Config.ThirdParty.GIF.Service,
+				"key":     c.Config.ThirdParty.GIF.APIKey,
+			}
+		}
+
 		RespondWithJSON(w, &JSONResponse{
 			Code: http.StatusOK,
-			JSON: map[string]any{
-				"healthy":  true,
-				"version":  c.Version,
-				"features": c.Config.Features,
-				"restrictions": map[string]any{
-					"space": c.Config.Restrictions.Space,
-					"media": c.Config.Restrictions.Media,
-				},
-			},
+			JSON: data,
 		})
 
 	}
