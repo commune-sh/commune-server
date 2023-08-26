@@ -12,6 +12,7 @@ import (
 
 type Cache struct {
 	VerificationCodes *buntdb.DB
+	GIFs              *buntdb.DB
 	Events            *redis.Client
 	System            *redis.Client
 	Notifications     *redis.Client
@@ -42,7 +43,13 @@ func NewCache(conf *config.Config) (*Cache, error) {
 		panic(err)
 	}
 
+	gifdb, err := buntdb.Open(":memory:")
+	if err != nil {
+		panic(err)
+	}
+
 	c := &Cache{
+		GIFs:              gifdb,
 		VerificationCodes: db,
 		Events:            pdb,
 		System:            sdb,

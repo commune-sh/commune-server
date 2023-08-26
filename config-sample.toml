@@ -87,6 +87,7 @@ youtube_key = ""
 [third_party.gif]
 enabled = false
 service = "" # giphy or tenor
+endpoint = ""
 api_key = ""
 
 [restrictions.space]

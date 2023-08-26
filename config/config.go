@@ -93,9 +93,10 @@ type Images struct {
 type ThirdParty struct {
 	YoutubeKey string `toml:"youtube_key"`
 	GIF        struct {
-		Enabled bool   `toml:"enabled"`
-		Service string `toml:"service"`
-		APIKey  string `toml:"api_key"`
+		Enabled  bool   `toml:"enabled"`
+		Service  string `toml:"service"`
+		Endpoint string `toml:"endpoint"`
+		APIKey   string `toml:"api_key"`
 	} `toml:"gif"`
 }
 

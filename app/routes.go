@@ -165,6 +165,12 @@ func routes(c *App) chi.Router {
 		r.Get("/upload_url", c.GetUploadURL())
 	})
 
+	r.Route("/gifs", func(r chi.Router) {
+		r.Use(c.RequireAuthentication)
+		r.Get("/search", c.GetGIFSearch())
+		r.Get("/", c.GetGIFCategories())
+	})
+
 	r.Route("/default_spaces", func(r chi.Router) {
 		r.Get("/", c.DefaultSpaces())
 	})
