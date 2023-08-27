@@ -87,7 +87,6 @@ func (c *App) HealthCheck() http.HandlerFunc {
 			data["gif"] = map[string]any{
 				"enabled": true,
 				"service": c.Config.ThirdParty.GIF.Service,
-				"key":     c.Config.ThirdParty.GIF.APIKey,
 			}
 		}
 

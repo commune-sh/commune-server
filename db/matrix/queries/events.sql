@@ -38,7 +38,11 @@ AND events.type = 'space.board.post'
 AND NOT EXISTS (SELECT FROM event_relations WHERE event_id = ej.event_id 
 AND relation_type != 'm.reference')
 AND (events.origin_server_ts < sqlc.narg('origin_server_ts') OR sqlc.narg('origin_server_ts') IS NULL)
-AND (ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic') OR sqlc.narg('topic') IS NULL)
+AND (
+    (sqlc.narg('topic')::text IS NOT NULL AND ej.json::jsonb->'content'->>'topic' = sqlc.narg('topic'))
+    OR
+    (sqlc.narg('topic')::text IS NULL AND ej.json::jsonb->'content'->>'topic' IS NULL)
+)
 AND redactions.redacts is null
 GROUP BY
     ej.event_id, 
