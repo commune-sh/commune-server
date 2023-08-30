@@ -25,6 +25,7 @@ type Features struct {
 	RegistrationEnabled  bool `toml:"registration_enabled" json:"registration_enabled"`
 	SpaceCreationEnabled bool `toml:"space_creation_enabled" json:"space_creation_enabled"`
 	RequireEmail         bool `toml:"require_email" json:"require_email"`
+	RequireInviteCode    bool `toml:"require_invite_code" json:"require_invite_code"`
 }
 
 type Matrix struct {

@@ -17,6 +17,7 @@ social = false
 space_rooms = true
 registration_enabled = true
 require_email = false
+require_invite_code = false
 space_creation_enabled = true
 
 
