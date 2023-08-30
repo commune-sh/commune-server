@@ -81,6 +81,7 @@ func (c *App) HealthCheck() http.HandlerFunc {
 				"space": c.Config.Restrictions.Space,
 				"media": c.Config.Restrictions.Media,
 			},
+			"shortlink_server": c.Config.App.ShortlinkDomain,
 		}
 
 		if c.Config.ThirdParty.GIF.Enabled {
