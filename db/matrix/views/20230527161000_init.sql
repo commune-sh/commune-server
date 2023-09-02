@@ -1,9 +1,21 @@
 CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
 
+DROP FUNCTION IF EXISTS get_next_token_id;
+
 DROP FUNCTION IF EXISTS gen_random_bytes;
 DROP FUNCTION IF EXISTS random_string;
 DROP FUNCTION IF EXISTS unique_random;
+
+CREATE OR REPLACE FUNCTION get_next_token_id() RETURNS bigint AS $$
+DECLARE
+  max_id bigint;
+BEGIN
+  SELECT max(id) INTO max_id FROM access_tokens;
+
+  RETURN COALESCE(max_id, 0) + 1;
+END;
+$$ LANGUAGE plpgsql;
 
 create function gen_random_bytes(int) returns bytea as
 '$libdir/pgcrypto', 'pg_random_bytes' language c strict;

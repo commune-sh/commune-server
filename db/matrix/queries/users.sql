@@ -21,6 +21,11 @@ JOIN profiles ON profiles.full_user_id = users.name
 LEFT JOIN user_threepids utpid ON utpid.user_id = users.name
 WHERE (profiles.user_id = sqlc.narg('username') OR utpid.address = sqlc.narg('username')) AND users.deactivated = 0;
 
+-- name: GetExternalUserID :one
+SELECT user_id 
+FROM user_external_ids
+WHERE auth_provider = $1 AND external_id = $2;
+
 -- name: GetUserSpaces :many
 SELECT ms.room_id, spaces.space_alias as alias, rs.name, rs.topic, rs.avatar, rs.header, rs.is_profile::boolean as is_profile, spaces.is_default,
 CASE WHEN rooms.creator = $1 THEN true ELSE false END as is_owner
@@ -120,6 +125,63 @@ INSERT INTO users (
   $1, $2, $3, $4, $5
 )
 RETURNING approved;
+
+-- name: UNSAFECreateUser :one
+INSERT INTO users (
+  name, shadow_banned, approved, creation_ts
+) VALUES (
+  $1, FALSE, TRUE, EXTRACT(EPOCH FROM NOW())::bigint
+)
+RETURNING name;
+
+-- name: UNSAFECreateExternalID :one
+INSERT INTO user_external_ids (
+    auth_provider, external_id, user_id
+) VALUES (
+  $1, $2, $3
+)
+RETURNING user_id;
+
+-- name: UNSAFECreateProfile :exec
+INSERT INTO profiles (
+    user_id, displayname, full_user_id
+) VALUES (
+  $1, $1, $2
+);
+
+-- name: UNSAFECreateUserDirectory :exec
+INSERT INTO user_directory (
+    user_id, display_name
+) VALUES (
+  $1, $2
+);
+
+-- name: UNSAFECreateDevice :one
+INSERT INTO devices (
+    user_id, device_id
+) VALUES (
+  $1, $2
+)
+RETURNING device_id;
+
+-- name: UNSAFECreateAccessToken :one
+WITH new_id AS (
+  SELECT max(id) + 1 AS next_id
+  FROM access_tokens
+  FOR UPDATE
+)
+INSERT INTO access_tokens (
+    id, user_id, device_id, token, used, last_validated
+) VALUES (
+  (SELECT next_id FROM new_id), $1, $2, $3, TRUE, EXTRACT(EPOCH FROM NOW())::bigint * 1000
+)
+RETURNING token;
+
+-- name: DoesAccessTokenIDExist :one
+SELECT exists(select 1 from access_tokens where id = $1);
+
+-- name: DoesAccessTokenExist :one
+SELECT exists(select 1 from access_tokens where token = $1);
 
 -- name: HasUpvoted :one
 WITH event AS (

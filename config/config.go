@@ -128,6 +128,18 @@ type Search struct {
 	APIKey  string `toml:"api_key"`
 }
 
+type Discord struct {
+	Provider string `toml:"provider" json:"provider"`
+	ClientID string `toml:"client_id" json:"client_id"`
+}
+
+type Provider struct {
+	Provider     string `toml:"provider" json:"provider"`
+	Enabled      bool   `toml:"enabled" json:"enabled"`
+	ClientID     string `toml:"client_id" json:"client_id"`
+	ClientSecret string `toml:"client_secret" json:"client_secret"`
+}
+
 type Config struct {
 	Name           string         `toml:"name"`
 	Mode           string         `toml:"mode"`
@@ -146,6 +158,7 @@ type Config struct {
 	Discovery      Discovery      `toml:"discovery"`
 	Restrictions   Restrictions   `toml:"restrictions"`
 	Search         Search         `toml:"search"`
+	Oauth          []Provider     `toml:"oauth"`
 }
 
 var conf Config

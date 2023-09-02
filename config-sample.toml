@@ -103,6 +103,24 @@ sender_age = 0 # in days
 verified_only = false
 max_size = 2 # in MB
 
+[[oauth]]
+provider = "google"
+enabled = false
+client_id = ""
+client_secret = ""
+
+[[oauth]]
+provider = "github"
+enabled = false
+client_id = ""
+client_secret = ""
+
+[[oauth]]
+provider = "discord"
+enabled = false
+client_id = ""
+client_secret = ""
+
 [discovery]
 enabled = true
 server = ""

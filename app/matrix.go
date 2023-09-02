@@ -155,6 +155,94 @@ func (c *App) CreateMatrixUserAccount(username, password string) (*MatrixAccount
 
 }
 
+func (c *App) CreateUserSpace(id, token, username string) (*string, error) {
+
+	log.Println("creating user space", id, token, username)
+
+	serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+	matrix, err := gomatrix.NewClient(serverName, id, token)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	pl := gomatrix.Event{
+		Type: "m.room.power_levels",
+		Content: map[string]interface{}{
+			"ban": 60,
+			"events": map[string]interface{}{
+				"m.room.name":         60,
+				"m.room.power_levels": 100,
+				"m.room.create":       10,
+				"m.space.child":       10,
+				"m.space.parent":      10,
+			},
+			"events_default": 10,
+			"invite":         10,
+			"kick":           60,
+			"notifications": map[string]interface{}{
+				"room": 20,
+			},
+			"redact":        10,
+			"state_default": 10,
+			"users": map[string]interface{}{
+				id: 100,
+			},
+			"users_default": 10,
+		},
+	}
+
+	initState := []gomatrix.Event{
+		gomatrix.Event{
+			Type: "m.room.history_visibility",
+			Content: map[string]interface{}{
+				"history_visibility": "world_readable",
+			},
+		}, gomatrix.Event{
+			Type: "m.room.guest_access",
+			Content: map[string]interface{}{
+				"guest_access": "can_join",
+			},
+		}, gomatrix.Event{
+			Type: "m.room.name",
+			Content: map[string]interface{}{
+				"name": fmt.Sprintf(`@%s`, username),
+			},
+		}, gomatrix.Event{
+			Type: "m.space.type",
+			Content: map[string]interface{}{
+				"type": "profile",
+			},
+		},
+		pl,
+	}
+
+	creq := &gomatrix.ReqCreateRoom{
+		RoomAliasName: fmt.Sprintf(`@%s`, username),
+		Preset:        "public_chat",
+		Visibility:    "public",
+		CreationContent: map[string]interface{}{
+			"type": "m.space",
+		},
+		InitialState: initState,
+	}
+
+	crr, err := matrix.CreateRoom(creq)
+
+	if err != nil || crr == nil {
+		log.Println(err)
+	}
+
+	log.Println("Was Room created?", crr)
+
+	if crr != nil && crr.RoomID != "" {
+		return &crr.RoomID, nil
+	} else {
+		return nil, errors.New("could not create user space")
+	}
+}
+
 func (c *App) NewMatrixClient(userID, accessToken string) (*gomatrix.Client, error) {
 
 	serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)

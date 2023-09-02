@@ -84,6 +84,20 @@ func (c *App) HealthCheck() http.HandlerFunc {
 			"shortlink_server": c.Config.App.ShortlinkDomain,
 		}
 
+		oauth := make(map[string]any)
+
+		for _, item := range c.Config.Oauth {
+			if item.Enabled {
+				oauth[item.Provider] = map[string]any{
+					"client_id": item.ClientID,
+				}
+			}
+		}
+
+		if len(oauth) > 0 {
+			data["oauth"] = oauth
+		}
+
 		if c.Config.ThirdParty.GIF.Enabled {
 			data["gif"] = map[string]any{
 				"enabled": true,

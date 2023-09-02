@@ -142,13 +142,17 @@ func routes(c *App) chi.Router {
 			})
 		})
 
-		r.Post("/", c.CreateAccount())
 		r.Route("/username", func(r chi.Router) {
 			r.Get("/{username}", c.UsernameAvailable())
 		})
 		r.Route("/email", func(r chi.Router) {
 			r.Get("/{email}", c.ValidateEmail())
 		})
+		r.Route("/oauth", func(r chi.Router) {
+			r.Post("/discord/validate", c.ValidateOauthDiscord())
+			r.Post("/github/validate", c.ValidateOauthGithub())
+		})
+		r.Post("/", c.CreateAccount())
 	})
 	r.Route("/discover", func(r chi.Router) {
 		r.Get("/", c.AllSpaces())
