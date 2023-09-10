@@ -165,15 +165,10 @@ INSERT INTO devices (
 RETURNING device_id;
 
 -- name: UNSAFECreateAccessToken :one
-WITH new_id AS (
-  SELECT max(id) + 1 AS next_id
-  FROM access_tokens
-  FOR UPDATE
-)
 INSERT INTO access_tokens (
     id, user_id, device_id, token, used, last_validated
 ) VALUES (
-  (SELECT next_id FROM new_id), $1, $2, $3, TRUE, EXTRACT(EPOCH FROM NOW())::bigint * 1000
+  (SELECT MAX(id) + 1 FROM access_tokens), $1, $2, $3, TRUE, EXTRACT(EPOCH FROM NOW())::bigint * 1000
 )
 RETURNING token;
 

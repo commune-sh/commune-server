@@ -6,6 +6,7 @@ domain = "localhost:8989"
 public_domain = "localhost:5173"
 ssr_domain = ""
 shortlink_domain = ""
+admin_domain = ""
 port = 8989
 cookie_name = "shpong"
 secure_cookie = "something_random"

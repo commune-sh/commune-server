@@ -12,10 +12,17 @@ type App struct {
 	PublicDomain    string `toml:"public_domain"`
 	SSRDomain       string `toml:"ssr_domain"`
 	ShortlinkDomain string `toml:"shortlink_domain"`
+	AdminDomain     string `toml:"admin_domain"`
 	Port            int    `toml:"port"`
 	CookieName      string `toml:"cookie_name"`
 	SecureCookie    string `toml:"secure_cookie"`
 	JWTKey          string `toml:"jwt_key"`
+}
+
+type Meta struct {
+	Title       string `toml:"title"`
+	Description string `toml:"description"`
+	Image       string `toml:"image"`
 }
 
 type Features struct {

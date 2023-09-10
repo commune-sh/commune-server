@@ -52,6 +52,34 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			username = creds.Username
 		}
 
+		{
+			serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
+
+			matrix, err := gomatrix.NewClient(serverName, "", "")
+			if err != nil {
+				log.Println(err)
+				RespondWithJSON(w, &JSONResponse{
+					Code: http.StatusOK,
+					JSON: map[string]any{
+						"authenticated": false,
+						"error":         "internal server error",
+					},
+				})
+				return
+			}
+
+			rl := &gomatrix.ReqLogin{
+				Type:     "m.login.password",
+				User:     c.DefaultMatrixAccount,
+				Password: c.Config.Matrix.Password,
+			}
+
+			resp, err := matrix.Login(rl)
+			if err != nil || resp == nil {
+				log.Println(err)
+			}
+		}
+
 		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
 		matrix, err := gomatrix.NewClient(serverName, "", "")

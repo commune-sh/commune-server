@@ -399,6 +399,7 @@ func (c *App) OauthUserSession(w http.ResponseWriter, r *http.Request, u *OauthU
 			})
 			return
 		}
+
 		log.Println("was device_id created?", device_id)
 		access_token, err := c.MatrixDB.Queries.UNSAFECreateAccessToken(context.Background(), matrix_db.UNSAFECreateAccessTokenParams{
 			UserID: userID,
