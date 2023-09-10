@@ -111,6 +111,8 @@ func routes(c *App) chi.Router {
 		r.Put("/event/unpin", c.UnpinIndexEvent())
 	})
 
+	r.HandleFunc("/admin/*", c.MatrixAdminProxy())
+
 	r.Route("/account", func(r chi.Router) {
 		r.Use(secureMiddleware.Handler)
 		r.Post("/login", c.ValidateLogin())
@@ -344,7 +346,7 @@ func (nfs FileSystem) Open(path string) (http.File, error) {
 
 func (c *App) CORS() {
 	cors := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   []string{c.Config.App.PublicDomain},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"X-PINGOTHER", "Accept", "Authorization", "Image", "Attachment", "File-Type", "Content-Type", "X-CSRF-Token", "Access-Control-Allow-Origin"},
 		ExposedHeaders:   []string{"Link"},

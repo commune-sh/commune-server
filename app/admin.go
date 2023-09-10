@@ -3,11 +3,58 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+func (c *App) MatrixAdminProxy() http.HandlerFunc {
+	endpoint := fmt.Sprintf("http://%s:%d/_synapse/", c.Config.Matrix.Homeserver, c.Config.Matrix.Port)
+
+	target, _ := url.Parse(endpoint)
+
+	proxy := httputil.NewSingleHostReverseProxy(target)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		at, err := ExtractAccessToken(r)
+
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusUnauthorized,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		user, err := c.GetTokenUser(at.Token)
+		if err != nil {
+			log.Println(err)
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"valid": false,
+				},
+			})
+			return
+		}
+
+		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", user.MatrixAccessToken))
+		w.Header().Del("Access-Control-Allow-Origin")
+
+		proxy.ServeHTTP(w, r)
+	}
+
+}
 
 func (c *App) SuspendUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
