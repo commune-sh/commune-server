@@ -39,8 +39,6 @@ func (c *App) Routes() {
 	hr.Map(c.Config.App.Domain, routes(c))
 	hr.Map(c.Config.App.SSRDomain, SSRDomain(c))
 	hr.Map(c.Config.App.ShortlinkDomain, ShortlinkDomain(c))
-	// local dev please ignore
-	hr.Map("192.168.1.12:8989", routes(c))
 
 	c.Router.Mount("/", hr)
 }
