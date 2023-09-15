@@ -12,6 +12,9 @@ cookie_name = "shpong"
 secure_cookie = "something_random"
 jwt_key = "some_random_string"
 
+[security]
+allowed_origins = ["http://localhost:5173"]
+
 [features]
 show_index = true
 social = false

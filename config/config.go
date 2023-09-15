@@ -19,6 +19,10 @@ type App struct {
 	JWTKey          string `toml:"jwt_key"`
 }
 
+type Security struct {
+	AllowedOrigins []string `toml:"allowed_origins"`
+}
+
 type Meta struct {
 	Title       string `toml:"title"`
 	Description string `toml:"description"`
@@ -151,6 +155,7 @@ type Config struct {
 	Name           string         `toml:"name"`
 	Mode           string         `toml:"mode"`
 	App            App            `toml:"app"`
+	Security       Security       `toml:"security"`
 	Matrix         Matrix         `toml:"matrix"`
 	DB             DB             `toml:"db"`
 	Redis          Redis          `toml:"redis"`

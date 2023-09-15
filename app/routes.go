@@ -346,7 +346,7 @@ func (nfs FileSystem) Open(path string) (http.File, error) {
 
 func (c *App) CORS() {
 	cors := cors.New(cors.Options{
-		AllowedOrigins:   []string{c.Config.App.PublicDomain},
+		AllowedOrigins:   c.Config.Security.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"X-PINGOTHER", "Accept", "Authorization", "Image", "Attachment", "File-Type", "Content-Type", "X-CSRF-Token", "Access-Control-Allow-Origin"},
 		ExposedHeaders:   []string{"Link"},
