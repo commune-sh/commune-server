@@ -52,6 +52,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			username = creds.Username
 		}
 
+		/* HACK:
 		{
 			serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
@@ -79,6 +80,7 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 				log.Println(err)
 			}
 		}
+		*/
 
 		serverName := c.URLScheme(c.Config.Matrix.Homeserver) + fmt.Sprintf(`:%d`, c.Config.Matrix.Port)
 
