@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -91,6 +92,8 @@ func (c *App) GetGIFSearch() http.HandlerFunc {
 		q := r.URL.Query()
 		query := q.Get("q")
 		limit := q.Get("limit")
+
+		query = url.QueryEscape(query)
 
 		if query == "" {
 			RespondWithJSON(w, &JSONResponse{
