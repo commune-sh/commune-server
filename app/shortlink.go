@@ -30,13 +30,10 @@ func (c *App) ResolveShortlink() http.HandlerFunc {
 
 		if err != nil || item.EventID == "" {
 			log.Println("error getting event: ", err)
-			RespondWithJSON(w, &JSONResponse{
-				Code: http.StatusOK,
-				JSON: map[string]any{
-					"error":  "event not found",
-					"exists": false,
-				},
-			})
+
+			//redirect to home
+			url := fmt.Sprintf("%s/%s", c.Config.App.PublicDomain, event)
+			http.Redirect(w, r, url, http.StatusFound)
 			return
 		}
 
