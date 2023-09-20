@@ -16,6 +16,9 @@ func (c *App) SSRIndex() http.HandlerFunc {
 func (c *App) Index() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		http.Redirect(w, r, c.Config.App.PublicDomain, 301)
+		return
+
 		us := c.LoggedInUser(r)
 
 		type Page struct {
