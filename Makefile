@@ -14,5 +14,5 @@ views:
 	#-cd db/matrix/views;./create.sh;
 	./bin/shpong views;
 deps:
-	-go install github.com/kyleconroy/sqlc/cmd/sqlc@latest;
+	-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest;
 	-go get -d github.com/cortesi/modd/cmd/modd;
