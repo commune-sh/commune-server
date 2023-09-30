@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -103,6 +104,34 @@ func (c *App) HealthCheck() http.HandlerFunc {
 				"enabled": true,
 				"service": c.Config.ThirdParty.GIF.Service,
 			}
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: data,
+		})
+
+	}
+}
+
+func (c *App) HomeserverInfo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		co, err := c.MatrixDB.Queries.GetSpaceCount(context.Background())
+		if err != nil {
+			log.Println("error getting homeserver info: ", err)
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "Couldn't get homeserver info",
+				},
+			})
+			return
+		}
+
+		data := map[string]any{
+			"spaces": co.Spaces,
+			"users":  co.Users,
 		}
 
 		RespondWithJSON(w, &JSONResponse{

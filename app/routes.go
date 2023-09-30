@@ -102,6 +102,10 @@ func routes(c *App) chi.Router {
 		r.Get("/", c.HealthCheck())
 	})
 
+	r.Route("/homeserver", func(r chi.Router) {
+		r.Get("/", c.HomeserverInfo())
+	})
+
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(c.RequireAuthentication)
 		r.Put("/user/suspend", c.SuspendUser())
