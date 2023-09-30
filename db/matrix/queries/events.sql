@@ -305,3 +305,9 @@ GROUP BY
     events.type,
     aliases.room_alias
 LIMIT 1;
+
+-- name: GetFirstEvent :one
+SELECT origin_server_ts
+FROM events
+ORDER BY origin_server_ts ASC
+LIMIT 1;

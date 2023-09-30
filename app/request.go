@@ -129,9 +129,21 @@ func (c *App) HomeserverInfo() http.HandlerFunc {
 			return
 		}
 
+		ep, err := c.MatrixDB.Queries.GetFirstEvent(context.Background())
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "Couldn't get homeserver info",
+				},
+			})
+			return
+		}
+
 		data := map[string]any{
 			"spaces": co.Spaces,
 			"users":  co.Users,
+			"since":  ep,
 		}
 
 		RespondWithJSON(w, &JSONResponse{
