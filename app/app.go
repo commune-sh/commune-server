@@ -154,6 +154,7 @@ func Start(s *StartRequest) {
 		Cron:          cron,
 		Cache:         cache,
 	}
+
 	if conf.Search.Enabled {
 		mei := meilisearch.NewClient(meilisearch.ClientConfig{
 			Host:   conf.Search.Host,
@@ -178,6 +179,10 @@ func Start(s *StartRequest) {
 		}
 		return ""
 	}()
+
+	if c.Version == "" {
+		c.Version = "development"
+	}
 
 	c.Middleware()
 	c.Routes()
