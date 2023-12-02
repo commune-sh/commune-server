@@ -102,6 +102,10 @@ func routes(c *App) chi.Router {
 		r.Get("/", c.HealthCheck())
 	})
 
+	r.Route("/stats", func(r chi.Router) {
+		r.Get("/", c.Stats())
+	})
+
 	r.Route("/homeserver", func(r chi.Router) {
 		r.Get("/", c.HomeserverInfo())
 	})

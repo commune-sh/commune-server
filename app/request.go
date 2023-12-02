@@ -114,6 +114,49 @@ func (c *App) HealthCheck() http.HandlerFunc {
 	}
 }
 
+func (c *App) Stats() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		rows, err := c.MatrixDB.Queries.GetTablesRowCount(context.Background())
+
+		if err != nil {
+
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error":  "Couldn't get stats",
+					"exists": false,
+				},
+			})
+			return
+		}
+
+		type stats struct {
+			Spaces int64 `json:"spaces"`
+			Users  int64 `json:"users"`
+		}
+
+		log.Println("rows: ", rows)
+
+		st := stats{}
+
+		for _, row := range rows {
+			if row.Table == "spaces" {
+				st.Spaces = row.Rows
+			}
+			if row.Table == "users" {
+				st.Users = row.Rows
+			}
+		}
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: st,
+		})
+
+	}
+}
+
 func (c *App) HomeserverInfo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
