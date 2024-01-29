@@ -96,7 +96,7 @@ LEFT JOIN (
 	GROUP BY evr.relates_to_id, ejs.event_id, ejs.json, evs.origin_server_ts
 	ORDER BY evr.relates_to_id, evs.origin_server_ts DESC
 ) ed ON ed.relates_to_id = ej.event_id
-LEFT JOIN event_txn_id txn ON txn.event_id = ej.event_id
+LEFT JOIN event_txn_id_device_id txn ON txn.event_id = ej.event_id
 WHERE RIGHT(events.event_id, 11) = $1
 AND redactions.redacts is null
 GROUP BY
