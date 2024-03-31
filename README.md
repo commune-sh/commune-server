@@ -1,4 +1,5 @@
-[![Screenshot](/docs/screenshots/screenshot.png?raw=true "")](https://shpong.com)
+[![Screenshot](/docs/screenshots/screenshot.png?raw=true
+"")](https://app.commune.sh)
 
 #### Commune
 
@@ -8,8 +9,7 @@ Conceptual Introduction: [Communal Bonfires](https://blog.erlend.sh/communal-bon
 
 We're operating these live instances at the moment:
 
-- [shpong.com](https://shpong.com) - Reddit-like
-- [commune.sh](https://commune.sh) - Gitter-like
+- [commune.sh](https://commune.sh) 
 
 #### What does it do?
 Commune opens up all spaces and underlying rooms to the web by reading data directly from the Synapse DB, bypassing Synapse's client-server API. Additional features such as discussion boards, threaded comments are rendered by the [client](https://github.com/commune-os/commune-client). Commune makes use of many [materialized views](https://github.com/commune-os/commune-server/tree/main/db/matrix/views) for querying Synapse events.
