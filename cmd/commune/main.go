@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"shpong/app"
+	"commune/app"
 )
 
 func main() {

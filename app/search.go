@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	matrix_db "shpong/db/matrix/gen"
+	matrix_db "commune/db/matrix/gen"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/go-chi/chi/v5"

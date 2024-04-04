@@ -1,4 +1,4 @@
-module shpong
+module commune
 
 go 1.20
 

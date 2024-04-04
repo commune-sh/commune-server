@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
-	"shpong/gomatrix"
-	"shpong/static"
+	"commune/gomatrix"
+	"commune/static"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"

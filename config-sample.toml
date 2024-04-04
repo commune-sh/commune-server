@@ -1,4 +1,4 @@
-name = "shpong"
+name = "commune"
 mode = "development"
 
 [app]
@@ -8,7 +8,7 @@ ssr_domain = ""
 shortlink_domain = ""
 admin_domain = ""
 port = 8989
-cookie_name = "shpong"
+cookie_name = "commune"
 secure_cookie = "something_random"
 jwt_key = "some_random_string"
 

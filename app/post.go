@@ -7,11 +7,11 @@ import (
 	"log"
 	"net/http"
 	"reflect"
-	"shpong/gomatrix"
+	"commune/gomatrix"
 	"strings"
 	"time"
 
-	matrix_db "shpong/db/matrix/gen"
+	matrix_db "commune/db/matrix/gen"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/jackc/pgx/v5/pgtype"

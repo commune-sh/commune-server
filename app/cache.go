@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/json"
 	"log"
-	config "shpong/config"
+	config "commune/config"
 	"time"
 
 	"github.com/go-redis/redis"

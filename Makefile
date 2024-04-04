@@ -1,18 +1,18 @@
 all: clean sqlc build 
 build: 
-	cd cmd/shpong;go build -o ../../bin/shpong
+	cd cmd/commune;go build -o ../../bin/commune
 vendor: clean vendorbuild 
 vendorbuild:
-	go build -mod=vendor -o bin/shpong cmd/shpong/main.go
+	go build -mod=vendor -o bin/commune cmd/commune/main.go
 clean: 
-	rm -f bin/shpong
+	rm -f bin/commune
 modd:
 	-modd
 sqlc:
 	-cd db/matrix;sqlc generate --experimental;
 views:
 	#-cd db/matrix/views;./create.sh;
-	./bin/shpong views;
+	./bin/commune views;
 deps:
 	-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest;
 	-go get -d github.com/cortesi/modd/cmd/modd;

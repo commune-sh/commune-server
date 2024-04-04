@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"shpong/config"
-	matrix_db "shpong/db/matrix/gen"
-	"shpong/gomatrix"
+	"commune/config"
+	matrix_db "commune/db/matrix/gen"
+	"commune/gomatrix"
 
 	"github.com/Jeffail/gabs/v2"
 	"gopkg.in/yaml.v2"

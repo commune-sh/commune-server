@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	matrix_db "shpong/db/matrix/gen"
-	"shpong/gomatrix"
+	matrix_db "commune/db/matrix/gen"
+	"commune/gomatrix"
 	"strings"
 
 	"github.com/go-chi/chi/v5"

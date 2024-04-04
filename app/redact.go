@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	matrix_db "shpong/db/matrix/gen"
-	"shpong/gomatrix"
+	matrix_db "commune/db/matrix/gen"
+	"commune/gomatrix"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )

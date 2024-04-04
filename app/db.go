@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"shpong/config"
-	matrix_db "shpong/db/matrix/gen"
+	"commune/config"
+	matrix_db "commune/db/matrix/gen"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"

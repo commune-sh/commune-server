@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"shpong/gomatrix"
+	"commune/gomatrix"
 )
 
 func (c *App) SyncEvents() http.HandlerFunc {

@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	matrix_db "shpong/db/matrix/gen"
+	matrix_db "commune/db/matrix/gen"
 
-	"shpong/gomatrix"
+	"commune/gomatrix"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
