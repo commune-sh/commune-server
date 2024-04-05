@@ -9,10 +9,10 @@ clean:
 modd:
 	-modd
 sqlc:
-	-cd db/matrix;sqlc generate --experimental;
+	-cd db/matrix;sqlc generate;
 views:
 	#-cd db/matrix/views;./create.sh;
 	./bin/commune views;
 deps:
 	-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest;
-	-go get -d github.com/cortesi/modd/cmd/modd;
+	-go install github.com/cortesi/modd/cmd/modd@latest;
