@@ -162,6 +162,11 @@ func routes(c *App) chi.Router {
 		})
 		r.Post("/", c.CreateAccount())
 	})
+
+	r.Route("/public_key", func(r chi.Router) {
+		r.Get("/{matrix_user_id}", c.GetUserPublicKey())
+	})
+
 	r.Route("/discover", func(r chi.Router) {
 		r.Get("/", c.AllSpaces())
 	})

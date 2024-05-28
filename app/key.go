@@ -12,6 +12,9 @@ import (
 	"encoding/pem"
 	"errors"
 	"io"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func generateKeyPair(bits int) (*rsa.PrivateKey, *rsa.PublicKey, error) {
@@ -119,4 +122,36 @@ func (c *App) CreateNewUserKey(mid string) (*string, error) {
 	}
 
 	return &pem, nil
+}
+
+func (c *App) GetUserPublicKey() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		matrix_user_id := chi.URLParam(r, "matrix_user_id")
+
+		key, err := c.DB.Queries.GetUserPublicKey(context.Background(), matrix_user_id)
+
+		if err != nil {
+			RespondWithJSON(w, &JSONResponse{
+				Code: http.StatusOK,
+				JSON: map[string]any{
+					"error": "could not get public key",
+				},
+			})
+			return
+		}
+
+		pubKeyPEM := pem.EncodeToMemory(&pem.Block{
+			Type:  "PUBLIC KEY",
+			Bytes: key,
+		})
+
+		RespondWithJSON(w, &JSONResponse{
+			Code: http.StatusOK,
+			JSON: map[string]any{
+				"public_key_pem": string(pubKeyPEM),
+			},
+		})
+
+	}
 }
