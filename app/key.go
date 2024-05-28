@@ -9,6 +9,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"io"
 )
@@ -77,26 +78,45 @@ func decryptPrivateKey(encryptedPrivateKey string, passphrase []byte) (*rsa.Priv
 	return privateKey, nil
 }
 
-func (c *App) CreateNewUserKey(mid string) error {
+func publicKeyToPEM(pubKey *rsa.PublicKey) (string, error) {
+	pubKeyBytes, err := x509.MarshalPKIXPublicKey(pubKey)
+	if err != nil {
+		return "", err
+	}
+	pubKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubKeyBytes,
+	})
+	return string(pubKeyPEM), nil
+}
+
+func (c *App) CreateNewUserKey(mid string) (*string, error) {
 	priv, pub, err := generateKeyPair(2048)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	pkey := x509.MarshalPKCS1PublicKey(pub)
 
 	enckey, err := encryptPrivateKey(priv, []byte(c.Config.App.EncryptionPassphrase))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = c.DB.Queries.CreateUserKey(context.Background(), app_db.CreateUserKeyParams{
 		MatrixUserID: mid,
-		PublicKey:    x509.MarshalPKCS1PublicKey(pub),
+		PublicKey:    pkey,
 		PrivateKey:   enckey,
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	pem, err := publicKeyToPEM(pub)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pem, nil
 }

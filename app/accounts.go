@@ -1,13 +1,13 @@
 package app
 
 import (
+	matrix_db "commune/db/matrix/gen"
 	"context"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
-	matrix_db "commune/db/matrix/gen"
 	"strings"
 	"time"
 
@@ -216,6 +216,12 @@ func (c *App) CreateAccount() http.HandlerFunc {
 			MatrixDeviceID:    resp.Response.DeviceID,
 			UserSpaceID:       resp.UserSpaceID,
 			Age:               cr,
+		}
+
+		pubkey, err := c.CreateNewUserKey(resp.Response.UserID)
+
+		if err == nil && pubkey != nil {
+			user.PublicKeyPem = *pubkey
 		}
 
 		if c.Config.Features.RequireEmail && isValid {
