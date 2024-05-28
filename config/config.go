@@ -8,15 +8,16 @@ import (
 )
 
 type App struct {
-	Domain          string `toml:"domain"`
-	PublicDomain    string `toml:"public_domain"`
-	SSRDomain       string `toml:"ssr_domain"`
-	ShortlinkDomain string `toml:"shortlink_domain"`
-	AdminDomain     string `toml:"admin_domain"`
-	Port            int    `toml:"port"`
-	CookieName      string `toml:"cookie_name"`
-	SecureCookie    string `toml:"secure_cookie"`
-	JWTKey          string `toml:"jwt_key"`
+	Domain               string `toml:"domain"`
+	PublicDomain         string `toml:"public_domain"`
+	SSRDomain            string `toml:"ssr_domain"`
+	ShortlinkDomain      string `toml:"shortlink_domain"`
+	AdminDomain          string `toml:"admin_domain"`
+	Port                 int    `toml:"port"`
+	CookieName           string `toml:"cookie_name"`
+	SecureCookie         string `toml:"secure_cookie"`
+	JWTKey               string `toml:"jwt_key"`
+	EncryptionPassphrase string `toml:"encryption_passphrase"`
 }
 
 type Security struct {
@@ -49,6 +50,7 @@ type Matrix struct {
 }
 
 type DB struct {
+	App    string `toml:"app"`
 	Matrix string `toml:"matrix"`
 }
 

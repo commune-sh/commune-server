@@ -1,13 +1,14 @@
 package app
 
 import (
+	"commune/config"
+	app_db "commune/db/gen"
+	matrix_db "commune/db/matrix/gen"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"commune/config"
-	matrix_db "commune/db/matrix/gen"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,11 +18,42 @@ import (
 
 type DB struct {
 	*pgxpool.Pool
+	Queries *app_db.Queries
 }
 
 type MatrixDB struct {
 	*pgxpool.Pool
 	Queries *matrix_db.Queries
+}
+
+// NewDB returns a new database instace
+func NewDB() (*DB, error) {
+
+	c, err := config.Read(CONFIG_FILE)
+	if err != nil {
+		panic(err)
+	}
+
+	address := c.DB.App
+
+	conn, err := pgxpool.New(context.Background(), address)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = conn.Ping(context.Background())
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
+	q := app_db.New(conn)
+
+	store := &DB{conn, q}
+
+	return store, nil
 }
 
 // NewDB returns a new database instace

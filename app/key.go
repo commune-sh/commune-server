@@ -1,6 +1,8 @@
 package app
 
 import (
+	app_db "commune/db/gen"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -73,4 +75,28 @@ func decryptPrivateKey(encryptedPrivateKey string, passphrase []byte) (*rsa.Priv
 	}
 
 	return privateKey, nil
+}
+
+func (c *App) CreateNewUserKey(mid string) error {
+	priv, pub, err := generateKeyPair(2048)
+	if err != nil {
+		return err
+	}
+
+	enckey, err := encryptPrivateKey(priv, []byte(c.Config.App.EncryptionPassphrase))
+	if err != nil {
+		return err
+	}
+
+	err = c.DB.Queries.CreateUserKey(context.Background(), app_db.CreateUserKeyParams{
+		MatrixUserID: mid,
+		PublicKey:    x509.MarshalPKCS1PublicKey(pub),
+		PrivateKey:   enckey,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

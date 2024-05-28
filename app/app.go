@@ -32,6 +32,7 @@ type App struct {
 	Templates            *Template
 	Sessions             *sessions.CookieStore
 	SessionsStore        *redis.Client
+	DB                   *DB
 	MatrixDB             *MatrixDB
 	Cron                 *cron.Cron
 	Cache                *Cache
@@ -90,6 +91,11 @@ func Start(s *StartRequest) {
 
 	PRODUCTION_MODE = conf.Mode == "production"
 
+	db, err := NewDB()
+	if err != nil {
+		panic(err)
+	}
+
 	mdb, err := NewMatrixDB()
 	if err != nil {
 		panic(err)
@@ -144,6 +150,7 @@ func Start(s *StartRequest) {
 	}
 
 	c := &App{
+		DB:            db,
 		MatrixDB:      mdb,
 		Config:        conf,
 		HTTP:          server,

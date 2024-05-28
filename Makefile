@@ -9,6 +9,7 @@ clean:
 modd:
 	-modd
 sqlc:
+	-cd db;sqlc generate;
 	-cd db/matrix;sqlc generate;
 views:
 	#-cd db/matrix/views;./create.sh;
