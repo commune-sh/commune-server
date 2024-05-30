@@ -172,6 +172,13 @@ func (c *App) ValidateLogin() http.HandlerFunc {
 			Admin:             admin,
 		}
 
+		// create keypair if it doesn't exist
+		pubkey, err := c.CreateNewUserKey(resp.UserID)
+
+		if err == nil && pubkey != nil {
+			user.PublicKeyPem = *pubkey
+		}
+
 		err = c.StoreUserSession(user)
 
 		spaces, err := c.MatrixDB.Queries.GetUserSpaces(context.Background(), pgtype.Text{String: resp.UserID, Valid: true})
